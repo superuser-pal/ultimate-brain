@@ -101,11 +101,11 @@ Every space takes part D, whatever its modules: every space has Meetings. Its **
 
 Open **Brain Data → Meetings**, click the **Brain Status** header → **Edit property**.
 1. **Already done?** The options read New, Ready, Done and Skipped, and none is named Not Reviewed, Reviewed or Ingested. Then change nothing, and go to D2.
-2. **Otherwise,** click each old option and rename it, keeping its row order: **Not Reviewed** → `New`, **Reviewed** → `Ready`, **Ingested** → `Done`. Don't touch Skipped.
+2. **Otherwise,** click each old option and rename it, keeping its row order (by hand only: the API ignores an option's new name, so the agent can't do it, and only reads the result back): **Not Reviewed** → `New`, **Reviewed** → `Ready`, **Ingested** → `Done`. Don't touch Skipped.
 3. **An option with the new name is already there** (the brain wrote `Done` before you ran this step, and Notion added the option): Notion can't give two options one name. The agent moves every row with the old option to the new one, with your yes, and changes nothing else on those rows (Ingested At included); then delete the old option, now empty, by hand (the agent says when no row holds it). Do the same for New and Ready if one is there twice.
 4. **The default:** click **New meeting** on Home (or **New** in Meetings). The new page's Brain Status reads **New**. If it is empty or reads another value, open Meetings → the arrow next to **New** → the default template **Default Meeting**, set its Brain Status to **New**, and try again. Then move the test page to the trash (••• → Delete).
 
-### D2 · The Areas formula "Meetings to review" (agent)
+### D2 · The Areas formula "Meetings to review" (by hand, read back by the agent)
 
 The formula keeps its name (0109 §7) and counts New meetings. Replace its expression with the one in [Prompt 4](../prompts/04-formula-rollup.md) ("Areas Meetings to review"), which compares Brain Status with `"New"`:
 
@@ -114,20 +114,20 @@ prop("Meetings").filter(current.prop("Brain Status") == "New" and !empty(current
 ```
 
 - **Already done?** The expression reads back with `== "New"`: change nothing.
-- **The API refuses the expression,** or reads it back unchanged: **by hand**, open Areas, click the **Meetings to review** header → **Edit property** → **Formula**, and paste the expression above in place of the old one. At a glance reads this formula and doesn't change.
+- **Otherwise, by hand:** open Areas, click the **Meetings to review** header → **Edit property** → **Formula**, and paste the expression above in place of the old one. The API refuses a formula that goes through a relation, so the agent can't make this change; it reads the expression back. At a glance reads this formula and doesn't change.
 
 ### D3 · The Meetings template's text (by hand)
 
 Open Meetings → the arrow next to **New** → **Default Meeting**, ••• next to it → **Edit**. [../prompts/06-templates.md](../prompts/06-templates.md) has the new texts, under "Meetings". Replace these texts, and nothing else in the template:
 1. **Already done?** The checklist callout's heading reads "Before setting Ready". Then change nothing.
 2. **The checklist callout:** its heading "Before marking Reviewed" becomes `Before setting Ready`; its gray line becomes "Check the minutes, fix them, then set Brain Status to Ready. Fixed them after the brain took them in? Set Ready again: it reads only what changed." The four to-do items don't change.
-3. **The notice:** "All subjects included unless marked Meeting only. Mark Reviewed to confirm." becomes "All subjects included unless marked Meeting only. Set Ready to confirm."; in its gray line, "when you set Reviewed" becomes "when you set Ready" and "until you set Reviewed" becomes "until you set Ready".
+3. **The notice** (the gray callout below the checklist): in its gray line, "when you set Reviewed" becomes "when you set Ready" and "until you set Reviewed" becomes "until you set Ready". Only if the notice also holds the sentence "All subjects included unless marked Meeting only. Mark Reviewed to confirm." (a space built from [Prompt 6](../prompts/06-templates.md); the published template's notice has only the gray line), that sentence becomes "All subjects included unless marked Meeting only. Set Ready to confirm.". Add no sentence the notice doesn't have.
 
 Meeting pages made from the old template keep their text (decision 0007: a meeting page is never rewritten); Check minutes and the brain accept their sentence.
 
 ### D4 · The Skills pages and the Instructions (by hand)
 
-Open **Skills**. [../brain-assistant.md](../brain-assistant.md) has the new texts. Replace them, and nothing else on each page; re-link *[@Brain Data]* with a real @mention of Brain Data under your top page wherever you paste a body. **Without a Custom Agent:** make the same replacements in your personal skills.
+Open **Skills**. [../brain-assistant.md](../brain-assistant.md) has the new texts. Replace them, and nothing else on each page; re-link *[@Brain Data]* with a real @mention of Brain Data under your top page wherever you paste a body. **Without a Custom Agent:** make the same replacements in your personal skills. Notion may turn a file name such as `minutes-format.md`, or an id such as `s0.i1`, into a link as you paste: remove the link, so the text stays as written.
 1. **Today:** in its body, step 4 reads "Meetings: Brain Status New and Date on or before today. Show the count." (it said Not Reviewed). **Already done?** It says New: change nothing.
 2. **Check minutes:** replace its Description ("… before I set it Ready …") and its whole body. The body's last line reads "If Brain Status is Ready or Done: change nothing and tell me.", and its Lean line accepts both sentences, "Set Ready to confirm." and the earlier "Mark Reviewed to confirm.". **Already done?** That last line is there: change nothing.
 3. **Write minutes:** its Description says to open the chat "while its Brain Status is New"; its body is the minutes prompt, which C1 replaced and which ends its For the brain sentence with "Set Ready to confirm.". If C1 ran before this release's prompt (the sentence still says "Mark Reviewed"), replace the body again from [../minutes-format.md](../minutes-format.md).
@@ -143,7 +143,7 @@ Make four test meetings in Meetings, titled `Status check 1: delete me` to `… 
 1. After D1: the first reads **New**, the second **Ready**, the third **Done** and the fourth **Skipped**, and the third keeps its Ingested At, if it had one.
 2. A new meeting (D1 step 4) starts at **New**.
 3. Home's **"Which minutes need review?"** lists the first test meeting (New), not the others; the Meetings tab **Ready** lists the second; the Area you linked the first to shows "1 meeting" in At a glance (D2).
-4. A new page from **Default Meeting** shows the callout "Before setting Ready" and the notice ending "Set Ready to confirm.".
+4. A new page from **Default Meeting** shows the callout "Before setting Ready", and its notice says "set Ready" where it said "set Reviewed" (and "Set Ready to confirm." where it had the sentence).
 5. Ask Brain Assistant **check minutes** on the second test meeting (Ready): it changes nothing and says so.
 
 Then move the four test meetings to the trash (••• → Delete), before any catch-up: the brain never took them in.
@@ -191,9 +191,9 @@ Part D, Meetings' status names (decision 0109):
 - [ ] *(API)* Meetings' Brain Status options read New, Ready, Done and Skipped (and any option of your own), in that order, and none is named Not Reviewed, Reviewed or Ingested; the D6 test meetings read New, Ready, Done and Skipped, the Done one with its Ingested At.
 - [ ] *(you)* A new meeting starts at New; "Which minutes need review?" lists the New test meeting only; the Ready tab lists the Ready one.
 - [ ] *(API)* The Areas formula Meetings to review reads back with `== "New"`; *(you)* the linked Area's At a glance shows "1 meeting".
-- [ ] *(you)* Default Meeting shows the callout "Before setting Ready", its gray line "… set Brain Status to Ready … Set Ready again …", and the notice ending "Set Ready to confirm.".
+- [ ] *(you)* Default Meeting shows the callout "Before setting Ready", its gray line "… set Brain Status to Ready … Set Ready again …", and a notice with "set Ready" and no "Reviewed".
 - [ ] *(you)* Today, Check minutes, Write minutes and the Instructions' Tasks rule hold the D4 texts; Check minutes on the Ready test meeting changes nothing and says so; the four test meetings are in the trash.
-- [ ] *(you)* The template's copy only: the example meeting's page shows "Before setting Ready" and "Set Ready to confirm." (D5).
+- [ ] *(you)* The template's copy only: the example meeting's page shows "Before setting Ready" and a notice with no "Reviewed" (D5), and its For the brain toggle ends its sentence with "Set Ready to confirm." (C4).
 
 The last steps:
 - [ ] *(API)* The System callout reads `Template version: 0029`.
