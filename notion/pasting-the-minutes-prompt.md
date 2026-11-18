@@ -15,10 +15,10 @@ Decision 0079 makes the minutes Notion AI writes shorter and easier to skim: **I
    ```text
    Write the minutes on this page, below the transcript, and nothing else.
    ```
-3. The minutes appear in the page body, below the transcript. If the transcript is gone, put it back above the minutes: restore an earlier version from Notion's version history (••• at the top right), or paste it again. Keep the minutes. Without the transcript, catch-up leaves the meeting Reviewed and tells you so.
+3. The minutes appear in the page body, below the transcript. If the transcript is gone, put it back above the minutes: restore an earlier version from Notion's version history (••• at the top right), or paste it again. Keep the minutes. Without the transcript, catch-up leaves the meeting Ready and tells you so.
 
 **Verify:** summarise one meeting with the new prompt, as above. The summary starts with the heading **In one line** and a divider, with one sentence below them; each section's heading has a divider under it; each line of a subject is a bullet, its prefix (**Decided:**, **Open:** …) in bold; its quick follow-ups are checkboxes ending with `[q1]`, `[q2]`, …, every task and every line of a subject ends with a tag like `[s1.i2]`, and the page ends with a collapsed toggle **For the brain** holding the Attendees and Projects lines, a `Selection:` line per subject and one quote line per item. Ask Brain Assistant to "check minutes" on it: it reports no line that blocks the meeting.
 
-**One new habit:** before you mark a meeting Reviewed, tick the quick follow-ups you've already done. Each one still unticked when the brain reads the meeting becomes a Task, with no due date. To keep one out of Tasks, tick it or delete it.
+**One new habit:** before you set a meeting Ready, tick the quick follow-ups you've already done. Each one still unticked when the brain reads the meeting becomes a Task, with no due date. To keep one out of Tasks, tick it or delete it.
 
 Nothing else changes: meetings summarised with an earlier prompt are still read exactly as before, so you don't need to regenerate them. Minutes from the 0.14.0 prompt (an "In one line:" paragraph, no dividers) keep turning unticked follow-ups into Tasks; in minutes from before 0.14.0 a quick follow-up never becomes a Task.
