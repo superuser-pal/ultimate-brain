@@ -44,7 +44,7 @@ test("the design, the views guide and prompt 7a put New task right after New pro
 test("migration 0029 makes the button by hand, reads it back by name and action, covers an own Tasks database, and sets the template version", async () => {
   const migration = await read(MIGRATION);
   assert.match(migration, /^# 0029 · 0\.16\.2: New task on Home/);
-  assert.match(migration, /CC-350 \(Clean email only on New captures, 0106 §3\) and CC-356 \(the minutes layout, 0106 §13\) add their parts/);
+  assert.match(migration, /CC-356 \(the minutes layout, 0106 §13\) adds its part/);
   assert.match(migration, /### A1 · The New task button \(by hand\)/);
   assert.match(migration, /\*\*Name:\*\* `New task`/);
   assert.match(migration, /\*\*Add page to\*\* → \*\*Tasks\*\*\. Add one property, \*\*Kind\*\* = \*\*Task\*\*/);
