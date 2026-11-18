@@ -224,11 +224,11 @@ Write every item as ONE line in exactly this form:
 ```
 
 ### Clean email
-**Description:** Clean a pasted email thread on the open Ultimate Brain capture: who wrote to whom and when, then each message's own text word for word. Rewrites the page directly; asks first only when it has a serious doubt. Use on an Inbox page of Kind Capture when I say "clean email" or "clean this thread".
+**Description:** Clean a pasted email thread on the open Ultimate Brain capture: who wrote to whom and when, then each message's own text word for word. Rewrites the page directly; asks first only when it has a serious doubt. Use on an Inbox page of Kind Capture, Brain Status New, when I say "clean email" or "clean this thread".
 
 ```text
 Goal: turn a pasted email thread into a clean copy the brain can read. Clean it; never summarize it.
-Source: this page only. It must be a page in the Inbox database inside [@Brain Data] with Kind Capture and Brain Status New or Ready; otherwise stop and tell me.
+Source: this page only. It must be a page in the Inbox database inside [@Brain Data] with Kind Capture and Brain Status New; otherwise stop and tell me (a Ready row may already be taken in by the brain, and rows the brain created and Done captures are a record of what came in).
 
 0. If the page has a "Transcript" toggle or lines with ids like "[s1.i1]", stop and tell me: this is not an email, and rewriting would break the quotes my selections point at.
 1. Split the text into messages. Put them newest first, as a mail client shows them: the latest message at the top, the oldest at the bottom. A message with no date goes where the thread places it (a reply pasted on top is the newest).
