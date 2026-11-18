@@ -113,3 +113,17 @@ test("no shipped text outside earlier migrations, history and read-before-0.16.2
     }
   }
 });
+
+test("the vendored skills read a meeting's Reviewed as Ready and write Done, never Ingested", async () => {
+  const ingest = await read(".agents/skills/brain-ingest/SKILL.md");
+  assert.match(ingest, /pages with Brain Status = \*\*Ready\*\* \(or \*\*Reviewed\*\*, its name before 0\.16\.2, decision 0109\)/);
+  assert.match(ingest, /set the meeting's Brain Status back to \*\*Done\*\* through the MCP yourself \(never Ingested/);
+  const query = await read(".agents/skills/brain-ingest/references/notion.md");
+  assert.match(query, /\*\*Brain Status = Ready\*\*[^\n]*still named \*\*Reviewed\*\*: take those too/);
+  const selection = await read(".agents/skills/brain-ingest/references/selection.md");
+  assert.match(selection, /a meeting's \*\*Reviewed\*\*, its name before 0\.16\.2, counts as Ready/);
+  const catchUp = await read(".agents/skills/brain-catch-up/SKILL.md");
+  assert.match(catchUp, /a meeting is Ready \(Reviewed, its name before 0\.16\.2, counts as Ready: decision 0109\)/);
+  const formats = await read(".agents/skills/brain-sync/references/formats.md");
+  assert.match(formats, /A record written before holds `Ingested`: `sync render` reads it as `Done`/);
+});
