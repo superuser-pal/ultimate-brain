@@ -546,8 +546,16 @@ function offRelations(config: Record<string, unknown>, database: string): Set<st
   return off;
 }
 
-/** Brain values that were renamed (0048, 0049): an S of the old one compares equal to the new one. */
-const RENAMED_VALUES: Record<string, Record<string, string>> = { "Brain Status": { Processed: "Done" }, Kind: { Document: "File" } };
+/** Brain values that were renamed (0048, 0049; Meetings' Brain Status in 0.16.2, 0109 §4): an S of the old one compares equal to the new one.
+ *  Keyed by database, then property; `*` holds the renames of every database. Skipped (Meetings) is not renamed. */
+const RENAMED_VALUES: Record<string, Record<string, Record<string, string>>> = {
+  "*": { "Brain Status": { Processed: "Done" }, Kind: { Document: "File" } },
+  meetings: { "Brain Status": { "Not Reviewed": "New", Reviewed: "Ready", Ingested: "Done" } },
+};
+function renamedValue(database: string, name: string, value: unknown): unknown {
+  const key = String(value);
+  return RENAMED_VALUES[database]?.[name]?.[key] ?? RENAMED_VALUES["*"]![name]?.[key] ?? value;
+}
 
 function sameValue(a: unknown, b: unknown): boolean {
   const norm = (value: unknown) => Array.isArray(value) ? [...value].map(String).sort(compareCodePoints) : value === "" || value === undefined ? null : value;
@@ -863,7 +871,7 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     const isCreate = note.attributes.notion === undefined && capturePage === undefined;
     // A report last published on the Inbox (no Origin in S) was moved to Documents by migration 0019: every property goes out once (cli §5.14.4, 0071).
     const moved = isReport(note) && !isCreate && !Object.hasOwn(published, "Origin");
-    for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name) || (capturePage !== undefined && name === "Name")) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (isCreate || moved || !Object.hasOwn(published, name) || !sameValue(value, RENAMED_VALUES[name]?.[String(published[name])] ?? published[name]))) properties[name] = encoded; }
+    for (const [name, value] of Object.entries(rendered)) { if (name === "@content" || heldProperties.has(name) || (capturePage !== undefined && name === "Name")) continue; const encoded = notionProperty(name, value, note, workspace, pending); if (encoded !== undefined && (isCreate || moved || !Object.hasOwn(published, name) || !sameValue(value, renamedValue(database, name, published[name])))) properties[name] = encoded; }
     // A held property is left out of `published` too, so S stays as it was until the conflict or the correction is decided (cli §5.14.4).
     for (const name of heldProperties) delete rendered[name];
     const content = renderedContent(form, workspace); if (content.hash !== undefined) rendered["@content"] = content.hash;
@@ -926,7 +934,7 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
   if (isWeekly(note)) { Object.assign(values, { Name: weeklyRowName(note), Kind: "Weekly", "Brain Status": weeklyDecided(note, workspace) ? "Done" : "New", "Brain ID": note.id }); return values; }
   // A report is a Documents row since 0.9.1 (0071); its Ask rows stay on the Inbox and link back through Asked in.
   if (isReport(note)) { Object.assign(values, { Name: a.title, Origin: ORIGIN_LABEL.report, Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), "Asked in": typeof a.asked_in === "string" ? [a.asked_in] : Array.isArray(a.asked_in) ? a.asked_in : [], "Brain ID": note.id }); return values; }
-  if (note.type === "meeting") { Object.assign(values, { Attendees: relationPages(a.attendees, workspace), Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), "Brain Status": "Ingested", "Ingested At": dateOutput(a.created), "Brain ID": note.id }); return values; }
+  if (note.type === "meeting") { Object.assign(values, { Attendees: relationPages(a.attendees, workspace), Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), "Brain Status": "Done", "Ingested At": dateOutput(a.created), "Brain ID": note.id }); return values; }
   if (note.type === "source") return sourceValues(note, workspace);
   common();
   if (note.type === "area") Object.assign(values, { Domain: relationPages(a.domain === undefined ? [] : [a.domain], workspace) });
