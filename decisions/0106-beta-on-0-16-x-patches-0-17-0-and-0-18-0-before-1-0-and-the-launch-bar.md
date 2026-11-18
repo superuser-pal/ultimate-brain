@@ -15,7 +15,7 @@ On 2026-11-18 the author ran the 1.0.0 opening scope review (0061's grill) with 
 ## Decision
 
 ### 1. The beta runs on 0.16.x patches (Q: what does the beta run on, and how often is a fix released?)
-The beta runs on 0.16.x. A patch carries beta fixes and launch-readiness polish, never a new feature. A patch is cut when at least one fix a tester can see is merged, at most about once a week, each with the usual native smoke run, `results.md` read before `scripts/release.mjs` (docs/releasing.md). A trust or data-loss fix ships at once.
+The beta runs on 0.16.x. A patch carries beta fixes and launch-readiness polish, never a new feature. A patch is cut when at least one fix a tester can see is merged, at most about once a week, each with the usual native smoke run, `results.md` read before `scripts/release.mjs` (docs/releasing.md). A trust or data-loss fix ships at once. Polish adds no capability: §12's button adds the row you would add by hand, and §13 lays out the same items, ids and selection to be read, so both fit a patch.
 
 ### 2. The beta starts now, on 0.16.1 (Q: when do invites go out, to whom, and how many?)
 U-31 (the attended setup steps 4a and 4b), then U-32 (the readiness recheck, from `v0.16.1`, no longer `v0.16.0`), then U-28 (the invites). Five testers, reached directly by the author, English-speaking only, each with Notion Business and Notion credits (0078 §6's rule). Testers without Notion AI join after 0.17.0.
