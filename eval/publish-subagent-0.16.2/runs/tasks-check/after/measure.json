@@ -1,0 +1,23 @@
+{
+ "cost_usd": 7.14,
+ "duration_s": 530,
+ "turns": 30,
+ "models": {
+  "claude-haiku-5-5": 0.0,
+  "claude-fable-5-2": 7.14
+ },
+ "session": {
+  "model_calls": 24,
+  "peak_context": 178949,
+  "compactions": 0,
+  "output_tokens": 24116
+ },
+ "subagents": [
+  {
+   "model_calls": 18,
+   "peak_context": 172747,
+   "compactions": 0,
+   "output_tokens": 25140
+  }
+ ]
+}

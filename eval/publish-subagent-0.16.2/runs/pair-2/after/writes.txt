@@ -1,0 +1,51 @@
+49 writes
+{'delete-block': 32, 'post-page': 8, 'append-blocks': 4, 'patch-page': 5}
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+post-page people per-k6d552s4 
+post-page people per-ke3gy1ys 
+append-blocks areas area-2m7c4h8n 8 blocks
+patch-page areas area-2m7c4h8n Last Synced
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+delete-block - - 
+append-blocks projects prj-9x4t1b7e 19 blocks
+patch-page projects prj-9x4t1b7e Last Synced
+append-blocks projects prj-9x4t1b7e 6 blocks
+post-page documents vw-ra0r13ky 
+patch-page inbox - Brain Status
+delete-block - - 
+delete-block - - 
+append-blocks documents vw-ra0r13ky 2 blocks
+patch-page documents vw-ra0r13ky Refresh asked,Last Synced
+patch-page meetings mtg-1jrdytg6 Attendees,Area,Brain Status,Ingested At,Brain ID
+post-page tasks mtg-1jrdytg6 
+post-page tasks mtg-1jrdytg6 
+post-page tasks mtg-1jrdytg6 
+post-page tasks mtg-1jrdytg6 
+post-page inbox Catch-up 18 Nov: 1 in, 4 need you 
