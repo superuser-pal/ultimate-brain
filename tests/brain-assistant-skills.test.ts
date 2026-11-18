@@ -43,14 +43,22 @@ function skillEntries(assistant: string): Entry[] {
 }
 
 /** Prompt 9 §2: one page per skill, its name the title, its Description line in Description, its text block the
- *  page body; Write minutes' body is the text block of minutes-format.md. */
+ *  page body. An entry with no text block names its source on its "**Text:**" line: the body is the one text block
+ *  of the file that line links (Write minutes: minutes-format.md). */
 async function publishedPages() {
-  const minutesPrompt = textBlocks(await read("notion/minutes-format.md"));
-  assert.equal(minutesPrompt.length, 1, "minutes-format.md holds one text block, the minutes prompt");
-  return skillEntries(await read("notion/brain-assistant.md")).map((entry) => {
-    const body = entry.name === "Write minutes" ? minutesPrompt[0] : entry.blocks[0];
-    return { title: entry.name, description: entry.description, body };
-  });
+  const pages = [];
+  for (const entry of skillEntries(await read("notion/brain-assistant.md"))) {
+    let body = entry.blocks[0];
+    if (entry.blocks.length === 0) {
+      const link = /^\*\*Text:\*\* .*?\]\(([^)]+\.md)\)/m.exec(entry.text)?.[1];
+      assert.ok(link, `${entry.name} has a text block or a Text: line that links its source`);
+      const source = textBlocks(await read(join("notion", link)));
+      assert.equal(source.length, 1, `${link} holds one text block`);
+      body = source[0];
+    }
+    pages.push({ title: entry.name, description: entry.description, body });
+  }
+  return pages;
 }
 
 const TEN = ["Today", "Check minutes", "Prep", "Weekly review", "Plan check", "Tidy capture", "Voice summary", "Clean email", "Write up", "Refresh report"];
@@ -65,9 +73,13 @@ test("publishing Brain Assistant's skills creates eleven pages: the ten skills a
 });
 
 test("Write minutes' body equals the minutes prompt, which has one source: minutes-format.md", async () => {
+  // The minutes prompt, read on its own: the fenced text block under minutes-format.md's opening paragraphs.
   const minutes = await read("notion/minutes-format.md");
+  const start = minutes.indexOf("```text\n") + "```text\n".length;
+  const prompt = minutes.slice(start, minutes.indexOf("\n```\n", start));
+  assert.match(prompt, /^Write the minutes of the meeting transcript/);
   const page = (await publishedPages()).find((p) => p.title === "Write minutes");
-  assert.equal(page?.body, textBlocks(minutes)[0]);
+  assert.equal(page?.body, prompt);
   const entry = skillEntries(await read("notion/brain-assistant.md")).find((e) => e.name === "Write minutes");
   assert.deepEqual(entry?.blocks, [], "brain-assistant.md keeps no copy of the minutes prompt");
   assert.match(entry!.text, /\[minutes-format\.md\]\(minutes-format\.md\)/);
@@ -79,8 +91,9 @@ test("Brain Assistant doesn't run Write minutes: its Description points to the N
   const entry = skillEntries(assistant).find((e) => e.name === "Write minutes");
   assert.match(entry!.description!, /Brain Assistant doesn't run it/);
   assert.match(entry!.description!, /Notion AI chat on the meeting page/);
-  assert.match(entry!.description!, /pasting-the-minutes-prompt\.md/);
-  assert.match(entry!.description!, /doesn't edit the page/);
+  assert.match(entry!.description!, /Write the minutes on this page, below the transcript, and nothing else\./);
+  assert.match(entry!.description!, /Asked to write minutes, Brain Assistant gives you these steps and doesn't edit the page/);
+  assert.doesNotMatch(entry!.description!, /\.md\b/, "the Description names no repo file a Notion user can't open");
   const instructions = textBlocks(assistant.slice(assistant.indexOf("## Instructions")))[0];
   const editRule = instructions.split("\n").find((line) => line.includes("Only these skills may edit page text"));
   assert.ok(editRule && !editRule.includes("Write minutes"), "the Instructions' edit rule doesn't name Write minutes");

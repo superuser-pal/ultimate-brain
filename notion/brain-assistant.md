@@ -283,7 +283,7 @@ My message carries my confirmation. When done, reply in at most three lines: wha
 ```
 
 ### Write minutes
-**Description:** The minutes prompt, kept here so you can copy it. Brain Assistant doesn't run it: open the Notion AI chat on the meeting page, with the transcript on the page, paste this text and the line "Write the minutes on this page, below the transcript, and nothing else.", and send (pasting-the-minutes-prompt.md). Asked to write minutes, Brain Assistant points you there and doesn't edit the page.
+**Description:** The minutes prompt, kept here so you can copy it. Brain Assistant doesn't run it: open the Notion AI chat on the meeting page, with the transcript on the page, paste this text and the line "Write the minutes on this page, below the transcript, and nothing else.", and send. Asked to write minutes, Brain Assistant gives you these steps and doesn't edit the page.
 
 **Text:** the minutes prompt, the text block of [minutes-format.md](minutes-format.md), word for word. It is not copied here, so the prompt has one source: when the minutes prompt changes, this page's body is published again from that block.
 
