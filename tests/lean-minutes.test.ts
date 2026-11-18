@@ -226,6 +226,14 @@ test("the divided layout gives the same items, ids, groups and selection as the 
   assert.equal(divided.items!.find((item) => item.id === "s1.i1")?.text, "The planting day moves to the second Saturday of April because the soil came late.", "the gist bullet, unprefixed");
 });
 
+test("the gate's reference minutes give the same plan in the divided layout as in 0.14.0's", () => {
+  const gate = join(import.meta.dirname, "..", "eval", "minutes-0.14");
+  const read = (name: string): string => readFileSync(join(gate, name), "utf8");
+  const before = plan(read("reference-output.md"), read("transcript.md"));
+  assert.equal(before.ok, true, JSON.stringify(before.problems));
+  assert.deepEqual(plan(read("reference-output-divided.md"), read("transcript.md")), before);
+});
+
 test("a bare In one line heading and its sentence are not items and never imported, a list line included", () => {
   const bulleted = plan(swap(DIVIDED, "\nThe planting day moves to April", "\n- The planting day moves to April"));
   assert.deepEqual(bulleted, plan(DIVIDED), "a bulleted sentence is the sentence, not an unnumbered line");
