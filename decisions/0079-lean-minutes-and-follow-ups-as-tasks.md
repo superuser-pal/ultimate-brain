@@ -4,6 +4,7 @@
 **Date:** 2026-11-10
 **Release:** 0.14.0
 **Amends:** [0067](0067-quick-follow-ups-scoped-tasks-and-forgiving-quotes.md) (the minutes' layout, and quick follow-ups no longer always stay in Notion); [0078](0078-onboarding-and-early-access-in-0-14-0.md) (0.14.0's scope gains this format, so early testers start on it)
+**Amended by:** [0106](0106-beta-on-0-16-x-patches-0-17-0-and-0-18-0-before-1-0-and-the-launch-bar.md) (2026-11-18; 0.16.2): the layout only: every section a `##` heading followed by a divider (In one line's sentence on its own line below), subject lines as bullets with a bold prefix; the ids, quotes, selection, For the brain toggle and §6's bar are kept, and earlier shapes are still read
 **Refines:** [0055](0055-domains-capture-and-review.md) (where the selection tokens and the quotes sit on the page; the selection itself is unchanged)
 **Keeps:** what the brain stores from a meeting (the selected transcript paragraphs, 0055), [0007](0007-notion-meeting-notes-not-deleted.md) (the brain never edits a meeting page's body), [0012](0012-meeting-minutes-reviewed-before-ingest.md) (nothing is read before Reviewed), [0062](0062-changes-reach-the-brain-only-when-you-say-so.md) (an ingested page is not watched), 0067's Scope toggle and its quote rule, the voice-capture format, the feature cutoff at 0.15.0
 

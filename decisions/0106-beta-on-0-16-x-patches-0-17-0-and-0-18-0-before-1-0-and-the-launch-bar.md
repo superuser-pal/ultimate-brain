@@ -2,15 +2,15 @@
 
 **Status:** Accepted
 **Date:** 2026-11-18
-**Release:** 0.16.2 (§1 to §3); 0.17.0 (§4); 0.18.0 (§5); 1.0.0 (§6 to §8)
-**Amends:** [0061](0061-roadmap-and-launch-boundary.md) (release order and launch details: two explicit roadmap changes after the cutoff, 0.17.0 and 0.18.0, before 1.0.0; the languages, channel, number of testers and launch it left to this grill); [0101](0101-where-notion-ai-and-the-brain-each-write.md) §9 (its 1.0.0 part, §3 and §8, ships in 0.17.0); [0078](0078-onboarding-and-early-access-in-0-14-0.md) §6 and [0101](0101-where-notion-ai-and-the-brain-each-write.md) §8 where they say "1.0" for Notion AI becoming optional (read 0.17.0); [0082](0082-native-smoke-run-per-release-full-native-acceptance-before-1-0.md) §2 (CC-186 with CC-206 runs on a 1.0.0 release candidate, §6); [0072](0072-ultimate-assistant.md) §1's rename note (Notion Brain Assistant is built in 0.17.0)
-**Keeps:** 0.15.0 as the feature cutoff for anything not listed here; [0083](0083-release-on-a-reviewed-reading-when-the-scorer-fails-a-smoke-run.md) (a scorer miss may be released on a reviewed reading, and the scorer is fixed before the next smoke run); the release scripts, the native smoke run per release (0082 §1) and the approval rules (0038, 0040, 0073); Markdown and Git canonical, Notion as the human interface; 0078 §6's rule that early-access testers have Notion Business with credits
+**Release:** 0.16.2 (§1 to §3, §12, §13); 0.17.0 (§4); 0.18.0 (§5); 1.0.0 (§6 to §8)
+**Amends:** [0061](0061-roadmap-and-launch-boundary.md) (release order and launch details: two explicit roadmap changes after the cutoff, 0.17.0 and 0.18.0, before 1.0.0; the languages, channel, number of testers and launch it left to this grill); [0101](0101-where-notion-ai-and-the-brain-each-write.md) §9 (its 1.0.0 part, §3 and §8, ships in 0.17.0); [0078](0078-onboarding-and-early-access-in-0-14-0.md) §6 and [0101](0101-where-notion-ai-and-the-brain-each-write.md) §8 where they say "1.0" for Notion AI becoming optional (read 0.17.0); [0082](0082-native-smoke-run-per-release-full-native-acceptance-before-1-0.md) §2 (CC-186 with CC-206 runs on a 1.0.0 release candidate, §6); [0072](0072-ultimate-assistant.md) §1's rename note (Notion Brain Assistant is built in 0.17.0); [0079](0079-lean-minutes-and-follow-ups-as-tasks.md) §1's layout only (headings with dividers and bold-prefixed bullets, §13)
+**Keeps:** 0.15.0 as the feature cutoff for anything not listed here; [0083](0083-release-on-a-reviewed-reading-when-the-scorer-fails-a-smoke-run.md) (a scorer miss may be released on a reviewed reading, and the scorer is fixed before the next smoke run); the release scripts, the native smoke run per release (0082 §1) and the approval rules (0038, 0040, 0073); Markdown and Git canonical, Notion as the human interface; 0078 §6's rule that early-access testers have Notion Business with credits; 0079's ids, quotes, selection, For the brain toggle, quick follow-ups, Scope toggle and its §6 bar; [0007](0007-notion-meeting-notes-not-deleted.md) (existing meeting pages are never rewritten)
 
 ## Context
 
 0.16.1 was released on 2026-11-17. 0061 left the launch's languages, channels, number of testers and offer to 1.0's opening grill, and 0078 §6 left how the template reaches testers and the npm channel to the same grill. 0101 put the path without Notion AI in 1.0.0, and 0082 put the complete native acceptance (CC-186, CC-206) there too, once beta testers are live. The 1.0.0 section had grown to hold beta fixes, two features, translation and the launch bar together, with no order between them.
 
-On 2026-11-18 the author ran the 1.0.0 opening scope review (0061's grill) with the coordinator and answered the questions below. This decision records each answer as a rule, with the question it answered.
+On 2026-11-18 the author ran the 1.0.0 opening scope review (0061's grill) with the coordinator and answered the questions below; later the same day the author added two items to 0.16.2 (§12, §13). This decision records each answer as a rule, with the question it answered.
 
 ## Decision
 
@@ -27,6 +27,9 @@ U-31 (the attended setup steps 4a and 4b), then U-32 (the readiness recheck, fro
 - Clean email acts only on captures with Brain Status New, as Tidy capture does (assessment finding F-0010, noted for 1.0.0 since CC-151), as its own task.
 - CC-267 (the catch-up's publish in a sub-agent) and CC-269 (the CLI writes the snapshot), moved from 1.0.0.
 - The wishlist page's copy, in English, and the waitlist paragraph of PRIVACY.md naming GoHighLevel (GHL) as where the page, the list and the email live. GHL's current data-location and consent documents are checked and linked before the paragraph is written: no claim without a vendor link.
+- A New task button on Home (§12) and the minutes layout (§13), added by the author later the same day.
+
+0.16.2 has one Notion migration, numbered after 0028, for every Notion step of its tasks.
 
 ### 4. 0.17.0: the path without Notion AI, and the rename (Q: does the path without Notion AI wait for 1.0.0?)
 A feature release, by explicit roadmap change after the cutoff. CC-325 (Brain Assistant sets your operational fields after your yes), CC-326 to CC-329 (the path without Notion AI) and U-36 move from 1.0.0 to 0.17.0, unchanged in scope. With them, the rename noted by 0072: the Notion custom agent Brain Assistant becomes **Notion Brain Assistant**, so it isn't confused with Ultimate Assistant (notion/brain-assistant.md, the button messages, the guides, the views guide, the template, a by-hand step of the Notion migration). The rename and CC-325 share **one** Notion migration, and the release has one skills release. CC-326, the contracts, may start beside the 0.16.2 work; the other 0.17.0 tasks start after CC-326 is merged.
@@ -58,11 +61,22 @@ CC-272 targeted the Decisions and Questions databases, which 0099 removed. It is
 ### 11. Stays in 1.0.0
 CC-347 (the Review and Questions transition code removed), CC-186, CC-206, CC-339 and CC-340, as they are.
 
+### 12. A New task button on Home (0.16.2; Q: can a task be added from Home, as a project can?)
+Next to New project in Home's right column, a **New task** button adds a Tasks row with Kind Task and the default Status, and opens it; it sets no project and no due date. It is polish under §1, not a new capability: it adds the row you would add by hand. The Notion design and template texts, the views guide, a check, and a by-hand step in 0.16.2's one Notion migration carry it; the published template takes it as the author's by-hand step.
+
+### 13. The minutes layout (0.16.2; amends 0079's layout only; Q: can the minutes be easier to scan?)
+1. **Sections:** every section is a `##` heading followed by a divider: `In one line` (its sentence moves to its own line below the heading, with no "In one line:" prefix), `Quick follow-ups`, `Tasks for the brain`, and each subject, `## <Subject> [s1]`.
+2. **Subject lines** are bullets with a bold prefix: `- **Decided:** … [s1.i2]`, and the same for Open, Concern, Waiting on <name> and Idea. The gist line stays first, unprefixed, as a bullet.
+3. **Unchanged:** quick follow-ups stay checkboxes; each task stays one line with its Scope toggle; 0079's ids, quotes, selection, the For the brain toggle and its bar (0079 §6) are kept, and the prompt is checked against that bar again before the release.
+4. **Earlier shapes are still read** (0.14.0's lean shape with "In one line:", the 0.9.x shape), and existing meeting pages are never rewritten. The author pastes the new prompt once after the release; 0.16.2's migration has a by-hand step to replace the prompt where the user keeps it.
+
+It is polish under §1: the same items, ids and selection, laid out to be read.
+
 ## Consequences
 
-- build/TASKS.md gains the sections 0.16.2, 0.17.0 and 0.18.0 before 1.0.0. Moved rows keep their text and add a "Moved by 0106" line; new rows: the scorer fix, Clean email (F-0010), the wishlist copy and privacy paragraph (0.16.2); the rename and the demo script (0.17.0); the 0.18.0 plan (0.18.0); U rows for the GHL wishlist page and the Spanish template.
+- build/TASKS.md gains the sections 0.16.2, 0.17.0 and 0.18.0 before 1.0.0. Moved rows keep their text and add a "Moved by 0106" line; new rows: the scorer fix, Clean email (F-0010), the wishlist copy and privacy paragraph, the New task button, the minutes layout, and U rows for 0.16.2's template and the author's brain (0.16.2); the rename and the demo script (0.17.0); the 0.18.0 plan (0.18.0); U rows for the GHL wishlist page and the Spanish template.
 - U-28 and U-32 change per §2; U-36 runs in 0.17.0.
-- 0061, 0078, 0082 and 0101 carry an "Amended by 0106" line; docs/vision.md, docs/v2-ideas.md and AGENTS.md say the new order.
+- 0061, 0072, 0078, 0079, 0082 and 0101 carry an "Amended by 0106" line; docs/vision.md, docs/v2-ideas.md and AGENTS.md say the new order.
 - The cutoff still stands for anything not listed: 0.17.0 and 0.18.0 are the only feature releases before 1.0.0.
 
 ## Evidence
