@@ -11,6 +11,7 @@
 **Amended by:** [0100](0100-keep-a-task-as-a-document.md) (2026-11-16; 0.17.0): 0.17.0 also keeps a task as a document, a second feature after the cutoff
 **Amended by:** [0101](0101-where-notion-ai-and-the-brain-each-write.md) (2026-11-16; 1.0.0): 1.0.0 holds the path without Notion AI, with minutes the agent writes, by explicit roadmap change
 **Amended by:** [0102](0102-one-release-for-0-16-0-and-0-17-0.md) (2026-11-16): no 0.17.0: its two features ship in 0.16.0, the one release after the cutoff
+**Amended by:** [0106](0106-beta-on-0-16-x-patches-0-17-0-and-0-18-0-before-1-0-and-the-launch-bar.md) (2026-11-18): the beta runs on 0.16.x patches; 0.17.0 (the path without Notion AI and the rename to Notion Brain Assistant) and 0.18.0 (Español) before 1.0.0, by explicit roadmap change; 1.0.0's release-candidate bar and a soft launch; the cutoff stands for anything else
 
 ## Context
 
