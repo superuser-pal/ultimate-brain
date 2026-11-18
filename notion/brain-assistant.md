@@ -10,7 +10,7 @@ It has three parts, all set up by hand in Notion ([migration 0004](migrations/00
 |---|---|---|
 | **The agent** | Its own chat, scoped to Ultimate Brain | Agents → Brain Assistant |
 | **Instructions** | Standing rules: scope, never edit, how to answer, how-to questions | The agent's Instructions |
-| **Ten skills** | Reusable workflows you run by asking for them by name (see [Running a skill](#running-a-skill)): Today, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report (Review queue and Grill review were retired with the Review database in 0.16.0) | A skills database "Skills" ("Brain Assistant Skills" in a space built before 0.14.0) |
+| **Eleven skills** | Reusable workflows you run by asking for them by name (see [Running a skill](#running-a-skill)): Today, Check minutes, Prep, Weekly review, Plan check, Tidy capture, Voice summary, Clean email, Write up, Refresh report; and Write minutes, the minutes prompt kept as a skill page, which you paste in the Notion AI chat on a meeting page and Brain Assistant doesn't run (Review queue and Grill review were retired with the Review database in 0.16.0) | A skills database "Skills" ("Brain Assistant Skills" in a space built before 0.14.0) |
 
 ## Why a Custom Agent, not personal Instructions
 
@@ -26,7 +26,7 @@ Duplicating the Notion template doesn't give you a configured Brain Assistant: y
 1. **Create the agent:** Agents → New Custom Agent, named **Brain Assistant**, no triggers. Already have a Brain Assistant you created that answers in its chat? Keep it, don't create a second one: check steps 2 to 5, then do step 6 (Test).
 2. **Tools and access:** add only the page **Brain Data**, the page **How it works**, and the database **Skills** (Brain Assistant's skills; in a space built before 0.14.0 it may be called **Brain Assistant Skills**), all three from **this space**: the ones under your space's top page ("Ultimate Brain" in a fresh duplicate). In the picker each result shows the page it sits under; pick only those under your top page. A workspace can hold several databases called Skills (another space, an older test copy): if a result doesn't show where it sits, paste that page's link instead (open it from your space, ••• → Copy link). If two top pages have the same name, rename yours first (for example "Ultimate Brain · Test"). Leave "Pages shared with everyone" off. Edit access is needed only on Meetings, Inbox and Documents, for the skills that may change page text; view access everywhere else. A mention in the Instructions doesn't give the agent access: only Tools and access does.
 3. **Instructions:** paste the block below. Replace each *[@…]* with a real @mention of that page under your top page.
-4. **Skills:** create the database **Skills** (title, plus a **Description** text property); a space that already has it, under that name or as **Brain Assistant Skills**, keeps it. One page per skill below: the name is the title, the description goes in Description, the body is the page content. Keep **Use automatically** on. In a duplicate of the template the ten skills are already there: open each and check that every mention of Brain Data or How it works opens the page under your top page; replace any that opens another space's page, or one you can't open.
+4. **Skills:** create the database **Skills** (title, plus a **Description** text property); a space that already has it, under that name or as **Brain Assistant Skills**, keeps it. One page per skill below: the name is the title, the description goes in Description, the body is the page content. Keep **Use automatically** on. In a duplicate of the template the eleven skills are already there: open each and check that every mention of Brain Data or How it works opens the page under your top page; replace any that opens another space's page, or one you can't open.
 5. **Buttons:** **Tidy capture** (Inbox), **Write up** and **Refresh report** (Documents; each there with its module on). For each, open the database as a full page → ••• → Properties → the button, and in **Send message to** select your own Brain Assistant. Keep the message as it is ([views-guide.md](views-guide.md) §9): its skill name, its confirmation and its **@This page**. Selecting the agent says who receives the message; @This page says which page it is about: one never replaces the other. With personal Instructions there is no agent to select, and the buttons do nothing.
 6. **Test:** in the agent's chat, ask **Run Today**: it lists only tasks from the Tasks database under your top page › Brain Data. If it shows a task or meeting from another space, see [Running a skill](#running-a-skill). Then "how do I decide what the brain proposes?" answers from How it works. "Set up my brain" then checks each button on a disposable sample page it creates, and records Brain Assistant ready only when those checks pass (spec/setup.md §6.4).
 
@@ -224,11 +224,11 @@ Write every item as ONE line in exactly this form:
 ```
 
 ### Clean email
-**Description:** Clean a pasted email thread on the open Ultimate Brain capture: who wrote to whom and when, then each message's own text word for word. Rewrites the page directly; asks first only when it has a serious doubt. Use on an Inbox page of Kind Capture when I say "clean email" or "clean this thread".
+**Description:** Clean a pasted email thread on the open Ultimate Brain capture: who wrote to whom and when, then each message's own text word for word. Rewrites the page directly; asks first only when it has a serious doubt. Use on an Inbox page of Kind Capture, Brain Status New, when I say "clean email" or "clean this thread".
 
 ```text
 Goal: turn a pasted email thread into a clean copy the brain can read. Clean it; never summarize it.
-Source: this page only. It must be a page in the Inbox database inside [@Brain Data] with Kind Capture and Brain Status New or Ready; otherwise stop and tell me.
+Source: this page only. It must be a page in the Inbox database inside [@Brain Data] with Kind Capture and Brain Status New; otherwise stop and tell me (a Ready row may already be taken in by the brain, and rows the brain created and Done captures are a record of what came in).
 
 0. If the page has a "Transcript" toggle or lines with ids like "[s1.i1]", stop and tell me: this is not an email, and rewriting would break the quotes my selections point at.
 1. Split the text into messages. Put them newest first, as a mail client shows them: the latest message at the top, the oldest at the bottom. A message with no date goes where the thread places it (a reply pasted on top is the newest).
@@ -281,6 +281,11 @@ Source: this page only, and the pages in [@Brain Data] that bear on its subject:
 
 My message carries my confirmation. When done, reply in at most three lines: what changed in the toggle (new, or replaced); if Accepted is ticked on this page, that this edit cancels the acceptance (click Accept again after replacing the text); and what I do next: "Replace the report text with what is in the toggle, delete the toggle, then click Accept."
 ```
+
+### Write minutes
+**Description:** The minutes prompt, kept here so you can copy it. Brain Assistant doesn't run it: open the Notion AI chat on the meeting page, with the transcript on the page, paste this text and the line "Write the minutes on this page, below the transcript, and nothing else.", and send. Asked to write minutes, Brain Assistant gives you these steps and doesn't edit the page.
+
+**Text:** the minutes prompt, the text block of [minutes-format.md](minutes-format.md), word for word. It is not copied here, so the prompt has one source: when the minutes prompt changes, this page's body is published again from that block.
 
 **Without a Custom Agent** (no Business or Enterprise plan with Notion credits): save the same text as a personal skill, or paste it into Notion AI while the capture is open (decision 0045).
 
