@@ -9,6 +9,10 @@ import { BrainError } from "../lib/errors.ts";
 import { lintWarnings } from "../lib/warnings.ts";
 import { applyQuestionStatus, buildQuestionsPlan, questionsSnapshotProblems, splitQuestionStatus } from "../lib/questions-transition.ts";
 import { trackedQuestions } from "../lib/tracked-tasks.ts";
+import { buildSnapshot, type SnapshotInput } from "../lib/sync-snapshot.ts";
+import { formatTimestamp } from "../lib/time.ts";
+import { readdir, stat, writeFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
 
 /** `brain sync tracked` (cli §5.14.1, 0101 §6): the tasks that track open questions, for the skill to read by page id. Read-only. */
 export const syncTrackedCommand: Command = {
@@ -17,6 +21,32 @@ export const syncTrackedCommand: Command = {
     if (!modulesOf(brain!.config).tasks) throw new BrainError("MODULE_OFF", "The Tasks module is off: brain modules on tasks");
     const tracked = trackedQuestions(await Workspace.open(brain!));
     return { data: { tracked }, human: tracked.length === 0 ? "No tracked questions.\n" : tracked.map((item) => `${item.question} ${item.page_id} ${item.title}\n`).join("") };
+  },
+};
+
+/** `brain sync snapshot` (cli §5.14.10, CC-269): the snapshot from the query replies the skill saved. Writes only --output. */
+export const syncSnapshotCommand: Command = {
+  name: "sync snapshot", usage: "brain sync snapshot --input <file|dir> [--input <file|dir> …] --output <snapshot.json> [--json]", summary: "Write the sync snapshot from saved Notion query replies.", options: { input: "list", output: "string" }, maxPositionals: 0, needsBrain: true,
+  async run({ args, brain, now }) {
+    const paths = args.options.input as string[] | undefined; const output = args.options.output as string | undefined;
+    if (paths === undefined || output === undefined) throw new BrainError("USAGE", "sync snapshot needs --input and --output");
+    const files: string[] = [];
+    for (const path of paths) {
+      const info = await stat(path).catch((error: unknown) => { throw new BrainError("INPUT_UNREADABLE", `Cannot read input ${path}: ${error instanceof Error ? error.message : String(error)}`); });
+      if (!info.isDirectory()) { files.push(path); continue; }
+      // A directory stands for every .json file directly in it, in name order.
+      const names = (await readdir(path, { withFileTypes: true })).filter((entry) => entry.isFile() && entry.name.endsWith(".json")).map((entry) => entry.name).sort();
+      files.push(...names.map((name) => join(path, name)));
+    }
+    const inputs: SnapshotInput[] = [];
+    for (const file of files) inputs.push({ path: file, value: await readJsonInput(file, "sync snapshot") });
+    const notion = (brain!.config.notion ?? {}) as { databases?: Record<string, string>; tasks?: { database?: string; properties?: Record<string, string> } };
+    const databases: Record<string, string> = { ...(notion.databases ?? {}) };
+    if (typeof notion.tasks?.database === "string" && notion.tasks.database !== "") databases.tasks = notion.tasks.database;
+    const built = buildSnapshot(inputs, { databases, taskProperties: notion.tasks?.properties ?? {} }, formatTimestamp(now));
+    const target = resolve(output);
+    await writeFile(target, `${JSON.stringify(built.snapshot, null, 2)}\n`);
+    return { data: { output: target, rows: built.snapshot.rows.length, examples_left_out: built.examples_left_out, databases: built.databases }, warnings: built.warnings, human: `${built.snapshot.rows.length} rows written to ${target}; ${built.examples_left_out} example rows left out\n` };
   },
 };
 

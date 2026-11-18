@@ -26,7 +26,7 @@ import { queryCommand } from "./commands/query.ts";
 import { reflectCommand } from "./commands/reflect.ts";
 import { recallCommand } from "./commands/recall.ts";
 import { questionDropCommand } from "./commands/question.ts";
-import { syncApplyCommand, syncPlanCommand, syncRecordCommand, syncRenderCommand, syncTasksCommand, syncTrackedCommand } from "./commands/sync.ts";
+import { syncApplyCommand, syncPlanCommand, syncSnapshotCommand, syncRecordCommand, syncRenderCommand, syncTasksCommand, syncTrackedCommand } from "./commands/sync.ts";
 import { viewsCommand } from "./commands/views.ts";
 import { WEEKLY_COMMANDS } from "./commands/weekly.ts";
 import { WORKFLOW_COMMANDS } from "./commands/workflow.ts";
@@ -42,7 +42,7 @@ export type CommandHandler = (args: readonly string[], io: CliIo) => number | Pr
 export const COMMANDS: readonly Command[] = [
   initCommand, statusCommand, configGetCommand, configSetCommand, configUnsetCommand, idNewCommand, indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, proposalBacklogCommand, proposalReviseCommand, proposalSettleCommand, sourceFullTextCommand, sourceDiffCommand, sourceExtractPlanCommand, sourceCleanupPlanCommand, sourceCleanupProposeCommand, sourceCheckCommand, sourceExtractCommand, recoverCommand, reportNewCommand, reportFixCommand, repoAddCommand, repoChangesCommand, repoRecordCommand, repoKitCheckCommand, repoKitWriteCommand, repoRefreshCommand, repoShowCommand, repoHealthCommand, repoTasksCommand, repoUnlinkCommand, repoNewCommand, questionDropCommand, applyCommand,
   assistantFindingsCommand, assistantDismissCommand,
-  syncTrackedCommand, syncPlanCommand, syncApplyCommand, syncRenderCommand, syncTasksCommand, syncRecordCommand, viewsCommand, linkCommand, queryCommand, reflectCommand, recallCommand, upgradeCommand, modulesListCommand, modulesOnCommand, modulesOffCommand,
+  syncTrackedCommand, syncSnapshotCommand, syncPlanCommand, syncApplyCommand, syncRenderCommand, syncTasksCommand, syncRecordCommand, viewsCommand, linkCommand, queryCommand, reflectCommand, recallCommand, upgradeCommand, modulesListCommand, modulesOnCommand, modulesOffCommand,
   scheduleInstallCommand, scheduleListCommand, scheduleRemoveCommand, ...WEEKLY_COMMANDS, ...WORKFLOW_COMMANDS,
 ];
 
