@@ -19,6 +19,13 @@ test("the reference output meets 0079 §6's bar", () => {
   assert.equal(result.bar.pass, true);
 });
 
+test("the reference in the divided layout (0106 §13) scores exactly as the 0.14.0 reference", () => {
+  const divided = readFileSync(new URL("reference-output-divided.md", dir), "utf8");
+  assert.ok(divided.includes("## In one line\n---\n") && divided.includes("- **Decided:**"), "the fixture is in the divided layout");
+  assert.deepEqual(score(divided, transcript), score(reference, transcript));
+  assert.equal(score(divided, transcript).oneLine, true, "the bare heading is the In one line");
+});
+
 test("an output read back with escapes and curly quotes scores the same", () => {
   const escaped = reference
     .replace(/\[(s\d+(?:\.i\d+)?|q\d+)\]/g, "\\[$1\\]")

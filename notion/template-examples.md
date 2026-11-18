@@ -38,15 +38,19 @@ Only these rows have a body. Every other Example row's page is empty below its p
 
 ### Row 6: the Meeting's minutes
 
-Short lean minutes (decision 0079, [minutes-format.md](minutes-format.md)). They go below the blocks the Meetings template puts on the page (the "Before setting Ready" callout, the gray notice, the Meeting notes block and the toggles), which all stay. There is no transcript: the quotes are invented, like the meeting. `▸` is a toggle, and the lines under it are its children.
+Short lean minutes (decision 0079, [minutes-format.md](minutes-format.md)), in the divided layout of 0.16.2 (decision 0106 §13), so a new duplicate shows minutes as the user's own will look. They go below the blocks the Meetings template puts on the page (the "Before setting Ready" callout, the gray notice, the Meeting notes block and the toggles), which all stay. There is no transcript: the quotes are invented, like the meeting. `▸` is a toggle, and the lines under it are its children.
 
 ```text
-In one line: Kickoff for the Northwind website refresh: the blog stays as it is, and the launch date waits on the brand guidelines.
+## In one line
+---
+Kickoff for the Northwind website refresh: the blog stays as it is, and the launch date waits on the brand guidelines.
 
 ## Quick follow-ups
+---
 - [ ] Send Sam the link to today's notes [q1]
 
 ## Tasks for the brain
+---
 Send the project plan to Sam [s2.i4]
 ▸ Scope
     Done when: Sam has the plan with the milestones up to launch.
@@ -55,18 +59,20 @@ Send the project plan to Sam [s2.i4]
     Notes:
 
 ## Scope of the refresh [s1]
-The refresh covers the home, services and contact pages; the blog already works. [s1.i1]
-Decided: keep the blog as it is. [s1.i2]
+---
+- The refresh covers the home, services and contact pages; the blog already works. [s1.i1]
+- **Decided:** keep the blog as it is. [s1.i2]
 
 ## Timeline [s2]
-The launch date depends on when Northwind's brand guidelines arrive. [s2.i1]
-Track: Waiting On — Waiting on Sam: can the site go live by the end of March? [s2.i2]
-Track: Waiting On — Waiting on Sam: send the brand guidelines. [s2.i3]
+---
+- The launch date depends on when Northwind's brand guidelines arrive. [s2.i1]
+- Track: Waiting On — **Waiting on Sam:** can the site go live by the end of March? [s2.i2]
+- Track: Waiting On — **Waiting on Sam:** send the brand guidelines. [s2.i3]
 
 ▸ For the brain
     Attendees: Sam Rivera (Northwind Studio, marketing lead)
     Projects: Website refresh
-    All subjects included unless marked Meeting only. Mark Reviewed to confirm.
+    All subjects included unless marked Meeting only. Set Ready to confirm.
     [s1] Selection: Use in brain
     [s1.i1] "the blog is fine, the rest of the site is the problem"
     [s1.i2] "let's leave the blog exactly as it is"
@@ -149,9 +155,9 @@ Then list each of the seven titles with "created" or "already there".
 Paste the minutes of "Row 6: the Meeting's minutes" above where the prompt says so.
 
 ```text
-Use only the databases on this page. Open the Meetings row "Example · Kickoff with Northwind". If its page already has minutes with a line starting "Decided: keep the blog as it is", a line containing "Waiting on Sam: can the site go live by the end of March?" and a line containing "Waiting on Sam: send the brand guidelines", change nothing and say so.
+Use only the databases on this page. Open the Meetings row "Example · Kickoff with Northwind". If its page already has minutes with a heading "In one line", a bullet containing "keep the blog as it is", a bullet containing "can the site go live by the end of March?" and a bullet containing "send the brand guidelines", change nothing and say so.
 
-Otherwise, add the minutes below at the end of the page, below every block the page already has. Keep every existing block exactly as it is, where it is: the "Before setting Ready" callout, the gray notice, the Meeting notes block and the toggles. Don't delete, move, replace or edit any of them, and don't write inside them. Write "In one line:" as a paragraph, each "## " line as a heading 2, "- [ ]" lines as unticked to-do checkboxes, each "▸" line as a toggle (not a toggle heading) whose children are the indented lines under it, collapsed, and every other line as a plain paragraph. Copy every character as written, the tags in square brackets and the quotes included. Don't change any property.
+Otherwise, add the minutes below at the end of the page, below every block the page already has. Keep every existing block exactly as it is, where it is: the "Before setting Ready" callout, the gray notice, the Meeting notes block and the toggles. Don't delete, move, replace or edit any of them, and don't write inside them. Write each "## " line as a heading 2, each "---" line as a divider, "- [ ]" lines as unticked to-do checkboxes, other "- " lines as bulleted list items, text between "**" and "**" in bold (without the asterisks), each "▸" line as a toggle (not a toggle heading) whose children are the indented lines under it, collapsed, and every other line as a plain paragraph. Copy every character as written, the tags in square brackets and the quotes included. Don't change any property.
 
 <the minutes>
 ```
@@ -235,6 +241,10 @@ A template copy built before 0.16.0 has the fifteen rows of 0.15.x. After migrat
 1. **The Meeting's minutes:** on `Example · Kickoff with Northwind`, change the line `Open: can the site go live by the end of March? [s2.i2]` to `Track: Waiting On — Waiting on Sam: can the site go live by the end of March? [s2.i2]`, by hand. Nothing else on the page changes.
 2. **Row 10:** run prompt 4 (it creates only the missing rows), then set row 10's relations as step 7 says.
 3. **Check by hand** as below: thirteen rows on Brain Data. If you clicked Keep as document on an Example task to check migration 0027's button (C4), untick its Document asked.
+
+## Updating a copy to 0.16.2
+
+The Meeting's minutes move to the divided layout (decision 0106 §13; migration 0029's template part, applied in U-41 before republishing). On `Example · Kickoff with Northwind`, delete the minutes in 0.14.0's layout, from the paragraph that starts `In one line:` to the For the brain toggle, both included. The Meetings template's blocks above them stay. Then run prompt 3, which writes "Row 6: the Meeting's minutes" in the new layout. Check by hand: the page starts its minutes with the heading **In one line** and a divider, every subject line is a bullet with its prefix in bold, and the For the brain toggle is collapsed with its quote lines unchanged. The Meeting keeps its Brain Status, which migration 0029's Part D renames from Not Reviewed to **New** (decision 0109). Nothing else on Brain Data changes.
 
 ## Updating a copy to 0.16.1
 

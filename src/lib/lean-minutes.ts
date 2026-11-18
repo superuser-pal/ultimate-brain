@@ -5,7 +5,8 @@ import {
 } from "./selection.ts";
 
 // The lean minutes shape (decision 0079, capture-and-review §3.3 and §4.1 "Shapes", "The lean shape"): a readable part with one line per
-// item, and a For the brain toggle with the Selection lines and the id → quote list. Pure functions: no I/O.
+// item, and a For the brain toggle with the Selection lines and the id → quote list. Since 0.16.2 (0106 §13, §3.3 "The divided layout") the
+// prompt writes a heading and a divider per section and bold prefixes; both layouts read the same. Pure functions: no I/O.
 
 /** `For the brain`, once heading marks, emphasis and a trailing colon are removed (case ignored). */
 function forTheBrain(text: string): boolean {
@@ -15,6 +16,10 @@ function forTheBrain(text: string): boolean {
 const SUMMARY_TAG = /^<summary>\s*(.*?)\s*<\/summary>$/i;
 const GROUP = /^#{0,6}\s*(quick follow[- ]?ups|tasks for the brain|tasks)\s*(?:\([^)]*\))?\s*:?$/i;
 const IN_ONE_LINE = /^#{0,6}\s*in one line\s*:/i;
+/** The divided layout's bare `In one line` heading (0106 §13), its sentence on the lines below; `bare` has its emphasis removed already. */
+const IN_ONE_LINE_HEADING = /^#{0,6}\s*in one line\s*:?$/i;
+/** A prefix with emphasis around it (`**Decided:**`, `**Decided**:`, `*Open:*`), read as the plain prefix (capture-and-review §4.1). */
+const EMPHASISED_PREFIX = /^([*_]+)(decided|open|concern|idea|waiting on\b[^:*_]*)(?:\1\s*:|\s*:\1)\s*/i;
 const MARKER = /^(?:[-*+]|\d+[.)])\s+(?:\[[ xX]\]\s+)?/;
 const TOKEN = /^(meeting only|use in brain)\s*:\s*/i;
 const TRACK = /^track\s*:\s*waiting on\s*[—–-]\s*/i;
@@ -107,6 +112,7 @@ export function parseLean(markdown: string): Summary {
   let group: "quick" | "tasks" | null = null;
   let block: Subject | null = null;
   let lastItem: string | null = null;
+  let oneLine = false; // inside the In one line section of the divided layout: its sentence, never read
   const subjectHeading = (line: string): Tag => (LIST.test(line) ? { kind: "none" } : tagOf(line.replace(/^#{1,6}\s*/, "")));
   const itemLine = (line: string): boolean => !line.startsWith("#") && tagOf(line.replace(MARKER, "")).kind === "item";
   const selectionLine = (line: string): boolean => {
@@ -116,7 +122,7 @@ export function parseLean(markdown: string): Summary {
   for (const [index, foldedLine] of folded.entries()) {
     if (foldedLine === null) continue;
     if (index >= start && start >= 0 && index <= end) {
-      if (index === start) { toggles.reset(); group = null; block = null; lastItem = null; }
+      if (index === start) { toggles.reset(); group = null; block = null; lastItem = null; oneLine = false; }
       if (index > first && index < end) readToggleLine(foldedLine);
       continue;
     }
@@ -124,15 +130,16 @@ export function parseLean(markdown: string): Summary {
     const line = toggles.read(index, foldedLine, {
       lastItem, quick: group === "quick", subject: block?.id ?? null,
       ends: (text) => text.startsWith("#") || subjectHeading(text).kind === "subject" || selectionLine(text),
-      endsUnclosed: (text, bare) => itemLine(text) || GROUP.test(bare) || SECTION.test(bare) || IN_ONE_LINE.test(bare) || (LIST.test(text) && !SCOPE_FIELD.test(text)),
+      endsUnclosed: (text, bare) => itemLine(text) || GROUP.test(bare) || SECTION.test(bare) || IN_ONE_LINE.test(bare) || IN_ONE_LINE_HEADING.test(bare) || (LIST.test(text) && !SCOPE_FIELD.test(text)),
       isItem: itemLine,
     });
     if (line === null) continue;
     const bare = line.replace(/[*_]/g, "").trim();
-    if (IN_ONE_LINE.test(bare)) { group = null; block = null; lastItem = null; continue; } // not an item, never imported
+    if (IN_ONE_LINE.test(bare)) { group = null; block = null; lastItem = null; oneLine = IN_ONE_LINE_HEADING.test(bare); continue; } // not an item, never imported
+    if (IN_ONE_LINE_HEADING.test(bare)) { group = null; block = null; lastItem = null; oneLine = true; continue; }
     if (forTheBrain(bare)) { unreadable(null, `a For the brain line outside a toggle: only the toggle is read: ${line.slice(0, 60)}`); continue; }
     const groupLine = GROUP.exec(bare);
-    if (groupLine !== null) { group = /^quick/i.test(groupLine[1] ?? "") ? "quick" : "tasks"; block = null; lastItem = null; continue; }
+    if (groupLine !== null) { group = /^quick/i.test(groupLine[1] ?? "") ? "quick" : "tasks"; block = null; lastItem = null; oneLine = false; continue; }
     if (selectionLine(line)) { unreadable(block?.id ?? null, `a Selection line outside the For the brain toggle: ${line.slice(0, 60)}`); continue; }
     const heading = subjectHeading(line);
     if (heading.kind === "subject") {
@@ -141,10 +148,16 @@ export function parseLean(markdown: string): Summary {
       subjects.push(block);
       group = null;
       lastItem = null;
+      oneLine = false;
       if (controlLike(block.title) || mixedScript(block.title)) unreadable(block.id, `a selection token in a subject title is not a control: ${block.title.slice(0, 40)}`);
       continue;
     }
-    if (line.startsWith("#") || SECTION.test(bare)) { group = null; lastItem = null; }
+    if (line.startsWith("#") || SECTION.test(bare)) { group = null; lastItem = null; oneLine = false; }
+    else if (oneLine) {
+      // The In one line sentence (§4.1): not an item, an unnumbered line or imported; a tag on it fails closed, as outside every group.
+      if (tagOf(line.replace(MARKER, "")).kind !== "none") unreadable(null, `a line with an id that is not an item: ${line.slice(0, 60)}`);
+      continue;
+    }
     if (line.startsWith("#")) {
       // A heading without a tag is not read; one with an id is not an item.
       if (heading.kind !== "none") unreadable(block?.id ?? null, `a line with an id that is not an item: ${line.slice(0, 60)}`);
@@ -200,6 +213,8 @@ export function parseLean(markdown: string): Summary {
     let rest = withoutTag;
     const track = TRACK.exec(rest);
     if (track !== null) rest = rest.slice(track[0].length);
+    const emphasised = EMPHASISED_PREFIX.exec(rest);
+    if (emphasised !== null) rest = `${emphasised[2]}: ${rest.slice(emphasised[0].length)}`;
     const prefix = checkControls(id, rest);
     const word = (prefix?.[1] ?? "").toLowerCase();
     const kind = prefix === null ? null : word.startsWith("waiting on") ? "waiting_on" : (word as LeanItem["prefix"]);
