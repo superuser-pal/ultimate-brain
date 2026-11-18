@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 
 import { parseSummary, planExtract } from "../src/lib/selection.ts";
+import { renamedValue } from "../src/lib/sync.ts";
 import { brain, fixtureCopy } from "./helpers.ts";
 
 const NOW = "2026-12-10T09:00:00Z";
@@ -50,23 +51,24 @@ test("render: an ingested meeting gets Brain Status Done and Ingested At (0109 �
   assert.ok(item.published["Ingested At"] !== undefined && item.published["Ingested At"] !== null);
 });
 
-test("render: a meeting published with an old name compares equal to the new one, so a migrated space sends no write (0109 §4)", async (context) => {
-  for (const [old, current] of [["Ingested", "Done"], ["Reviewed", "Ready"], ["Not Reviewed", "New"]] as const) {
-    const dir = await fixtureCopy(context);
-    await configure(dir, "meetings", "a1000000-0000-4000-8000-00000000000d");
-    const [item] = await renderMeeting(dir);
-    // The baseline the brain holds names the old option; Notion renamed it (migration 0029). The new name is what B would compare against.
-    await record(dir, MEETING_PAGE, MEETING, { ...item.published, "Brain Status": old });
-    const rendered = await renderMeeting(dir);
-    if (current === "Done") assert.deepEqual(rendered, [], `${old} in S reads as Done: nothing to send`);
-    else {
-      // B is always Done for an ingested meeting, so an S of Ready or New differs from it exactly as the new name would.
-      assert.equal(rendered.length, 1, `${old} in S reads as ${current}, which differs from Done`);
-      assert.deepEqual(Object.keys(rendered[0]!.properties), ["Brain Status"], "only Brain Status goes out");
-      await record(dir, MEETING_PAGE, MEETING, { ...item.published, "Brain Status": current });
-      assert.deepEqual(Object.keys((await renderMeeting(dir))[0]!.properties), ["Brain Status"], `${old} and ${current} in S render the same`);
-    }
+test("render: a meeting published with Ingested compares equal to Done, so a migrated space sends no write (0109 §4)", async (context) => {
+  const dir = await fixtureCopy(context);
+  await configure(dir, "meetings", "a1000000-0000-4000-8000-00000000000d");
+  const [item] = await renderMeeting(dir);
+  // The baseline the brain holds names the old option; Notion renamed it in place (migration 0029).
+  await record(dir, MEETING_PAGE, MEETING, { ...item.published, "Brain Status": "Ingested" });
+  assert.deepEqual(await renderMeeting(dir), [], "Ingested in S reads as Done: nothing to send");
+});
+
+test("the comparison reads a meeting's old names as the new ones, and only on Meetings (0109 §4)", () => {
+  // Render only ever sends Done for a meeting, so Reviewed and Not Reviewed in S are pinned here, on the comparison itself.
+  for (const [old, current] of [["Ingested", "Done"], ["Reviewed", "Ready"], ["Not Reviewed", "New"]]) {
+    assert.equal(renamedValue("meetings", "Brain Status", old), current, `${old} on Meetings reads as ${current}`);
+    assert.equal(renamedValue("inbox", "Brain Status", old), old, `${old} on the Inbox is not renamed`);
   }
+  for (const value of ["New", "Ready", "Done", "Skipped"]) assert.equal(renamedValue("meetings", "Brain Status", value), value, `${value} passes through`);
+  assert.equal(renamedValue("inbox", "Brain Status", "Processed"), "Done", "Processed still reads as Done (0048)");
+  assert.equal(renamedValue("inbox", "Kind", "Document"), "File", "Document still reads as File (0049)");
 });
 
 test("render: Skipped on a meeting passes through as it is, never read as another name (0109 §2)", async (context) => {

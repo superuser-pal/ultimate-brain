@@ -552,7 +552,7 @@ const RENAMED_VALUES: Record<string, Record<string, Record<string, string>>> = {
   "*": { "Brain Status": { Processed: "Done" }, Kind: { Document: "File" } },
   meetings: { "Brain Status": { "Not Reviewed": "New", Reviewed: "Ready", Ingested: "Done" } },
 };
-function renamedValue(database: string, name: string, value: unknown): unknown {
+export function renamedValue(database: string, name: string, value: unknown): unknown {
   const key = String(value);
   return RENAMED_VALUES[database]?.[name]?.[key] ?? RENAMED_VALUES["*"]![name]?.[key] ?? value;
 }
