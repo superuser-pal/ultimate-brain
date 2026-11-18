@@ -12,9 +12,9 @@
 - **A changed document is checked before it goes in** (0098 §4). When you ask in the session for a document to be changed before it goes in, or click Keep as document with Only keep filled, the brain writes the changed text to a new Inbox row: Kind **Changed**, **Changed from** the original's row, and **What changed** listing what was dropped or altered. Home's Inbox tab lists it until it goes in: read it, edit it if you want, then say *go* in the session or set it Ready. With Only keep, only the kept part goes in; the original is recorded as a source only.
 - **Any task can be kept as a document** (0100). Tasks gain **Document asked** and a **Keep as document** button; the next catch-up keeps the task's page as a Document, whose new **Task** relation points back to the task.
 
-**Nothing is deleted.** An archived database keeps every row and page: it moves to **Archive** (on System), out of Brain Data, so Brain Assistant and the brain no longer read it. The relations to it and the views of it are removed; what they showed stays in your brain, in Git. The template's copy is the one exception: it has no brain and nothing to keep, so the template deletes these databases instead of archiving them.
+**Nothing is deleted.** An archived database keeps every row and page: it moves to **Archive** (on System), out of Brain Data, so Brain Assistant and the brain no longer read it. The relations to it and the views of it are removed; what they showed stays in your brain, in Git. The template's copy is the exception: it has no brain and nothing to keep, so the template deletes its Review database instead of archiving it, and its copy has no Decisions or Questions database.
 
-Run this migration after `brain upgrade` has put 0.16.0 in place, in an attended session (never from a schedule), in the order below: part A, then part B, then part C, then the last steps. Part A's, part B's and part C's brain steps run only in a space connected to a brain; **the template's copy** (no brain) skips them and does the Notion steps alone, except that the template deletes the Review, Decisions and Questions databases, with their Example rows, instead of archiving them.
+Run this migration after `brain upgrade` has put 0.16.0 in place, in an attended session (never from a schedule), in the order below: part A, then part B, then part C, then the last steps. Part A's, part B's and part C's brain steps run only in a space connected to a brain; **the template's copy** (no brain) skips them and does the Notion steps alone, except that the template deletes the Review database, with its Example Review row, instead of archiving it; the template's copy has no Decisions or Questions database and none of their Example rows.
 
 Who does each step:
 - **agent:** the `brain-notion-change` skill, through the CLI and the API, with your yes;
@@ -129,7 +129,7 @@ The API can't edit views or templates ([../views-guide.md](../views-guide.md)).
 
 ### B4 · Archive the Decisions and Questions databases (by hand)
 
-On **Brain Data**, for each: **⋯** → **Move to**, type `Archive` and pick the Archive page under System on your top page, as in A6. Every row and page goes with it; nothing is deleted. Then check that it worked: Brain Data no longer lists it, and the **Archive** page on System lists it (a page in your sidebar's **Trash** is not archived). Never choose **Delete**: it sends the database to Notion's trash. If it is in the trash, open **Trash**, **Restore** it, and move it again. Without a brain (the template's copy), the template deletes both databases, with their Example rows, instead of archiving them.
+On **Brain Data**, for each: **⋯** → **Move to**, type `Archive` and pick the Archive page under System on your top page, as in A6. Every row and page goes with it; nothing is deleted. Then check that it worked: Brain Data no longer lists it, and the **Archive** page on System lists it (a page in your sidebar's **Trash** is not archived). Never choose **Delete**: it sends the database to Notion's trash. If it is in the trash, open **Trash**, **Restore** it, and move it again. Without a brain (the template's copy), there is nothing to do here: the template's copy has no Decisions or Questions database and none of their Example rows.
 
 ### B5 · `brain.json` (agent; a space with a brain)
 
@@ -253,7 +253,7 @@ If the System callout on your top page reads `Template version: …` with a lowe
 
 ## What this migration doesn't do
 
-- **No row is deleted, and no row is changed.** The Review, Decisions and Questions rows stay in their archived databases, under Archive, with their pages. The template's copy is the exception: the template deletes the three databases and their Example rows.
+- **No row is deleted, and no row is changed.** The Review, Decisions and Questions rows stay in their archived databases, under Archive, with their pages. The template's copy is the exception: the template deletes its Review database with its Example Review row, and its copy has no Decisions or Questions database.
 - **No decision is made for you.** Only what you decided in Notion is applied; a pending row's proposal is asked in your next session. A requested revision is asked with your words shown, never redrafted here.
 - **No answer is invented.** A question marked Answered in Notion is recorded as answered, without an answer; what the answer was stays wherever you wrote it.
 - **No task is created by the migration.** A question becomes a task only when you say so (B8, "track it", or `Track: Waiting On —` in the minutes).
@@ -271,7 +271,7 @@ Part A:
 Part B:
 - [ ] (With a brain) A question you had set Answered in Notion has its `answer` in Git; one set Dropped is `archived` with `dropped`; `brain config get notion.databases.questions` and `.decisions` have no value.
 - [ ] No database on Brain Data has a property pointing at Decisions or Questions; Documents has no From decision.
-- [ ] The Decisions and Questions databases are under Archive, with every row; Knowledge and Archive have no Decisions or Questions tab; the area, project and meeting templates have no Decisions or Questions view or toggle. (The template's copy: both databases are deleted.)
+- [ ] The Decisions and Questions databases are under Archive, with every row; Knowledge and Archive have no Decisions or Questions tab; the area, project and meeting templates have no Decisions or Questions view or toggle. (The template's copy: it has no Decisions or Questions database.)
 - [ ] (Tasks) Tasks has Kind (Task, Question, Risk), `brain config get notion.tasks.properties.kind` is `Kind` (or empty, on a mapped database you kept without it), and the Tasks page has the tabs Questions and Risks between Someday and Done.
 - [ ] (Tasks) "track it" on an open question in the session creates one task with Kind Question, listed under Questions.
 
