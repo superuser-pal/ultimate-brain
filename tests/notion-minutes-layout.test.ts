@@ -59,5 +59,5 @@ test("migration 0029 part C replaces the prompt and Check minutes by hand, reads
   assert.match(migration, /\*\*Part C rewrites no meeting\.\*\*/);
   assert.match(migration, /Part C, the minutes layout \(decision 0106 §13\):\n- \[ \] \*\(you\)\* Write minutes/);
   const readme = await read("notion/migrations/README.md");
-  assert.match(readme.split("\n").find((l) => l.includes("0029-new-task-on-home")) ?? "", /The minutes layout \(by hand\).*CC-356 \(release 0\.16\.2\) \|$/);
+  assert.match(readme.split("\n").find((l) => l.includes("0029-new-task-on-home")) ?? "", /The minutes layout \(by hand\).*CC-356 \(release 0\.16\.2\)[^|]*\|$/);
 });

@@ -13,7 +13,7 @@ Every row is invented. They tell one story with synthetic names only: a kickoff 
 | 3 | Orgs | `Example · Northwind Studio` | Relationship Client | |
 | 4 | People | `Example · Sam Rivera` | Role "Marketing lead" | Org → 3 |
 | 5 | Projects | `Example · Website refresh` | | Area → 2 |
-| 6 | Meetings | `Example · Kickoff with Northwind` | Brain Status Not Reviewed; Date the day you build it; the minutes below | Project → 5, Area → 2, Attendees → 4 |
+| 6 | Meetings | `Example · Kickoff with Northwind` | Brain Status New; Date the day you build it; the minutes below | Project → 5, Area → 2, Attendees → 4 |
 | 7 | Tasks | `Example · Send the project plan` | Status To Do; Document asked unticked | Project → 5, Meeting → 6 |
 | 8 | Tasks | `Example · Brand guidelines from Sam` | Status Waiting On; Document asked unticked | Project → 5, Meeting → 6 |
 | 9 | Inbox | `Example · Notes from a call with Sam` | Kind Capture, Brain Status Done, Summary below; Document asked unticked, Only keep empty, Changed from and What changed empty, Brain ID empty | Project → 5, People → 4 |
@@ -38,7 +38,7 @@ Only these rows have a body. Every other Example row's page is empty below its p
 
 ### Row 6: the Meeting's minutes
 
-Short lean minutes (decision 0079, [minutes-format.md](minutes-format.md)), in the divided layout of 0.16.2 (decision 0106 §13), so a new duplicate shows minutes as the user's own will look. They go below the blocks the Meetings template puts on the page (the "Before marking Reviewed" callout, the gray notice, the Meeting notes block and the toggles), which all stay. There is no transcript: the quotes are invented, like the meeting. `▸` is a toggle, and the lines under it are its children.
+Short lean minutes (decision 0079, [minutes-format.md](minutes-format.md)), in the divided layout of 0.16.2 (decision 0106 §13), so a new duplicate shows minutes as the user's own will look. They go below the blocks the Meetings template puts on the page (the "Before setting Ready" callout, the gray notice, the Meeting notes block and the toggles), which all stay. There is no transcript: the quotes are invented, like the meeting. `▸` is a toggle, and the lines under it are its children.
 
 ```text
 ## In one line
@@ -72,7 +72,7 @@ Send the project plan to Sam [s2.i4]
 ▸ For the brain
     Attendees: Sam Rivera (Northwind Studio, marketing lead)
     Projects: Website refresh
-    All subjects included unless marked Meeting only. Mark Reviewed to confirm.
+    All subjects included unless marked Meeting only. Set Ready to confirm.
     [s1] Selection: Use in brain
     [s1.i1] "the blog is fine, the rest of the site is the problem"
     [s1.i2] "let's leave the blog exactly as it is"
@@ -144,7 +144,7 @@ Use only the databases on this page. Don't change any row that already exists, a
 3. Orgs: "Example · Northwind Studio". Relationship: Client.
 4. People: "Example · Sam Rivera". Role: Marketing lead. Org: Example · Northwind Studio.
 5. Projects: "Example · Website refresh". Area: Example · Clients.
-6. Meetings: "Example · Kickoff with Northwind". Date: today. Brain Status: Not Reviewed. Project: Example · Website refresh. Area: Example · Clients. Attendees: Example · Sam Rivera.
+6. Meetings: "Example · Kickoff with Northwind". Date: today. Brain Status: New. Project: Example · Website refresh. Area: Example · Clients. Attendees: Example · Sam Rivera.
 7. Tasks: "Example · Send the project plan". Status: To Do. Project: Example · Website refresh. Meeting: Example · Kickoff with Northwind.
 
 Then list each of the seven titles with "created" or "already there".
@@ -157,7 +157,7 @@ Paste the minutes of "Row 6: the Meeting's minutes" above where the prompt says 
 ```text
 Use only the databases on this page. Open the Meetings row "Example · Kickoff with Northwind". If its page already has minutes with a heading "In one line", a bullet containing "keep the blog as it is", a bullet containing "can the site go live by the end of March?" and a bullet containing "send the brand guidelines", change nothing and say so.
 
-Otherwise, add the minutes below at the end of the page, below every block the page already has. Keep every existing block exactly as it is, where it is: the "Before marking Reviewed" callout, the gray notice, the Meeting notes block and the toggles. Don't delete, move, replace or edit any of them, and don't write inside them. Write each "## " line as a heading 2, each "---" line as a divider, "- [ ]" lines as unticked to-do checkboxes, other "- " lines as bulleted list items, text between "**" and "**" in bold (without the asterisks), each "▸" line as a toggle (not a toggle heading) whose children are the indented lines under it, collapsed, and every other line as a plain paragraph. Copy every character as written, the tags in square brackets and the quotes included. Don't change any property.
+Otherwise, add the minutes below at the end of the page, below every block the page already has. Keep every existing block exactly as it is, where it is: the "Before setting Ready" callout, the gray notice, the Meeting notes block and the toggles. Don't delete, move, replace or edit any of them, and don't write inside them. Write each "## " line as a heading 2, each "---" line as a divider, "- [ ]" lines as unticked to-do checkboxes, other "- " lines as bulleted list items, text between "**" and "**" in bold (without the asterisks), each "▸" line as a toggle (not a toggle heading) whose children are the indented lines under it, collapsed, and every other line as a plain paragraph. Copy every character as written, the tags in square brackets and the quotes included. Don't change any property.
 
 <the minutes>
 ```
@@ -231,7 +231,7 @@ Then check prompt 2's other relations against "The story" (Domain on the Area, O
 
 - Brain Data starts with the callout, word for word.
 - Each of the thirteen rows exists once, with its title exactly as in "The story" (the prefix `Example · ` with the middle dot), its state and every relation of step 7 and "The story"; every Brain ID is empty. Sam's Role is Marketing lead, Northwind's Relationship is Client, and the Meeting has its Date and Area, and the Document its Area.
-- The Meeting is **Not Reviewed**, and its page still has the template's blocks (the "Before marking Reviewed" callout, the notice, the Meeting notes block and the toggles), with the minutes below them. The question's Task is **Waiting On** with Kind **Question**. The Inbox row is **Done**, and its Changed from and What changed are empty. Nothing on the Document is ticked, and its Task is empty. No task's Document asked is ticked: a ticked one would be kept as a Document by the next catch-up.
+- The Meeting is **New**, and its page still has the template's blocks (the "Before setting Ready" callout, the notice, the Meeting notes block and the toggles), with the minutes below them. The question's Task is **Waiting On** with Kind **Question**. The Inbox row is **Done**, and its Changed from and What changed are empty. Nothing on the Document is ticked, and its Task is empty. No task's Document asked is ticked: a ticked one would be kept as a Document by the next catch-up.
 - The pages link to each other: the Project page lists the Meeting, the three Tasks, the Inbox row and the Document; the Project, the Meeting and the Document each show Domain `Example · Work`, and the `Example · Work` page lists all three in its views (decision 0105); the Tasks page lists the question's Task under Questions; Plan shows the Goal at 33%.
 - The coordinator's read-only scan (TEMPLATE.md, step 10) lists these thirteen rows as Example rows, and nothing else.
 
@@ -244,7 +244,7 @@ A template copy built before 0.16.0 has the fifteen rows of 0.15.x. After migrat
 
 ## Updating a copy to 0.16.2
 
-The Meeting's minutes move to the divided layout (decision 0106 §13; migration 0029's template part, applied in U-41 before republishing). On `Example · Kickoff with Northwind`, delete the minutes in 0.14.0's layout, from the paragraph that starts `In one line:` to the For the brain toggle, both included. The Meetings template's blocks above them stay. Then run prompt 3, which writes "Row 6: the Meeting's minutes" in the new layout. Check by hand: the page starts its minutes with the heading **In one line** and a divider, every subject line is a bullet with its prefix in bold, and the For the brain toggle is collapsed with its quote lines unchanged. The Meeting stays **Not Reviewed**. Nothing else on Brain Data changes.
+The Meeting's minutes move to the divided layout (decision 0106 §13; migration 0029's template part, applied in U-41 before republishing). On `Example · Kickoff with Northwind`, delete the minutes in 0.14.0's layout, from the paragraph that starts `In one line:` to the For the brain toggle, both included. The Meetings template's blocks above them stay. Then run prompt 3, which writes "Row 6: the Meeting's minutes" in the new layout. Check by hand: the page starts its minutes with the heading **In one line** and a divider, every subject line is a bullet with its prefix in bold, and the For the brain toggle is collapsed with its quote lines unchanged. The Meeting keeps its Brain Status, which migration 0029's Part D renames from Not Reviewed to **New** (decision 0109). Nothing else on Brain Data changes.
 
 ## Updating a copy to 0.16.1
 

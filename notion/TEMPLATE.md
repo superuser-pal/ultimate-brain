@@ -43,7 +43,7 @@ Everything a space built from every prompt has (the build prompts include every 
 | Projects | `Example · Website refresh` | | the Area |
 | People | `Example · Sam Rivera` | | the Org |
 | Orgs | `Example · Northwind Studio` | | |
-| Meetings | `Example · Kickoff with Northwind` | Not Reviewed, with short lean minutes (decision 0079) | the Project, the Area, the Person |
+| Meetings | `Example · Kickoff with Northwind` | New, with short lean minutes (decision 0079) | the Project, the Area, the Person |
 | Tasks | `Example · Send the project plan` | not started (To Do) | the Project, the Meeting |
 | Tasks | `Example · Brand guidelines from Sam` | Waiting On | the Project, the Meeting |
 | Tasks | `Example · Can the site go live by the end of March?` | Waiting On, Kind Question (a question tracked as a task, 0099) | the Project, the Meeting |
@@ -92,7 +92,7 @@ The template is a **copy of the author's own Ultimate Brain space, emptied**, ma
    - **Comments** on any page or row.
    - **The public page:** the workspace's name, icon and `notion.site` domain shown on a published page name nothing personal.
 6. **Every module.** Compare the copy with the table above. A module or part your space never had is added from [modules/](modules/) (or its migration), so the template holds every module (0078 §1).
-7. **Add the Example rows and the Brain Data callout** of "What a duplicate contains", related as its table says, with the content and the Notion AI prompts of [template-examples.md](template-examples.md), run on the copy's Brain Data page, then its step 7 for the relations (the agent through the API with your yes, or by hand). Leave each row in its state there: the Meeting Not Reviewed, nothing ticked.
+7. **Add the Example rows and the Brain Data callout** of "What a duplicate contains", related as its table says, with the content and the Notion AI prompts of [template-examples.md](template-examples.md), run on the copy's Brain Data page, then its step 7 for the relations (the agent through the API with your yes, or by hand). Leave each row in its state there: the Meeting New, nothing ticked.
 8. **Start here and First things first.** Check the callout on the top page, and link its "Get started" to the README's Get started section and its "First things first" to the copy's own First things first page. That page holds [docs/notion-space-design.md](../docs/notion-space-design.md) §10.1 word for word, every to-do unticked, and the System callout links it first. A button in the copy may still send to your own Brain Assistant: a duplicate can't use it, and First things first's item 6 has each user select their own.
 9. **Template version.** The System callout on the top page holds the line `Template version: NNNN` on its own, the number of the last migration in [migrations/](migrations/) applied to the copy. Record the same number in the table above.
 10. **The coordinator's read-only scan.** Give the coordinator session in this repository the copy's top page, shared with its Notion connection. Reading only, through the Notion MCP, it lists every row, database template, select option, mention and page title it can reach, and flags anything that is not an Example row or the product's own text. Fix each finding by hand, then ask for the scan again until it finds nothing. What the API can't read (button contents, view filters) is checked by your ticks in step 5 alone.

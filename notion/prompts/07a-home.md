@@ -12,7 +12,7 @@ Ignore the module names in square brackets at the start of lines.
 On this page ("Home"):
 
 In the left column, under the navigation, add a heading 3 "Needs you" and one linked view, List layout, at most 5 rows:
-2. "Which minutes need review?" of "Meetings": filter Brain Status is Not Reviewed and Date is on or before today; sort Date descending; show Name.
+2. "Which minutes need review?" of "Meetings": filter Brain Status is New and Date is on or before today; sort Date descending; show Name.
 
 In the right column add, in one row:
 3. A button "Quick capture": Add page to "Inbox", set Kind = Capture and Brain Status = Ready, open the page after creation.
@@ -33,7 +33,7 @@ Put the views in a tabs block (one view per tab, except Areas, which holds both 
 
 Below that, a heading 3 "What did the brain take in?" and two tabs:
 9. Tab "Came in": linked view of "Inbox", List, at most 10 rows, named "What came in lately?": filter Brain Status is Done; sort Created descending; show Name, Kind, Project.
-10. Tab "Meetings": linked view of "Meetings", List, at most 10 rows, named "Which meetings did it take in?": filter Brain Status is Ingested; sort Ingested At descending; show Name, Date, Project.
+10. Tab "Meetings": linked view of "Meetings", List, at most 10 rows, named "Which meetings did it take in?": filter Brain Status is Done; sort Ingested At descending; show Name, Date, Project.
 Put these two in their own tabs block.
 
 Rules: only add linked views of the existing databases on "Brain Data"; never create a new database on this page. Name each view exactly as written, question mark included, and hide its database title. In every view hide the properties "Brain ID", "Last Synced", "Created time" and "Last edited time" unless the view lists them under show. Show only the properties listed. Leave the navigation column as it is. Do not add other content.

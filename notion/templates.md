@@ -55,7 +55,7 @@ Template id `<id>`. Reworked by hand on 2026-10-13.
 
 ```text
 ℹ️ callout (gray)
-   ### Before marking Reviewed
+   ### Before setting Ready
    ---
    ☐ Attendees linked
    ☐ Project linked

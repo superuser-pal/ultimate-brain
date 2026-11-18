@@ -14,7 +14,7 @@ Create a default page template for each database below. Each item "Heading: data
   First a toggle heading 2 "Brief" containing one empty paragraph.
   "What needs me here?": a tabs block with these tabs, each holding one linked view filtered to this area, with the database title hidden:
 [Tasks]     tab "Today": Tasks where Area is this page, Status is not Done and Status is not Won't Do and Due is on or before today, sorted Due ascending, showing Name, Project, Due.
-    tab "Meetings": Meetings where Area is this page, Brain Status is Not Reviewed and Date is on or before today, sorted Date descending, showing Name, Date, Project.
+    tab "Meetings": Meetings where Area is this page, Brain Status is New and Date is on or before today, sorted Date descending, showing Name, Date, Project.
     tab "Inbox": Inbox where Area is this page and Brain Status is New or Ready, sorted Created ascending, showing Name, Kind, Brain Status.
 [Planning]   "What am I working toward here?": Goals where Area is this page and Status is Active, showing Name, Progress, Countdown.
   "What's active here?": Projects where Area is this page (views: "Active" Status is Active; "Planned" Status is Planned; "Done" Status is Done), showing Name, Status, Countdown.
@@ -39,8 +39,8 @@ Create a default page template for each database below. Each item "Heading: data
 [Reports]   "Reports": Documents where Project is this page and Origin is Report, sorted Created time descending, showing Name, Refresh asked, What to fix.
   Then a toggle "My notes".
 - Meetings:
-  A gray callout containing a heading 3 "Before marking Reviewed", a divider, and the to-do items "Attendees linked", "Project linked", "Minutes follow the format", "Minutes checked and corrected", then a gray line "Check the minutes, fix them, then set Brain Status to Reviewed. Fixed them after the brain took them in? Set Reviewed again: it reads only what changed."
-  A gray callout (the notice, decision 0055): "All subjects included unless marked Meeting only. Mark Reviewed to confirm." followed by a gray line "Tick the quick follow-ups you've done: the ones left unticked become Tasks when you set Reviewed. To leave a subject out, open For the brain and change its line to Selection: Meeting only. To leave one item out, write Meeting only: at the start of its quote line there. Nothing is added to the brain until you set Reviewed."
+  A gray callout containing a heading 3 "Before setting Ready", a divider, and the to-do items "Attendees linked", "Project linked", "Minutes follow the format", "Minutes checked and corrected", then a gray line "Check the minutes, fix them, then set Brain Status to Ready. Fixed them after the brain took them in? Set Ready again: it reads only what changed."
+  A gray callout (the notice, decision 0055): "All subjects included unless marked Meeting only. Set Ready to confirm." followed by a gray line "Tick the quick follow-ups you've done: the ones left unticked become Tasks when you set Ready. To leave a subject out, open For the brain and change its line to Selection: Meeting only. To leave one item out, write Meeting only: at the start of its quote line there. Nothing is added to the brain until you set Ready."
   A Notion AI meeting notes block.
   A toggle "My notes".
 [Tasks]   A toggle "Tasks" containing a linked view of Tasks where Meeting is this page.
@@ -65,4 +65,4 @@ Set each of these templates as the database default, except the Inbox "Voice not
 - [ ] No template shows a view of a database you left out.
 - [ ] No template has a callout that prints "[Summary]", "[Role]" or "Why".
 - [ ] Every template listed above is the default for its database, except the Inbox "Voice note".
-- [ ] A new Meeting shows the gray notice about Meeting only and Reviewed above the notes block. A new Inbox row from the "Voice note" template starts at Brain Status New (not Ready), has the Transcript toggle, and nothing in it is ingested until you set Ready.
+- [ ] A new Meeting shows the gray notice about Meeting only and Ready above the notes block. A new Inbox row from the "Voice note" template starts at Brain Status New (not Ready), has the Transcript toggle, and nothing in it is ingested until you set Ready.

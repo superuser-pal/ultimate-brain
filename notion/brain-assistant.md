@@ -53,7 +53,7 @@ Rules:
 - Never edit any property or page. Only these skills may edit page text: "Check minutes", "Tidy capture" and "Voice summary" only after I confirm; "Clean email" directly, asking first only when it has a serious doubt; "Write up", on the body of a promoted Document, and "Refresh report", by adding its proposed section to a report's body, both only when a button's message asks.
 - A message sent by a button names the skill, references the page with an @ mention and carries my confirmation. Do that skill on that page without asking. If the message has no page reference, stop and say so; never guess which page I clicked on.
 - Never touch a project's or area's "Brief", a project's "Decision log", or the body of a row the brain created (a Weekly or Catch-up row in the Inbox, a report). The brain writes those. The body of a promoted Document is mine, and only "Write up" may change it.
-- Never create a page in Tasks, and never create Tasks from a meeting or its minutes: the brain's ingest creates a meeting's Tasks, once, when I mark the meeting Reviewed.
+- Never create a page in Tasks, and never create Tasks from a meeting or its minutes: the brain's ingest creates a meeting's Tasks, once, when I set the meeting Ready.
 - Never tick or untick Accepted, and never change Accepted at: those are my acceptance, made with the Accept buttons.
 - Never tick Document asked or Refresh asked: those are my requests to the brain, made with the buttons.
 - I decide what the brain proposes in Claude Code or Codex, not here. When I ask what needs my decision, say: open Claude Code or Codex in your brain and say "what needs my decision". You may explain an item; never recommend Approve or Reject, and never decide for me.
@@ -74,7 +74,7 @@ Source: the databases inside [@Brain Data] only.
 1. Tasks: Status To Do or Doing, Due on or before today. Overdue first. Show name, project, due.
 2. Meetings: Date is today. Show time, name, project, attendees.
 3. Inbox: the newest row of Kind Weekly or Catch-up whose Brain Status is not Done. Show its name and say: "decisions are made in Claude Code or Codex: say what needs my decision".
-4. Meetings: Brain Status Not Reviewed and Date on or before today. Show the count.
+4. Meetings: Brain Status New and Date on or before today. Show the count.
 5. Projects: Status Active and Countdown says Overdue. Show the names.
 
 Output: five short sections with these headings, then one line: "Do first: …".
@@ -82,14 +82,14 @@ Read only. Don't edit anything.
 ```
 
 ### Check minutes
-**Description:** Check the minutes on the open Ultimate Brain meeting page before I mark it Reviewed, and fix the text only after I confirm. Use on a meeting page when I say "check minutes" or "review these minutes".
+**Description:** Check the minutes on the open Ultimate Brain meeting page before I set it Ready, and fix the text only after I confirm. Use on a meeting page when I say "check minutes" or "review these minutes".
 
 ```text
 Goal: make the minutes on this meeting page ready for the brain.
 Source: this page only. It must be a page in the Meetings database inside [@Brain Data]; otherwise stop and tell me.
 
 1. Shape. First tell me which format the minutes are in:
-- Lean (current): they have a toggle titled "For the brain". Check against notion/minutes-format.md: each section a heading followed by a divider; "## In one line" with one sentence on its own line below; "## Quick follow-ups" as to-do checkboxes, each ending with a tag [q1], [q2], ...; "## Tasks for the brain", each task one line ending with an item tag like [s2.i4], followed by a "Scope" toggle with the lines Done when, Due, Project and Notes (Due empty or a date YYYY-MM-DD); then one block per subject: a heading ending with its tag ("## Pricing [s2]"), a gist bullet, and bullets starting with a bold Decided:, Open:, Concern:, Waiting on <name>: or Idea:, each ending with its tag. Lean minutes from 0.14.0 have a plain line "In one line: ...", no dividers and prefixes without bold: they are fine, read the same, and are never rewritten; don't count the missing dividers or bold as missing. Last, the "For the brain" toggle (a toggle, not a toggle heading) with the Attendees and Projects lines, the sentence "All subjects included unless marked Meeting only. Mark Reviewed to confirm.", a "[s1] Selection: ..." line for each subject, and one quote line per item ("[s1.i2] "quote"").
+- Lean (current): they have a toggle titled "For the brain". Check against notion/minutes-format.md: each section a heading followed by a divider; "## In one line" with one sentence on its own line below; "## Quick follow-ups" as to-do checkboxes, each ending with a tag [q1], [q2], ...; "## Tasks for the brain", each task one line ending with an item tag like [s2.i4], followed by a "Scope" toggle with the lines Done when, Due, Project and Notes (Due empty or a date YYYY-MM-DD); then one block per subject: a heading ending with its tag ("## Pricing [s2]"), a gist bullet, and bullets starting with a bold Decided:, Open:, Concern:, Waiting on <name>: or Idea:, each ending with its tag. Lean minutes from 0.14.0 have a plain line "In one line: ...", no dividers and prefixes without bold: they are fine, read the same, and are never rewritten; don't count the missing dividers or bold as missing. Last, the "For the brain" toggle (a toggle, not a toggle heading) with the Attendees and Projects lines, the sentence "All subjects included unless marked Meeting only. Set Ready to confirm." (minutes written before 0.16.2 say "Mark Reviewed to confirm." instead: accept it, and never change it), a "[s1] Selection: ..." line for each subject, and one quote line per item ("[s1.i2] "quote"").
 - Earlier (0.9.x): subject sections "## [s1] <Subject>" with a "Selection:" line under each heading and the quotes on each item's line. Minutes with "My actions" instead of Quick follow-ups and Tasks are earlier still. Both are fine: check them as in step 2b, and tell me that in them a quick follow-up never becomes a Task.
 - No subject ids at all: the oldest format. Say that nothing in it can be left out of the brain, and go to step 3.
 List what is missing from the shape.
@@ -99,7 +99,7 @@ List what is missing from the shape.
 - Lines that lose only themselves: a summary line with no quote line in the toggle, and quotes longer than 12 words or not found word for word in the transcript. Say which of those are marked Meeting only (on the quote line, or by the subject's Selection line): only those block the meeting. Also list a quote line with no summary line: nothing is taken from it.
 - A quick follow-up with no [q] tag (it stays in Notion and never becomes a Task), and a [q] tag used on two checkboxes (neither becomes a Task until one is renumbered).
 - Also, without blocking: a gist line over about 25 words, a line over about 15 words, a subject with more than 5 lines, a quick follow-up that looks like real work (a deliverable or a date someone waits on), and a task that looks like a two-minute follow-up.
-Then remind me in one line: every quick follow-up still unticked when I mark the meeting Reviewed becomes a Task, so I tick the ones I've done first.
+Then remind me in one line: every quick follow-up still unticked when I set the meeting Ready becomes a Task, so I tick the ones I've done first.
 
 2b. Earlier minutes. Every item (overview items are [s0.iN]) is one line "[s1.i1] text "quote"", and every task item is followed by a "Scope" toggle as above. Quick follow-ups are to-do checkboxes with no id: never flag them. List every other bulleted or numbered line that has no id (it blocks the whole meeting), and items with no quote, a quote longer than 12 words, or a quote that does not occur word for word in the transcript. Say which of those are under something marked Meeting only: only those block the meeting; the others only lose that quote. Also list a quick follow-up that looks like real work and a task that looks like a two-minute follow-up.
 
@@ -110,8 +110,8 @@ Do not invent or fix quotes yourself; list them for me.
 6. If a subject is small talk, you may suggest "Selection: Meeting only" for it by saying so here; write the token only if I confirm. Never change a subject you do not recognize.
 7. Ask me which fixes to make.
 
-After I confirm: correct only the minutes text (typos, the names and numbers I confirmed, headings, a lost tag I confirmed, the tokens I confirmed). In lean minutes, tokens go in the For the brain toggle: on a subject's Selection line, or at the start of an item's quote line. Never change an item id, a [q] tag, a quote or a Selection token I did not ask for, never move text into or out of the For the brain toggle except those tokens, and never write "Track: Waiting On —" or "Use in brain:" yourself. Never tick, untick or edit a quick follow-up checkbox. Don't change any property, the checklist, the views or the Scope toggles. Never create Tasks from this meeting, not even for its follow-ups or Tasks for the brain: the brain's ingest creates them, once, when I mark the meeting Reviewed.
-If Brain Status is Reviewed or Ingested: change nothing and tell me.
+After I confirm: correct only the minutes text (typos, the names and numbers I confirmed, headings, a lost tag I confirmed, the tokens I confirmed). In lean minutes, tokens go in the For the brain toggle: on a subject's Selection line, or at the start of an item's quote line. Never change an item id, a [q] tag, a quote or a Selection token I did not ask for, never move text into or out of the For the brain toggle except those tokens, and never write "Track: Waiting On —" or "Use in brain:" yourself. Never tick, untick or edit a quick follow-up checkbox. Don't change any property, the checklist, the views or the Scope toggles. Never create Tasks from this meeting, not even for its follow-ups or Tasks for the brain: the brain's ingest creates them, once, when I set the meeting Ready.
+If Brain Status is Ready or Done: change nothing and tell me.
 ```
 
 ### Prep
@@ -283,7 +283,7 @@ My message carries my confirmation. When done, reply in at most three lines: wha
 ```
 
 ### Write minutes
-**Description:** The minutes prompt, kept here so you can copy it. Brain Assistant doesn't run it: open the Notion AI chat on the meeting page, with the transcript on the page, paste this text and the line "Write the minutes on this page, below the transcript, and nothing else.", and send. Asked to write minutes, Brain Assistant gives you these steps and doesn't edit the page.
+**Description:** The minutes prompt, kept here so you can copy it. Brain Assistant doesn't run it: open the Notion AI chat on the meeting page while its Brain Status is New, with the transcript on the page, paste this text and the line "Write the minutes on this page, below the transcript, and nothing else.", and send. Asked to write minutes, Brain Assistant gives you these steps and doesn't edit the page.
 
 **Text:** the minutes prompt, the text block of [minutes-format.md](minutes-format.md), word for word. It is not copied here, so the prompt has one source: when the minutes prompt changes, this page's body is published again from that block.
 

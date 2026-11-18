@@ -46,13 +46,13 @@ Nothing sits above the two columns (#143, decision 0053).
 |---|---|---|---|---|---|---|---|---|
 | 0 | Areas | How are my areas? | Areas | List | Archived is unchecked | Name | Name, At a glance | Your areas, each line readable on its own: "Day job · 1 meeting · 2 due", or "all clear" (#145). Open one for its home (0050). The first tab |
 | 0b | Areas | What's due across areas? *(Tasks)* | Tasks | List, 5 rows | Status is not Done · Status is not Won't Do · Due is on or before today | Due, ascending | Name, Area, Due | Due today or overdue, in every area |
-| 2 | — | Which minutes need review? | Meetings | List, 5 rows | Brain Status is Not Reviewed · Date is on or before today | Date, descending | Name | Minutes to check before the brain may ingest them. Upcoming meetings stay out |
+| 2 | — | Which minutes need review? | Meetings | List, 5 rows | Brain Status is New · Date is on or before today | Date, descending | Name | Minutes to check before the brain may ingest them. Upcoming meetings stay out |
 | 3 | Tasks *(Tasks)* | What's due today? | Tasks | List | Status is To Do or Doing · Due is on or before today | Due, ascending | Name, Project, Due | Today's work, overdue first |
 | 4 | Meetings | Which meetings are today? | Meetings | List | Date is today | Date, ascending | Name, Date, Project | Today's meetings, with time and project |
 | 5 | Projects | What's active? | Projects | Gallery (small cards) | Status is Active · Archived is unchecked | Priority (High→Low), then Name | Name, Countdown, *(Orgs)* Client, *(Tasks)* Task Progress | What you're working on, and how far along each is |
 | 5b | Inbox | What's in my inbox? | Inbox | List | Brain Status is New or Ready | Created, ascending | Name, Kind, Brain Status | Rows waiting for the brain, oldest first: set one Ready when it can be taken in. The week's review (Kind Weekly) and a catch-up's summary (Kind Catch-up) show here until they are Done; they are never taken in. A changed version of a document waiting for your check (Kind Changed) shows here too: read it, edit it if you want, then say *go* in your agent session or set it Ready (decision 0098 §4). The last tab; the buttons and the boxes they tick are on each row's page (#146) |
 | 6 | Came in | What came in lately? | Inbox | List, 10 rows | Brain Status is Done | Created, descending | Name, Kind, Project | The Brain feed (0043): every document, email and capture the brain took in, newest first (reports are in Documents since 0.9.1) |
-| 7 | Meetings | Which meetings did it take in? | Meetings | List, 10 rows | Brain Status is Ingested | Ingested At, descending | Name, Date, Project | The meetings the brain ingested, newest first. Together with view 6, everything the brain did |
+| 7 | Meetings | Which meetings did it take in? | Meetings | List, 10 rows | Brain Status is Done | Ingested At, descending | Name, Date, Project | The meetings the brain ingested, newest first. Together with view 6, everything the brain did |
 
 **Buttons** (`/button`, each with *Open page after creation* on):
 
@@ -87,22 +87,24 @@ All views use the Tasks database. Using your own Tasks database (0018)? Map the 
 
 ## 3. Meetings (prepare, review minutes, track ingestion)
 
-**Job:** prepare upcoming meetings, then move each one from raw minutes → reviewed → ingested by the brain.
+**Job:** prepare upcoming meetings, then move each one from New (raw minutes) → Ready (you checked them) → Done (taken in by the brain). Meetings use the Inbox's names (decision 0109).
 
 | # | Tab | View name | Layout | Filter | Sort | Group | Show | Use case |
 |---|---|---|---|---|---|---|---|---|
 | 1 | Upcoming | What's coming up? | List | Date is on or after today | Date, ascending | — | Name, Date, Project, Attendees | Meetings you created ahead of time. Open one to prepare |
-| 2 | To review | Which minutes need review? | Table | Brain Status is Not Reviewed · Date is on or before today | Date, descending | — | Name, Date, Project, Brain Status | Check the minutes with the checklist in the page, then set Reviewed (or Skipped) in this view |
-| 3 | Ready | What's waiting for the brain? | List | Brain Status is Reviewed | Date, ascending | — | Name, Date, Project | The next ingest takes these. If one sits here for days, run the ingest |
-| 4 | Ingested | What did the brain take in this week? | Table | Brain Status is Ingested · Ingested At is within *Past week* (relative) | Ingested At, descending | — | Name, Ingested At | What each ingest took in; what it produced shows on the project's page (Brief, Decision log, Tasks) |
+| 2 | To review | Which minutes need review? | Table | Brain Status is New · Date is on or before today | Date, descending | — | Name, Date, Project, Brain Status | Check the minutes with the checklist in the page, then set Ready (or Skipped) in this view |
+| 3 | Ready | What's waiting for the brain? | List | Brain Status is Ready | Date, ascending | — | Name, Date, Project | The next ingest takes these. If one sits here for days, run the ingest |
+| 4 | Ingested | What did the brain take in this week? | Table | Brain Status is Done · Ingested At is within *Past week* (relative) | Ingested At, descending | — | Name, Ingested At | What each ingest took in; what it produced shows on the project's page (Brief, Decision log, Tasks) |
 | 5 | Calendar | When did we meet? | Calendar (by Date) | — | — | — | Name, Brain Status | Find a meeting by when it happened |
 
 **The meeting flow, for reference:**
 1. You create the meeting ahead of time (New meeting on Home), or Notion AI creates it when it starts taking notes.
 2. Notion AI writes the minutes. Use [minutes-format.md](minutes-format.md) for the sections.
-3. You tick the "Before marking Reviewed" checklist and set **Reviewed**.
-4. The ingest sets **Ingested**, fills in Attendees and creates the meeting's Tasks, once. Never let Notion AI or a notetaker create Tasks from the meeting: the ingest would create them again (decision 0101 §5).
-5. **Skipped** means the brain never reads that meeting.
+3. You tick the "Before setting Ready" checklist and set **Ready**.
+4. The ingest sets **Done** (and Ingested At), fills in Attendees and creates the meeting's Tasks, once. Never let Notion AI or a notetaker create Tasks from the meeting: the ingest would create them again (decision 0101 §5).
+5. Meetings have one extra state, **Skipped**, for a meeting you keep but don't want in the brain: the brain never reads it.
+
+A space built before 0.16.2 named these Not Reviewed, Reviewed and Ingested; [migration 0029](migrations/0029-new-task-on-home-clean-email-and-the-minutes-layout.md) renames them in place, and the brain reads the old names as the new ones until then.
 
 ---
 
