@@ -1,0 +1,17 @@
+_proposals/2026-12-03-acme-launch-jan-feb.md
+_proposals/2026-12-03-acme-mobile-app-relaunch.md
+_proposals/2026-12-03-maria-lopez-role-designer-pm.md
+_proposals/2026-12-03-supabase-supersedes-firebase.md
+areas/clients.md
+goals/grow-consulting-to-10k-eur-per-month.md
+knowledge/meetings/2026-10-01-acme-kickoff.md
+knowledge/meetings/2026-12-03-acme-sync.md
+knowledge/meetings/2026-12-11-acme-launch-plan-review.md
+knowledge/orgs/acme.md
+knowledge/people/alex-example.md
+knowledge/people/carlos-ruiz.md
+knowledge/people/maria-lopez.md
+knowledge/people/sofia-brandt.md
+knowledge/questions/who-owns-the-acme-mobile-app.md
+projects/acme-website/project.md
+reports/2026-11-18-acme-website-where-we-stand.md
