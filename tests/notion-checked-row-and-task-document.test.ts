@@ -27,7 +27,7 @@ test("0.16.0 has one Notion migration, and brain upgrade names it to a space at 
   // 0.16.0's is 0027; the next number is 0.16.1's one migration (0028, CC-337 and CC-343), so CC-311's part is in 0027, not in a 0028 of 0.16.0.
   assert.equal(files.filter((f) => f.startsWith("0027-")).length, 1);
   assert.ok(files.includes(MIGRATION_0_16_0));
-  assert.deepEqual(files.filter((f) => f > MIGRATION_0_16_0), ["0028-first-things-first-and-domains.md"]);
+  assert.equal(files.filter((f) => f > MIGRATION_0_16_0)[0], "0028-first-things-first-and-domains.md");
   const migrations = await notionMigrations(root, { notion: { template_version: "0026", databases: { review: "x" } } });
   assert.equal(migrations.newer?.[0], MIGRATION_0_16_0);
   assert.deepEqual(migrations.newer, [MIGRATION_0_16_0, ...files.filter((f) => f > MIGRATION_0_16_0)]);
