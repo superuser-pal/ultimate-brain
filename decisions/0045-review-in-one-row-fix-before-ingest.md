@@ -6,6 +6,7 @@
 **Amends:** 0003, 0026, 0041, 0043
 **Refines:** 0007, 0032, 0035
 **Amended by:** [0096](0096-one-place-to-decide.md) (2026-11-15; 0.16.0): Review rows, Fix and What to fix are retired with the Review database; corrections are made in the session
+**Amended by:** [0109](0109-meetings-use-the-inbox-s-status-names.md) (2026-11-18; 0.16.2): a corrected meeting is set back to Ready (was Reviewed) to be read again
 
 ## Context
 U-15 put 0.4.0 in the first brain. On 2026-10-22, the user gave this feedback:
