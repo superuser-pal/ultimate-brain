@@ -104,7 +104,7 @@ The first patch of the beta, from the author's 1.0.0 opening scope review of 202
 | U-41 | Publish the 0.16.2 template: migration 0029 on the template copy | the published template | after CC-350, CC-355 and CC-356 are merged | author's task |
 | U-42 | 0.16.2 in your brain: upgrade, migration 0029, paste the new minutes prompt | your brain and Notion space | after 0.16.2 is released | author's task |
 
-### CC-267 · The catch-up's publish runs in a sub-agent with a fresh context (gate problem 9) · `todo`
+### CC-267 · The catch-up's publish runs in a sub-agent with a fresh context (gate problem 9) · `in progress`
 **Release:** 0.16.2
 **Changelog:** a catch-up writes its Notion pages and Tasks in a fresh context, so a long run no longer runs out of context while it publishes.
 **Output:** from CC-264's breakdown: the gate's first-meeting publish made 34 Notion calls with 250k to 350k tokens of context, about 70% of the second run's cost, and the session compacted itself mid-publish, against decision 0043's bar that a catch-up never runs out of context. Contract first (brain-catch-up step 4.1, with the rule that a sub-agent never writes amended for this one): the Pages and Tasks writes (4.1.1, 4.1.2) run in one sub-agent given the brain path, `plan.json`, the render and the run's temp folder; it reads brain-ingest references/notion.md "Publish" and brain-sync's Push itself, writes, records with `sync record`, and returns the counts and failures; the main run keeps the other publish steps. A fork PR.
