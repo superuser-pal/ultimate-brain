@@ -1,7 +1,7 @@
 // CC-361: Meetings' Brain Status uses the Inbox's names, New → Ready → Done, with Skipped kept (decision 0109). Text checks only.
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
-import { join } from "node:path";
+import { join, sep } from "node:path";
 import { test } from "node:test";
 
 const root = join(import.meta.dirname, "..");
@@ -93,7 +93,7 @@ test("migration 0029 part D renames the options in place, after part C, and read
 test("no shipped text outside earlier migrations, history and read-before-0.16.2 notes names an old meeting status", async () => {
   const notionFiles: string[] = [];
   for (const entry of await readdir(join(root, "notion"), { recursive: true })) {
-    const path = `notion/${entry}`;
+    const path = `notion/${entry.split(sep).join("/")}`; // readdir gives \ on Windows
     if (!path.endsWith(".md")) continue;
     if (/^notion\/migrations\/00(0\d|1\d|2[0-8])-/.test(path)) continue;
     notionFiles.push(path);
