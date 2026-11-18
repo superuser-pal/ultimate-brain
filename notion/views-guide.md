@@ -62,6 +62,7 @@ Nothing sits above the two columns (#143, decision 0053).
 | Ask the brain *(Reports)* | Add page to *Inbox*, Kind = Ask, Brain Status = New. Type your question as the Name; the next catch-up answers it with a report in Documents, linked to the row (0043, 0071) |
 | New meeting | Add page to *Meetings*, Date = today. The default template applies |
 | New project | Add page to *Projects*, Status = Planned. The default template applies |
+| New task *(Tasks)* | Add page to *Tasks*, Kind = Task. Status keeps the database's default (To Do); no Project, Area or Due is set. The row you would add by hand in Tasks (decision 0106 §12). On your own Tasks database (0018), add the page to it and set your Kind property to Task if you mapped one; set nothing else |
 
 ---
 
@@ -263,6 +264,7 @@ A row is on a Domain page when its Area has that Domain. A row with no Area, or 
 - [ ] View names match this guide exactly, question marks included.
 - [ ] Home has no Review list, and no page or view shows a Review, Decisions or Questions database; Tasks has the tabs Questions and Risks (Tasks module).
 - [ ] Quick capture creates an Inbox row with Kind Capture and Brain Status Ready; New meeting and New project open a page with the default template.
+- [ ] (Tasks) New task, next to New project, opens a new Tasks row with Kind Task, the default Status and no project or due date.
 - [ ] Brain ID and Last Synced are hidden in every view and page layout.
 - [ ] A Domain made from the Domains template lists that Domain's projects, meetings and (Documents) documents, and no page or view shows a Domains · Type.
 - [ ] Editing Tier 1 nav on System updates every Space.
