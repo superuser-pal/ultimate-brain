@@ -7,7 +7,7 @@ Two templates exist; this one is the **Notion template**. The **brain folder** (
 | | |
 |---|---|
 | **Link** | https://sentina.notion.site/TEMPLATE-Ultimate-Brain-419495661e9980859df9ca0c3d836d27 |
-| **Template version** | `0028` |
+| **Template version** | `0029` |
 
 **Template version** is the four-digit number of the last migration in [migrations/](migrations/) the template includes. The template shows the same number as a line of its own in the System callout on its top page (as inline code or plain text, spec/setup.md §9), `Template version: NNNN`, and the connect step stores it in `brain.json` as `notion.template_version`; `brain upgrade` then names the migrations newer than it (spec/setup.md §9, spec/cli.md §5.15).
 

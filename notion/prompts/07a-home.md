@@ -7,7 +7,7 @@ Home leads with your own work; the brain's queues sit small in the left column, 
 First delete the lines of modules you didn't choose ([CHECKLIST](../CHECKLIST.md)).
 
 ```text
-[Tasks] When mapping your own Tasks database, substitute its mapped status property and Done and Won't Do option names in every Tasks filter below.
+[Tasks] When mapping your own Tasks database, substitute its mapped status property and Done and Won't Do option names in every Tasks filter below, and add the New task button's page to that database, setting its mapped Kind property to Task, or nothing if it has none.
 Ignore the module names in square brackets at the start of lines.
 On this page ("Home"):
 
@@ -19,6 +19,7 @@ In the right column add, in one row:
 [Reports] 3b. A button "Ask the brain": Add page to "Inbox", set Kind = Ask and Brain Status = New, open the page after creation.
 4. A button "New meeting": Add page to "Meetings", set Date = today, open the page after creation.
 5. A button "New project": Add page to "Projects", set Status = Planned, open the page after creation.
+[Tasks] 5a. A button "New task", right after New project: Add page to "Tasks", set Kind = Task, open the page after creation. Set nothing else: Status keeps the database's default, and the task has no Project and no Due.
 
 Below them, a heading 3 "What's on today?" and a tabs block:
 5b. Tab "Areas", first: a linked view of "Areas", List, named "How are my areas?": filter Archived is unchecked; sort Name; show Name, At a glance.
@@ -42,6 +43,7 @@ Rules: only add linked views of the existing databases on "Brain Data"; never cr
 ## Verify
 - [ ] "Needs you" shows one short list, "Which minutes need review?", and a meeting dated tomorrow is not in it. There is no Review list: you decide what the brain proposes in your agent session, and the week's review is an Inbox row, Kind Weekly, in the Inbox tab (decision 0096).
 - [ ] Quick capture creates an Inbox row with Kind Capture and Brain Status **Ready**; New meeting and New project open a page with the default template.
+- [ ] (Tasks) New task sits right after New project and opens a new Tasks row with Kind Task, the default Status (To Do) and no project or due date (decision 0106 §12).
 - [ ] "What's on today?" has its tabs: Areas, Tasks (Tasks module), Meetings, Projects, Inbox; nothing sits above the two columns (#143).
 - [ ] The Areas tab's "How are my areas?" shows one line per area that reads on its own: "Agency · 1 meeting · 2 due", or "all clear" (decisions 0050, #145).
 - [ ] The Inbox tab's "What's in my inbox?" lists the New and Ready rows, oldest first, with Name, Kind and Brain Status only (#146).
