@@ -92,7 +92,7 @@ The first patch of the beta, from the author's 1.0.0 opening scope review of 202
 | Task | Work | Files | When | Status |
 |---|---|---|---|---|
 | CC-267 | The catch-up's publish runs in a sub-agent (moved from 1.0.0) | brain-catch-up through a fork PR, the unattended eval | any order | `todo` |
-| CC-269 | The CLI turns Notion's query replies into the snapshot (moved from 1.0.0) | `spec/cli.md` §5.14, sync, brain-sync through a fork PR | any order | `review` |
+| CC-269 | The CLI turns Notion's query replies into the snapshot (moved from 1.0.0) | `spec/cli.md` §5.14, sync, brain-sync through a fork PR | any order | `done` (#455) |
 | CC-283 | Write minutes as Brain Assistant's eleventh skill (moved from 1.0.0, rewritten) | brain-assistant.md, Notion design, TEMPLATE.md, prompt 09, brain-howto through a fork PR | any order | `done` (#451) |
 | CC-346 | Bookkeeping after 0.16.1 (moved from 1.0.0) | your task rows, HISTORY.md, migration 0027, releasing.md | merged | `done` (#448) |
 | CC-348 | Record 0106 and plan 0.16.2, 0.17.0 and 0.18.0 | decision and amendment pointers, this plan, vision, v2-ideas, AGENTS.md, issue #447 | the author's answers of 2026-11-18 | `done` (#449) |
@@ -113,7 +113,7 @@ The first patch of the beta, from the author's 1.0.0 opening scope review of 202
 **Acceptance:** a synthetic catch-up with simulated Notion (eval/unattended-0.7.0's pattern) over one meeting, setup's leftover rows and a report, before and after: the same pages written and recorded, the same report, a lower cost and a peak context under 200k tokens with no compaction; the fork PR's checks pass; the leak check passes.
 **Moved by [0106](../decisions/0106-beta-on-0-16-x-patches-0-17-0-and-0-18-0-before-1-0-and-the-launch-bar.md) (2026-11-18):** from 1.0.0 to 0.16.2 (its `**Release:**` was 1.0.0; the rest of the row is as recorded). A beta fix for long catch-ups (0106 §3); its fork change may share 0.16.2's one skills release.
 
-### CC-269 · The CLI turns Notion's query replies into the snapshot · `review`
+### CC-269 · The CLI turns Notion's query replies into the snapshot · `done` (#455)
 **Release:** 0.16.2
 **Changelog:** a sync no longer copies every Notion row by hand into its snapshot: the CLI converts the rows itself.
 **Output:** from CC-264's breakdown: in the gate the agent wrote the snapshot of every row as a script by hand (about 8.8k output tokens, one call of 13% of the first run's cost, over a minute). Contract first (spec/cli.md §5.14, brain-sync references/formats.md): `brain sync snapshot --input <files>` takes the Notion query replies as saved files and writes `snapshot.json` with formats.md's normalized values, leaving out the `Example · ` rows; the skill saves each reply to the run's temp folder instead of retyping it. A fork PR for brain-sync. *Scope clarified with the coordinator (2026-11-18):* the rows that are no query reply (the tracked tasks read by page id, the `wording` objects) are passed to the same command as a rows file in today's row format, with no new field, told apart from a reply by its shape and joined by page only for a tracked task or a wording object; a property with two different values is `INPUT_INVALID`, so the CLI is the only writer of `snapshot.json`.
