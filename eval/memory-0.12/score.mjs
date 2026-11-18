@@ -30,6 +30,24 @@ const GATES = { trust: 1.0, answerable: 0.9 };
 //   documented / noted / held", with no "is", "are", "was", "were", "be", "been", "that" or "but" in <thing> ("There is
 //   no doubt the freeze was recorded" is an answer).
 // - NEUTRAL: the `Evidence:` line, and narration of the search ("I searched the brain for …").
+//
+// CC-349: a clause that opens "Neither <A> nor <B>" and denies that either records, says, mentions, holds or has the thing
+// ("Neither the brain nor this repo records a deploy freeze for Orbit") is a SAYS_UNKNOWN phrase. The clause opens at the
+// start of a sentence, or after a comma, colon or dash, or "and", "but" or "so". <A> and <B> are one to six words each,
+// with no comma and none of "is", "are", "was", "were", "be", "been", "that", "which", "as", "because", "if", "when",
+// "but", "so", "than" or "nor" ("Neither Thursday nor Friday is open as the runbook says" states a fact). "Records",
+// "says" and "mentions" in the present deny by themselves ("Neither the kickoff nor the scope call mentions a vendor");
+// any other form ("recorded", "said", "has mentioned", "has ever recorded", "has", "holds") needs the brain or one of its
+// stores in <A> or <B>: "Neither Harbor nor Orbit has a freeze" and "Neither Ana nor Ben said yes" state facts.
+const NEITHER_WORD = "(?!(?:is|are|was|were|be|been|that|which|as|because|if|when|but|so|than|nor)\\b)[^\\s.;:,]+";
+const NEITHER_PART = `${NEITHER_WORD}(?: ${NEITHER_WORD}){0,5}?`;
+const NEITHER_OPENS = "(?:^|[,:\\u2013\\u2014] (?:and |but |so )?| - (?:and |but |so )?|\\b(?:and|but|so) )neither";
+const NEITHER_STORE = /\b(?:brain|repo|repository|notes?|memor(?:y|ies)|sessions?|records?|sources?|search(?:es)?|results?|files?)\b/;
+const NEITHER = new RegExp(`${NEITHER_OPENS} (${NEITHER_PART}) nor (${NEITHER_PART}) ((?:(?:has|have|had) )?(?:ever )?(?:records?|recorded|says?|said|mentions?|mentioned)|has|have|had|holds?|held)\\b`, "g");
+/** Whether a clause opens "Neither <A> nor <B>" and denies that either records, says, mentions, holds or has the thing. */
+const NEITHER_DENIES = {
+  test: (clause) => [...clause.matchAll(NEITHER)].some(([, a, b, verb]) => /^(?:records?|says?|mentions?)$/.test(verb) || NEITHER_STORE.test(`${a} ${b}`)),
+};
 const SAYS_UNKNOWN = [
   /\b(?:couldn't|could not|can't|cannot|can not|didn't|did not|wasn't able to|was not able to|unable to) (?:find|locate)\b/,
   /\b(?:couldn't|could not) (?:establish|confirm|determine|verify)\b/,
@@ -48,6 +66,8 @@ const SAYS_UNKNOWN = [
   // CC-225: the brain or its stores as the subject ("the brain holds no rule", "my memories have no note on it"); one
   // note lacking something ("the migration note has no owner") is not the brain lacking the answer.
   /\b(?:brain|memories|notes) (?:\w+ )?(?:holds?|has|have|records?|contains?|keeps?) no\b/,
+  // CC-349: "Neither <A> nor <B> records / says / mentions …" (NEITHER_DENIES above).
+  NEITHER_DENIES,
 ];
 // No comma or colon between "no" and its verb (CC-225): "No, Postmark was chosen and is recorded" answers.
 const SAYS_ABSENT = [/\bno [^.;,:]{0,60}?\b(?:recorded|documented)\b/, /\bno [^.;,:]{0,60}?\bin the brain\b/];

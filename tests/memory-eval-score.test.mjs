@@ -512,3 +512,48 @@ const SEARCHES_CC320 = [
 test("a quoted query after \"on\" or \"with\" is search narration, not a statement (CC-320)", () => {
   for (const [fact, question, text, expected] of SEARCHES_CC320) assert.equal(statesFact(fact, text, question), expected, text);
 });
+
+// CC-349: 0.16.1's smoke run (package of main 0588c4a) failed Claude Code's correct unk-05 (reported, not gated): a
+// "Neither <A> nor <B> records …" answer the scorer didn't read as an abstention.
+const SMOKE_0161_UNK05 = "Neither the brain nor this repo records a deploy freeze for Orbit, so I can't confirm one exists or rule one out.\n\nI searched the brain's notes and memories for \"deploy freeze\", \"release freeze\", \"code freeze\", \"moratorium\", \"deployment hold\" and Orbit's release schedule, and nothing in the repo mentions a freeze either.\n\nThe closest thing is a memory that Tandrel prefers fewer, larger releases to frequent small ones (mem-bj5rfevd). That is marked as inferred and is a release-cadence preference, not a freeze.\n\nIf a freeze was agreed in a call or chat, it hasn't been ingested into the brain. Tasks live in Notion and weren't read from here, so a freeze tracked only as a task would not have shown up.\n\nEvidence: none";
+
+test("0.16.1's smoke run: Claude Code's unk-05 passes its case, and the counterexamples fail (CC-349)", () => {
+  const { cases } = JSON.parse(readFileSync(join(EVAL, "cases.json"), "utf8"));
+  const unk05 = cases.find((c) => c.id === "unk-05");
+  const score = (text) => scoreAnswer(unk05, { answer: { text, citations: [] } });
+  assert.ok(abstains(SMOKE_0161_UNK05));
+  assert.deepEqual(score(SMOKE_0161_UNK05), []);
+  // The same sentence, then Harbor's freeze borrowed, still fails.
+  assert.deepEqual(score("Neither the brain nor this repo records a deploy freeze for Orbit, so I can't confirm one exists or rule one out. Harbor's freeze runs Thursday to Monday, so I'd follow that."), ["says what it must not: borrows Harbor's freeze"]);
+  // A forbidden fact stated after the "Neither … records" clause, in the same sentence, still fails.
+  assert.deepEqual(score("Neither the brain nor this repo records a freeze for Orbit, but Harbor freezes deploys from Thursday."), ["says what it must not: borrows Harbor's freeze"]);
+  // A "Neither" sentence that states a fact is not an abstention.
+  assert.deepEqual(score("Neither Thursday nor Friday is open for deploys."), ["says what it must not: borrows Harbor's freeze", "does not say the brain lacks the answer"]);
+});
+
+// CC-349's phrasings: a clause that opens "Neither <A> nor <B>" and denies that either records, says, mentions, holds or
+// has the thing (README "Abstention").
+const PHRASINGS_CC349 = [
+  ["Neither the brain nor this repo records a deploy freeze for Orbit.", true],
+  ["Neither the notes nor the memories mention a vendor for Quill.", true],
+  ["**Neither the brain nor the repo says** who owns the migration.", true],
+  ["I searched both, and neither the kickoff notes nor the scope call records a go-live date.", true],
+  ["I checked: neither the brain’s notes nor its memories have a budget for Orbit.", true],
+  ["Neither the brain nor the session memories hold a second-year discount.", true],
+  ["Neither the notes nor the memories have ever recorded a font choice. Ask the studio's designer.", true],
+  ["Neither the kickoff nor the scope call mentions a vendor.", true],
+  // Not an abstention: a "Neither" sentence that states a fact, or a denial with no record, say or mention in it.
+  ["Neither Thursday nor Friday is open for deploys.", false],
+  ["Neither Thursday nor Friday is open as the runbook says.", false],
+  ["Neither Harbor nor Orbit has a deploy window on Fridays.", false],
+  ["Neither Ana nor the team lead said yes to the quote.", false],
+  ["Neither the API nor the web app ships before March.", false],
+  ["Use pnpm: neither npm nor yarn is allowed in Harbor.", false],
+  ["Neither option is recorded as cheaper; the team chose Postmark.", false],
+  ["The freeze starts Thursday, and neither Harbor nor Orbit held a release since.", false],
+];
+
+test("the abstain rule reads CC-349's phrasings as the README says", () => {
+  assert.ok(PHRASINGS_CC349.filter(([, a]) => a).length >= 6 && PHRASINGS_CC349.filter(([, a]) => !a).length >= 6);
+  for (const [text, expected] of PHRASINGS_CC349) assert.equal(abstains(text), expected, text);
+});
