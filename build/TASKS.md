@@ -92,7 +92,7 @@ The first patch of the beta, from the author's 1.0.0 opening scope review of 202
 |---|---|---|---|---|
 | CC-267 | The catch-up's publish runs in a sub-agent (moved from 1.0.0) | brain-catch-up through a fork PR, the unattended eval | any order | `todo` |
 | CC-269 | The CLI turns Notion's query replies into the snapshot (moved from 1.0.0) | `spec/cli.md` §5.14, sync, brain-sync through a fork PR | any order | `todo` |
-| CC-283 | Write minutes as Brain Assistant's eleventh skill (moved from 1.0.0, rewritten) | brain-assistant.md, Notion design, TEMPLATE.md, prompt 09, brain-howto through a fork PR | any order | `todo` |
+| CC-283 | Write minutes as Brain Assistant's eleventh skill (moved from 1.0.0, rewritten) | brain-assistant.md, Notion design, TEMPLATE.md, prompt 09, brain-howto through a fork PR | any order | `review` |
 | CC-346 | Bookkeeping after 0.16.1 (moved from 1.0.0) | your task rows, HISTORY.md, migration 0027, releasing.md | merged | `done` (#448) |
 | CC-348 | Record 0106 and plan 0.16.2, 0.17.0 and 0.18.0 | decision and amendment pointers, this plan, vision, v2-ideas, AGENTS.md, issue #447 | the author's answers of 2026-11-18 | `done` (#449) |
 | CC-349 | The scorer reads a "Neither … records" abstention | `eval/memory-0.12/score.mjs`, its tests and README | before 0.16.2's smoke run | `todo` |
