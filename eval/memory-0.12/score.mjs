@@ -69,11 +69,15 @@ const SAYS_UNKNOWN = [
   // CC-349: "Neither <A> nor <B> records / says / mentions …" (NEITHER_DENIES above).
   NEITHER_DENIES,
   // CC-362: "No rule on record says so": one or two words of <thing>, none a determiner, "doubt" or a form of "be", so
-  // "No doubt the rule on record says yes" states a fact.
-  /\bno (?:(?!(?:the|a|an|this|that|these|those|doubt|is|are|was|were|be|been|but)\b)[a-z-]+ ){1,2}on record (?:says?|records?|mentions?|states?|shows?|holds?)\b/,
+  // "No doubt the rule on record says yes" states a fact. "Says" and "states" deny only with "so", "it" or "either" after
+  // them, or nothing ("No rule on record says Postmark is required" reports what a rule would say); "records", "mentions",
+  // "shows" and "holds" deny whatever follows ("No note on record mentions a discount").
+  /\bno (?:(?!(?:the|a|an|this|that|these|those|doubt|is|are|was|were|be|been|but)\b)[a-z-]+ ){1,2}on record (?:(?:says?|states?)(?: (?:so|it|either))?$|(?:says?|states?) (?:so|it|either)\b|(?:records?|mentions?|shows?|holds?)\b)/,
   // CC-362: the brain or its stores as the subject of "doesn't release / mention" ("the brain doesn't release any
-  // discount", "this repo doesn't mention one"); one note, or anyone else, not mentioning a thing is not an abstention.
-  /\b(?:brain|repo|repository|memories|notes) (?:\w+ )?(?:doesn't|does not|don't|do not) (?:release|mention)\b/,
+  // discount", "this repo doesn't mention one", "the brain's notes don't mention it"): "the brain", "this / the repo",
+  // "the memories" or "the notes" right after "the" or "this", or the brain's own; one note, someone else's repo or notes
+  // ("Harbor's repo", "the migration notes"), or anyone else not mentioning a thing is not an abstention.
+  /(?:^|[^\w'])(?:the brain|(?:this|the) (?:repo|repository)|(?:the|the brain's|its) (?:memories|notes)) (?:\w+ )?(?:doesn't|does not|don't|do not) (?:release|mention)\b/,
 ];
 // No comma or colon between "no" and its verb (CC-225): "No, Postmark was chosen and is recorded" answers.
 const SAYS_ABSENT = [/\bno [^.;,:]{0,60}?\b(?:recorded|documented)\b/, /\bno [^.;,:]{0,60}?\bin the brain\b/];

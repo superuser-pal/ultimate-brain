@@ -585,9 +585,9 @@ test("0.16.2's smoke runs: Claude Code's trust-04 and trust-10 pass their cases,
 // CC-362's phrasings (README "Abstention").
 const PHRASINGS_CC362 = [
   ["No rule on record says so.", true],
-  ["**No rule on record says** you must ask first.", true],
+  ["**No rule on record says so.**", true],
   ["No approved memory on record mentions a discount.", true],
-  ["No meeting note on record states a go-live date.", true],
+  ["No meeting note on record records a go-live date.", true],
   ["I can't tell you: the brain doesn’t release any second-year discount for Velmor.", true],
   ["This repo doesn't mention a deploy freeze either.", true],
   ["The brain's notes do not mention a vendor for Quill.", true],
@@ -601,6 +601,10 @@ const PHRASINGS_CC362 = [
   ["The migration note doesn't mention an owner.", false],
   ["Harbor does not release on Thursdays.", false],
   ["The team doesn't mention pricing in standups.", false],
+  ["The migration notes don't mention an owner.", false],
+  ["Harbor's repo does not mention a freeze.", false],
+  ["Orbit's repo doesn't release on Fridays.", false],
+  ["No rule on record says Postmark is required.", false],
 ];
 
 test("the abstain rule reads CC-362's phrasings as the README says", () => {
