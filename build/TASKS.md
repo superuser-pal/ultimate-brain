@@ -209,7 +209,7 @@ The first patch of the beta, from the author's 1.0.0 opening scope review of 202
 
 ## 0.16.3
 
-### CC-362 · The smoke-run scorer reads No rule on record and does not release as an abstention · `in progress`
+### CC-362 · The smoke-run scorer reads No rule on record and does not release as an abstention · `review`
 **Release:** 0.16.3
 **Changelog:** development only: the memory evaluation's scorer reads "No rule on record says so" and "the brain doesn't release …" as the honest abstentions they are, so 0.16.2's smoke runs no longer fail a correct Claude Code answer on trust-04 or trust-10.
 **Reviewed reading:** 0.16.2's smoke runs on the package of main 76e58a6e (`~/ub-smoke-runs/0.16.2-claude-FINDINGS.md`, kept outside this repo per 0083 §6), trust-04 (Claude Code) as a scorer miss, and the void run's trust-10 (Claude Code) of the same kind; the user's yes, 2026-11-19
