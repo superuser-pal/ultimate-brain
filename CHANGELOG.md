@@ -2,6 +2,25 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.16.2 — 2026-11-19
+
+- CC-267 (#458): a catch-up writes its Notion pages and Tasks in a fresh context, so a long run no longer runs out of context while it publishes.
+- CC-269 (#455): a sync no longer copies every Notion row by hand into its snapshot: the CLI converts the rows itself.
+- CC-283 (#451): The guides count Write minutes among Brain Assistant's skills, as the template does.
+- CC-346 (#448): development only: the 0.12.0 to 0.16.1 sections move to the build history, U-33 to U-35 and U-37 are closed, migration 0027 says the template deletes its retired databases, and the release steps name the real agent login folders and read the smoke results before release.mjs.
+- CC-348 (#449): development only: decision 0106 plans the beta on 0.16.x patches, 0.17.0 (the path without Notion AI and Notion Brain Assistant), 0.18.0 (Español), and 1.0.0's release candidates and soft launch.
+- CC-349 (#452): development only: the memory evaluation's scorer reads "Neither the brain nor this repo records …" as the honest answer it is, so the 0.16.1 smoke run's unk-05 no longer fails a correct Claude Code answer.
+- CC-350 (#456): Brain Assistant's Clean email works only on a capture still marked New, as Tidy capture does, so it never rewrites a capture the brain may already be taking in.
+- CC-355 (#454): Home has a New task button next to New project: it adds a task and opens it.
+- CC-356 (#457): New minutes are easier to scan: each section is a heading followed by a divider, and each subject line is a bullet that starts with a bold Decided, Open, Concern, Waiting on or Idea; minutes in the earlier shapes are still read.
+- CC-357 (#459): development only: decision 0107 records that the landing page, its wishlist and the demo are built outside this repo, and drops CC-351, CC-353 and U-39.
+- CC-358 (#460): development only: planning, decision 0108 (beta invitations wait for 0.16.2).
+- CC-359 (#461): development only: planning, decision 0109 (Meetings use the Inbox's status names).
+- CC-360 (#462): A meeting's Brain Status uses the Inbox's words: New until you check the minutes, Ready to have the brain take it in, Done once it has; Skipped stays for a meeting you keep out of the brain, and the old names are still read.
+- CC-361 (#463): Notion, the template and the guides say New, Ready and Done for meetings, and the 0.16.2 migration renames your meetings' statuses in place, so none loses its state.
+
+Skills: ultimate-brain-skills 1.11.1 (sha256-3c367e8a7f94150397c2cda3596afe87d7747e46a5823c140e363baf0fa34343)
+
 ## 0.16.1 — 2026-11-17
 
 - CC-334 (#435): development only: 0.16.1 is scoped to visible Brain Assistant setup and upgrades that preserve unrelated uncommitted work.
