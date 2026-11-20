@@ -27,9 +27,19 @@ Ultimate Brain uses two templates, and you meet both here: the **Notion template
 
 ### 1. Install what you need
 
-Every grey box on this page is a line to paste into a terminal, then press Return (on Windows: Enter). You also need a Notion account and a free GitHub account. Ultimate Brain itself is free: you pay for your agent's plan and for a Notion plan with Notion AI.
+Every grey box on this page is a line to paste into a terminal, then press Return (on Windows: Enter). You also need a Notion account and a free GitHub account. Ultimate Brain itself is free: you pay for your agent's plan, and any Notion plan works, Free included.
 
-You need: **Node 22.6 or later**, **Git**, **the GitHub CLI (`gh`)**, **Python with MarkItDown** (it turns PDFs, Word files and slides into exact text), **Claude Code or Codex**, and **a Notion plan with Notion AI** (Custom Agents, on Business and Enterprise plans, are a plus, not a must).
+You need: **Node 22.6 or later**, **Git**, **the GitHub CLI (`gh`)**, **Python with MarkItDown** (it turns PDFs, Word files and slides into exact text), **Claude Code or Codex**, and **Notion**, on any plan.
+
+**What works on your Notion plan** (checked 2026-11-20 against Notion's [AI Meeting Notes](https://www.notion.com/help/ai-meeting-notes), [Notion AI](https://www.notion.com/help/notion-ai-faqs), [Custom Agents](https://www.notion.com/help/custom-agents) and [Notion credits](https://www.notion.com/help/buy-and-track-notion-credits-for-custom-agents) pages):
+
+| Your Notion | Meetings | Brain Assistant and its buttons |
+|---|---|---|
+| Business or Enterprise, with Notion credits | Notion AI meeting notes and the minutes prompt, or any other tool | Yes |
+| Business or Enterprise, without credits | Notion AI meeting notes and the minutes prompt, or any other tool | No: ask Claude Code or Codex for the same skills |
+| Free or Plus | Any other tool, pasting, or transcript files: your agent writes the minutes | No: ask Claude Code or Codex for the same skills |
+
+Brain Assistant is a Notion Custom Agent, and Custom Agents run on Notion credits, which only Business and Enterprise can buy. Meetings from another notetaker or pasted: [docs/meetings-from-other-tools.md](docs/meetings-from-other-tools.md).
 
 #### On a Mac
 
@@ -187,14 +197,14 @@ claude
 set up my brain
 ```
 
-Your agent walks you through the rest, one step at a time: your settings, connecting Notion, the meeting minutes prompt, Brain Assistant, the names you appear under, a short description of your work, and a first check. Stop whenever you like. Say "set up my brain" again to pick up where you left off.
+Your agent walks you through the rest, one step at a time: your settings, connecting Notion, the meeting minutes prompt and Brain Assistant when your plan has them, the names you appear under, a short description of your work, and a first check. Stop whenever you like. Say "set up my brain" again to pick up where you left off.
 
 ### 6. What you'll have at the end
 
 - **Your brain:** Markdown notes in a private Git repository, backed up to a private remote.
 - **Your Notion space,** connected: your Areas, Projects, the people you work with and a few key documents are already in it.
-- **Meetings that feed your brain:** Notion AI writes the minutes, you set the meeting Ready, and the next catch-up turns it into your tasks and notes.
-- **Brain Assistant** in Notion, for its skills (ask it "Run Today") and the buttons that message it.
+- **Meetings that feed your brain:** Notion AI, another tool or your agent writes the minutes, you set the meeting Ready, and the next catch-up turns it into your tasks and notes.
+- **Brain Assistant's skills:** in Notion, with its buttons, when you have Notion credits (ask it "Run Today"); otherwise ask your agent for the same skills ("what's due today").
 - **A first check that passed:** tasks that are really yours, a report on your main project, notes in the right place, and an answer that cites its source.
 
 Why each step is there, every setting, and what to do when something fails: [docs/setup.md](docs/setup.md).
