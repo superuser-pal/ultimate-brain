@@ -217,7 +217,7 @@ test("status counts each check and recorded step, and next walks setup's order (
   await connectDatabases(target);
   await expectNext("minutes-prompt", 6, "paste the minutes prompt");
   await logSetup(target, "2026-12-10T09:20:00Z", ["step=minutes-prompt", "result=done"]);
-  await expectNext("brain-assistant", 7, "set up Brain Assistant");
+  await expectNext("brain-assistant", 7, "set up Notion Brain Assistant");
   await logSetup(target, "2026-12-10T09:30:00Z", ["step=brain-assistant", "result=done"]);
   await expectNext("owner_person", 8, "set your identities");
   await addOwnerPerson(target);

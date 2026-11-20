@@ -28,7 +28,7 @@ const ORDER: ReadonlyArray<readonly [item: string, what: string]> = [
   ["notion-mcp", "connect your agent to Notion"],
   ["databases", "connect Notion"],
   ["minutes-prompt", "paste the minutes prompt"],
-  ["brain-assistant", "set up Brain Assistant"],
+  ["brain-assistant", "set up Notion Brain Assistant"],
   ["owner_person", "set your identities"],
   ["seeding", "seed your work"],
   ["first-value", "check first value"],
