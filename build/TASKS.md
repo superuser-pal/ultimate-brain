@@ -220,7 +220,7 @@ A feature release, by explicit roadmap change after the cutoff ([0106](../decisi
 |---|---|---|---|---|
 | CC-325 | Brain Assistant sets your operational fields after your yes (moved from 1.0.0) | brain-assistant.md, Notion design, the one migration, brain-howto through a fork PR | after CC-326 is merged; one migration with CC-352 | `todo` |
 | CC-326 | Contracts for the path without Notion AI (moved from 1.0.0) | `spec/capture-and-review.md`, `spec/cli.md`, `spec/setup.md`, Notion design | may start beside 0.16.2 | `done` (#453) |
-| CC-327 | The CLI for the path without Notion AI (moved from 1.0.0) | the minutes check, the drop folder's transcript row, setup's answers, tests | after CC-326 is merged | `review` |
+| CC-327 | The CLI for the path without Notion AI (moved from 1.0.0) | the minutes check, the drop folder's transcript row, setup's answers, tests | after CC-326 is merged | `done` (#474) |
 | CC-328 | The skills for the path without Notion AI, through the fork (moved from 1.0.0) | catch-up, ingest, setup, how-to; the one skills release, vendored | after CC-326 is merged; its minutes step after CC-327 | `todo` |
 | CC-329 | Notion, setup and the guides without Notion AI (moved from 1.0.0) | `docs/setup.md`, the guides, README Get started, Start here | after CC-326 is merged | `todo` |
 | CC-352 | Brain Assistant becomes Notion Brain Assistant | brain-assistant.md, button messages, guides, views guide, the one migration, the fork | after CC-326 is merged; with CC-325 and CC-328 | `todo` |
@@ -253,7 +253,7 @@ A feature release, by explicit roadmap change after the cutoff ([0106](../decisi
 **Acceptance:** every rule of 0101 §7 and §8 is in exactly one contract; the reviewer walks three meetings through it: Notion AI minutes, a Granola-style transcript pasted with no minutes, and minutes in the format pasted from another tool; and a setup that answers no and "pasted"; `npm run test:scripts`, the leak and PR format checks pass.
 **Moved by [0106](../decisions/0106-beta-on-0-16-x-patches-0-17-0-and-0-18-0-before-1-0-and-the-launch-bar.md) (2026-11-18):** from 1.0.0 to 0.17.0 (its `**Release:**` was 1.0.0; the rest of the row is as recorded). It may start beside the 0.16.2 work; the other 0.17.0 tasks start after it is merged (0106 §4).
 
-### CC-327 · The CLI for the path without Notion AI · `review`
+### CC-327 · The CLI for the path without Notion AI · `done` (#474)
 **Release:** 0.17.0
 **Changelog:** Your agent can write a meeting's minutes from its transcript, and the brain checks every quote against the transcript before they are written.
 **Output:** per CC-326's contracts: the minutes check (each item's id and quotes found in the transcript, every follow-up a `q` id, 0079 §6's bar), the drop folder's transcript row, and setup's recorded answers in `brain.json` or `status`, as CC-326 decides; tests.
