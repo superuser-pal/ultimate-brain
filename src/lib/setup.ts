@@ -8,7 +8,7 @@ import { isRecord } from "./input.ts";
 import { databaseId, MODULES, missingFor, modulesOf } from "./modules.ts";
 import type { Note } from "./notes.ts";
 import { slugify } from "./paths.ts";
-import { scheduleEntryOf } from "./schedule-entry.ts";
+import { scheduledBrains } from "./schedule.ts";
 import { expandPath, workTreeTop } from "./repos.ts";
 import { logLinesOf } from "./runs.ts";
 
@@ -105,6 +105,8 @@ export async function setupStatus(root: string, config: Record<string, unknown>,
     if (line === undefined) return [step, null];
     // First value counts only when its latest line passes, never an attempt (setup.md §5, §10).
     if (step === "first-value") return [step, line.pairs.result === "done" && firstValuePasses(firstValue!, tasksOff) ? line.timestamp : null];
+    // A schedule declined only because Windows had none before 0.17.0 is offered again (setup.md §7, cli.md §5.2).
+    if (step === "schedule" && line.pairs.reason === "schedule-unsupported") return [step, null];
     return [step, line.pairs.result === "done" || line.pairs.result === "declined" ? line.timestamp : null];
   })) as SetupStatus["recorded"];
   const taken = stepsTaken(latest.get("prerequisites")?.pairs);
@@ -265,7 +267,7 @@ async function dropFolderProposal(root: string, home: string, env: NodeJS.Proces
 /** The other brains the machine knows, with a drop folder: the default brain and each scheduled brain (cli.md §5.2). */
 async function otherBrains(root: string, home: string, env: NodeJS.ProcessEnv): Promise<OtherBrain[]> {
   const self = await canonical(root);
-  const candidates = [await defaultBrain(home), ...await scheduledBrains(home, env)].filter((brain): brain is string => brain !== null);
+  const candidates = [await defaultBrain(home), ...await scheduledBrains(env, home)].filter((brain): brain is string => brain !== null);
   const found = new Map<string, OtherBrain>();
   for (const candidate of candidates) {
     const brain = await canonical(candidate);
@@ -289,23 +291,3 @@ async function defaultBrain(home: string): Promise<string | null> {
   }
 }
 
-/** The `brain` of each scheduled job's plist (cli.md §5.21); none when the folder or a file can't be read. */
-async function scheduledBrains(home: string, env: NodeJS.ProcessEnv): Promise<string[]> {
-  const agents = env.UB_LAUNCH_AGENTS_DIR ?? join(home, "Library", "LaunchAgents");
-  let names: string[];
-  try {
-    names = (await readdir(agents)).filter((name) => name.startsWith("eu.ultimate-brain.") && name.endsWith(".plist")).sort();
-  } catch {
-    return [];
-  }
-  const brains: string[] = [];
-  for (const name of names) {
-    try {
-      const entry = scheduleEntryOf(await readFile(join(agents, name), "utf8"));
-      if (isRecord(entry) && typeof entry.brain === "string" && entry.brain !== "") brains.push(entry.brain);
-    } catch {
-      // An unreadable or invalid plist adds nothing.
-    }
-  }
-  return brains;
-}

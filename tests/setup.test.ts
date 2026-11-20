@@ -503,6 +503,27 @@ test("an unreadable default brain, an invalid config or plist, and a brain witho
   assert.deepEqual(result.data.setup.drop_folder, { proposed: "~/Documents/brain-dropbox/", exists: false, default_read_by: null, others: [] });
 });
 
+test("a brain scheduled on Windows counts too: the Description of each task's local copy (CC-369, cli.md §5.2)", async (context) => {
+  const { home, target: first } = await freshBrain(context);
+  await appendRules(first, "Drop folder: ~/Documents/brain-dropbox/");
+  // A task copy as `brain schedule install` keeps it on Windows, reduced to the Description `status` reads (cli.md §5.21).
+  const tasks = join(home, "AppData", "Local", "ultimate-brain", "tasks");
+  await mkdir(tasks, { recursive: true });
+  const entry = JSON.stringify({ brain: first, job: "catch-up", times: ["07:30"], days: null, agent: "codex", model: "gpt-5.2-codex", prompt: "catch up unattended" }).replaceAll("&", "&amp;").replaceAll('"', "&quot;");
+  await writeFile(join(tasks, "eu.ultimate-brain.brain-1a2b3c4d.catch-up.xml"), `<?xml version="1.0" encoding="UTF-16"?>\n<Task>\n  <RegistrationInfo>\n    <Description>ultimate-brain:${entry}</Description>\n  </RegistrationInfo>\n</Task>\n`);
+  const second = await secondBrain(home, "client");
+  const result = (await status(second, home)).data.setup.drop_folder;
+  assert.deepEqual([result.proposed, result.default_read_by, result.others], ["~/Documents/client-dropbox/", first, [{ brain: first, folder: join(home, "Documents", "brain-dropbox") }]]);
+});
+
+test("a schedule declined because Windows had none before 0.17.0 is not recorded, so setup offers it again (CC-369, cli.md §5.2)", async (context) => {
+  const { home, target } = await freshBrain(context);
+  await logSetup(target, "2026-12-10T09:55:00Z", ["step=schedule", "result=declined", "reason=schedule-unsupported"]);
+  assert.equal((await status(target, home)).data.setup.recorded.schedule, null);
+  await logSetup(target, "2026-12-10T10:05:00Z", ["step=schedule", "result=done"]);
+  assert.equal((await status(target, home)).data.setup.recorded.schedule, "2026-12-10T10:05:00Z");
+});
+
 test("remote passes only for the brain's own repository with an origin URL, not a parent folder's (setup.md §5)", async (context) => {
   const { home, target } = await freshBrain(context);
   await git(home, ["init", "-q"]);

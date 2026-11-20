@@ -59,6 +59,14 @@ export interface Command {
 export interface RunEnvironment {
   env?: NodeJS.ProcessEnv;
   homeDirectory?: string;
+  /** The processes `brain schedule` starts (launchctl, PowerShell); tests inject them so no real scheduler is touched (spec/cli.md §5.21). */
+  scheduler?: SchedulerProcess;
+}
+
+/** What `brain schedule` runs to load or register an entry: launchctl on macOS, a PowerShell script on Windows (its stdout returned). */
+export interface SchedulerProcess {
+  launchctl(args: readonly string[]): Promise<void>;
+  powershell(script: string): Promise<string>;
 }
 
 /** Run one command and print its result or error (spec/cli.md §3.3). Returns the exit code. */
