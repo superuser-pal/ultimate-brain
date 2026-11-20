@@ -9,6 +9,7 @@
 **Amended by:** [0098](0098-agree-by-subject-and-check-a-changed-document.md) (2026-11-16; 0.16.0): an attended ingest goes by subject; each part shows what the brain has on it, then what is added, then its questions, then its yes (§2 and §5)
 **Amended by:** [0099](0099-notion-without-decisions-and-questions.md) (2026-11-16; 0.16.0): 0.16.0 also removes the Decisions and Questions databases, in the same migration, skills release and template
 **Amended by:** [0101](0101-where-notion-ai-and-the-brain-each-write.md) (2026-11-16; 0.16.0): corrections from Notion and a tracked question's finished task are asked in the session too (§4, §6); from 1.0.0 a scheduled run may write a meeting's minutes from its transcript, which takes nothing in (§8.3)
+**Amended by:** [0110](0110-the-weekly-row-scheduling-on-mac-and-windows-and-0-16-x-folded-into-0-17-0.md) (2026-11-20; 0.17.0): §4: the weekly run also applies mechanical, reversible clean-up alone; §7: the row's Actions and Clean-up are decided by ticks in Notion and applied by a catch-up once the row is Ready; other decisions stay in the session
 
 ## Context
 

@@ -2205,6 +2205,16 @@ Work packages: contracts and representative resource-budget trials; shared diges
 
 Text and configuration for the friends-and-family beta, from the beta readiness review of v0.15.0 (2026-11-15). No feature and no CLI change; the scope is bounded to the tasks in this section. The user approved 0.15.1 as a release on 2026-11-15.
 
+### CC-276 · Notion property descriptions fit Notion's 280-character limit · `done` (#386)
+**Release:** 0.15.1
+**Changelog:** Review's Your call description fits Notion's 280-character limit, and a new space gets the same description as migration 0025.
+**Output:** migration 0025 step 1 sets a 270-character Your call description (its 476-character text was refused by Notion when applied to a real space); `notion/prompts/02-databases.md`, `05-ownership.md` and `docs/notion-space-design.md` give a new space that same text instead of the older ones; `tests/notion-property-descriptions.test.ts`.
+**Acceptance:**
+- [x] Every "Owner: …" description in `notion/prompts/`, `notion/modules/` and `notion/migrations/` is 280 characters or less (test). Evidence: `tests/notion-property-descriptions.test.ts` "every property description the Notion steps set fits Notion's 280-character limit", passing at `v0.15.1` and on CC-367's branch.
+- [x] Migration 0025, prompts 02 and 05 and the design doc give Your call the same description, which names Request revision (test). Evidence: the same file's "a new space and migration 0025 give Your call the same description" at `v0.15.1` (0.16.0 removed the Review database, so the test now checks migration 0027's descriptions instead).
+- [x] The full suite passes. Evidence: PR #386's CI `test` job passed before its merge, and `npm test` passes on CC-367's branch (output in CC-367's PR).
+**Closed by CC-367 (2026-11-20):** merged in #386 (merge `362067b1`), first contained by `v0.15.1`, so it shipped in 0.15.1; its `**Release:**` was 1.0.0, which made `scripts/release.mjs`'s rule 10 count it as later work. Moved here from TASKS.md's 1.0.0 section; the rest of the row is as recorded, its boxes ticked with the evidence above.
+
 ### CC-279 · A privacy and data statement, and a security policy · `done` (#389)
 **Release:** 0.15.1
 **Changelog:** The repository says where your data goes (`PRIVACY.md`) and how to report a security problem (`SECURITY.md`).

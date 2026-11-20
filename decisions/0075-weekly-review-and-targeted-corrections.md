@@ -7,6 +7,7 @@
 **Refines:** [0061](0061-roadmap-and-launch-boundary.md) and [0064](0064-brain-assistant-before-reflection-hermes-after-1-0.md) (weekly knowledge payback, correction propagation and CC-111)
 **Keeps:** [0003](0003-proposal-review-flow.md), [0051](0051-unattended-catch-up-and-schedules.md), [0055](0055-domains-capture-and-review.md), [0072](0072-ultimate-assistant.md), [0074](0074-scoped-memory-handovers-and-bounded-recall.md), existing module/publishing rules and the 0.14.0 feature cutoff
 **Amended by:** [0096](0096-one-place-to-decide.md) (2026-11-15; 0.16.0): the weekly review is one Inbox row per week, Kind Weekly, and its decisions are made in the session; §2's limits are unchanged
+**Amended by:** [0110](0110-the-weekly-row-scheduling-on-mac-and-windows-and-0-16-x-folded-into-0-17-0.md) (2026-11-20; 0.17.0): §1's three sections become Your week and Clean-up; §2's five decisions become at most 5 Actions and 10 doubtful clean-up items (the five-target limit stays); §5: an unanswered clean-up carries to next week; §6: the scheduled run applies mechanical, reversible clean-up alone, each with an undo
 
 ## Context
 
