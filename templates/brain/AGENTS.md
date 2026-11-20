@@ -14,7 +14,7 @@ Each operation has a skill; follow it end to end:
 |---|---|
 | set up the brain the first time, or continue setup ("set up my brain"): settings, Notion, your work, the first check | `brain-setup` |
 | connect the brain to Notion, or turn a module on or off | `brain-connect-notion` |
-| catch up: do everything that's waiting (decided reviews, reviewed meetings, the Inbox and its attachments, the drop folder, linked repos, reports asked for) | `brain-catch-up` |
+| catch up: do everything that's waiting (decided reviews, reviewed meetings, the Inbox and its attachments, the ticks of a weekly row set Ready, the drop folder, linked repos, reports asked for), or undo a clean-up item ("undo clean-up U2") | `brain-catch-up` |
 | ingest one input: reviewed minutes, a document, a web page, a pasted email or note, the Inbox, the drop folder, a linked repo | `brain-ingest` |
 | turn open questions that are really to-dos into tasks, or drop them (once, after a yes for each, 0071) | `brain-ingest` |
 | decide what the brain is waiting for (proposals, questions), in the session, and apply the answers | `brain-apply` |
@@ -25,7 +25,7 @@ Each operation has a skill; follow it end to end:
 | take an existing project's plans and tasks (a Markdown plan, issues, Notion tasks) into a connected workflow | `brain-workflow-adopt` |
 | review the structure of your work: what's overdue, stalled, missing a next step or misplaced, and turn your thoughts into tasks, projects and captures | `ultimate-assistant` (delegated to the sub-agent: say `report only`) |
 | tidy the brain: contradictions, duplicates, stale facts and recurring themes in your notes | `brain-reflect` |
-| review the week: what changed, the task analysis and at most five decisions ("weekly review"); the rest that waited, the notes that still say a corrected value, or the Monday schedule | `brain-weekly-review` |
+| review the week: your week, at most five actions and the clean-up, ticked in the week's Inbox row ("weekly review"); the rest that waited, the notes that still say a corrected value, or its schedule | `brain-weekly-review` |
 | learn how the system works ("how do I…", "why didn't…") | `brain-howto` |
 | change the Notion structure (databases, properties, views) | `brain-notion-change`; structure is changed in the product repo first, never edited directly in Notion (0022) |
 | change how the brain talks to them ("talk to me more simply", "shorter answers", "go back to normal") | `brain-setup` ("Changing the response style") |

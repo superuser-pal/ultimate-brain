@@ -14,7 +14,7 @@ Each Space has the navigation in a narrow left column and one tabs block on the 
 | f | Knowledge | [07f-knowledge.md](07f-knowledge.md) |
 | g | Archive (on System) | [07h-archive.md](07h-archive.md) |
 
-There is no Review page since 0.16.0: you decide what the brain proposes in your agent session (decision 0096). Prompt 7e built it up to 0.15.x and is retired.
+There is no Review page since 0.16.0: you decide what the brain proposes in your agent session (decision 0096), and since 0.17.0 the weekly row's actions and clean-up by ticking them in that Inbox row (decision 0110). Prompt 7e built it up to 0.15.x and is retired.
 
 The order is the one to use when time is short: Home and Meetings matter most during ingest. Tasks (7g) is for the Tasks module and Plan (7b) for Planning: skip them if you left those off. The other prompts carry module tags: delete the tagged lines of the modules you didn't choose ([CHECKLIST](../CHECKLIST.md)).
 
