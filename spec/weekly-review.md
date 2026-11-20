@@ -1,6 +1,6 @@
 # The weekly review (contract, decisions 0075, 0093 and 0096)
 
-**Status:** contract for release 0.15.0 (CC-111). Written by Claude Code. It is built by CC-253 (the CLI), CC-254 (correction checks), CC-255 (the skill and the schedule offer) and CC-256 (Weekly review in Notion), and tried in the author's brain by U-29. **Since 0.16.0 (decision [0096](../decisions/0096-one-place-to-decide.md), CC-295; built by CC-297):** the report is published as one Inbox row per week, Kind Weekly, not a Documents row; its decisions are made in the Claude Code or Codex session (capture-and-review §7.5), not in Review rows; the Reports offer is retired; and Weekly review in Notion reads the week's row and decides nothing (§13). `spec/schemas/weekly.schema.json` (`lives: "session"`, the record input's `publish`) follows in CC-297. Reports published as Documents rows in 0.15.x stay as they are, as history. The numbers in §12 come from the resource-budget trials, run read-only in the author's brain (0075 §7, 0093 §4, §6).
+**Status:** contract for release 0.15.0 (CC-111). Written by Claude Code. It is built by CC-253 (the CLI), CC-254 (correction checks), CC-255 (the skill and the schedule offer) and CC-256 (Weekly review in Notion), and tried in the author's brain by U-29. **Since 0.16.0 (decision [0096](../decisions/0096-one-place-to-decide.md), CC-295; built by CC-297):** the report is published as one Inbox row per week, Kind Weekly, not a Documents row; its decisions are made in the Claude Code or Codex session (capture-and-review §7.5), not in Review rows; the Reports offer is retired; and Weekly review in Notion reads the week's row and decides nothing (§13; from 0.17.0 it sets a task's Status or Due after the user's answer, 0101 §3). `spec/schemas/weekly.schema.json` (`lives: "session"`, the record input's `publish`) follows in CC-297. Reports published as Documents rows in 0.15.x stay as they are, as history. The numbers in §12 come from the resource-budget trials, run read-only in the author's brain (0075 §7, 0093 §4, §6).
 
 How this file fits: it holds the whole weekly review. That covers what a run reads, the report and its identity, the three sections, the change window and coverage, the two shared limits, repetition and dismissals, the correction queue and its claim groups, budgets and partial runs, delivery, the schedule, Brain Assistant's Weekly review skill and the acceptance scenarios. It reuses what exists. Ultimate Assistant's findings ([assistant.md](assistant.md) §3, cli.md §5.31) are the work stream. `brain reflect --candidates` (cli.md §5.32, §6.2) is the knowledge stream, the only scheduled reflection (0076 §5). Proposals (schema §11, cli.md §5.6) and their questions in the session (capture-and-review §7.5), the Inbox (docs/notion-space-design.md §3.11) and `brain schedule` (cli.md §5.21) are used as they are. The command surface (`brain weekly`) is cli.md §5.34; the fields are in schema §2, §4 view, §11 and §12.
 
@@ -359,11 +359,11 @@ The user asks Brain Assistant for it by name, "Run Weekly review". Since CC-260,
 Brain Assistant's Weekly review skill (notion/brain-assistant.md) is the way to read this week's review in Notion. **It decides nothing** (0096 §7): decisions are made in the Claude Code or Codex session. The new text, which a Notion migration ships (0022, CC-299):
 - **Find this week's review:** the Inbox row of Kind Weekly whose Name is this week's `Week of <D Mon YYYY>`; else the newest Weekly row, saying its week.
 - **None this week:** it says so and how to get one: say `weekly review` to Claude Code or Codex in the brain, or wait for the Monday schedule when it is on.
-- **With one:** it summarises What changed and Task analysis in a few lines, then reads What needs your decision with the user, item by item, answering questions about each from the row and the related Notion pages. It asks the user nothing to decide:
-  - **a proposal item:** it says what the item would change and that it is decided in Claude Code or Codex, with "what needs my decision";
-  - **a task item:** it says what to set and links the task. Brain Assistant never edits a property (its Instructions), so the user sets it.
+- **With one:** it summarises What changed and Task analysis in a few lines, then reads What needs your decision with the user, item by item, answering questions about each from the row and the related Notion pages:
+  - **a proposal item:** it says what the item would change and that it is decided in Claude Code or Codex, with "what needs my decision". It asks nothing to decide about it;
+  - **a task item:** it says what the row suggests setting and links the task. **From 0.17.0** (0101 §3, CC-325) it then asks about the task items in rounds of at most five, each numbered with lettered options carrying their values (the row's suggestion first, "leave it" last), and the user answers "1a, 2d". That answer is the yes the Instructions ask for: Brain Assistant sets exactly the picked values (a task's Status or Due, nothing else), reads each back, and sets nothing before the answer or for "leave it". Before 0.17.0 it only said what to set, and the user set it.
 - **A row already Done** says so in one line: nothing of it is waiting.
-- It writes nothing anywhere, as before.
+- It writes nothing else: not the row, not any other page or property. A task it sets is an operational field, read by the brain as a pointer (docs/notion-space-design.md §2); a task tracking an open question that it sets Done is asked about in the next attended session (0101 §6).
 
 ## 14. Acceptance (0075 §8)
 
@@ -384,7 +384,7 @@ Plus the following cases:
 - **Notion unreachable:** brain only, a failure surfaced in the log and the opening line, and no claim of a Notion write.
 - **Separation from catch-up:** no input ingested and no approved proposal applied by a weekly run; catch-up's behaviour unchanged.
 - **Budget exhaustion** at each step boundary.
-- **"Run Weekly review"** on a test space with a Weekly row and with none: it reads, decides nothing and writes nothing.
+- **"Run Weekly review"** on a test space with a Weekly row and with none: it reads and decides nothing for the user; it writes nothing but, from 0.17.0, the task values the user picked (a round answered "1a" sets that task's Due after the answer and not before; CC-325).
 
 The reading and deciding targets (two minutes to read, five to decide) are checked by the word cap and by the attended trial.
 
