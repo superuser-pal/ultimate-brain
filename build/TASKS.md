@@ -215,7 +215,7 @@ A beta patch under [0106](../decisions/0106-beta-on-0-16-x-patches-0-17-0-and-0-
 |---|---|---|---|---|
 | CC-362 | The smoke-run scorer reads No rule on record and does not release | `eval/memory-0.12/score.mjs`, its tests and README | merged | `done` (#465) |
 | CC-363 | Plan the skill fixes from the SkillEvaluator assessment | this plan | the author's answer of 2026-11-19 | `done` (#467) |
-| CC-364 | The skills' descriptions, the pinned Notion MCP server, howto's repeated guide | the fork's fifteen descriptions, its skill check, brain-connect-notion, brain-howto, brain-weekly-review; vendored | after CC-363 is merged | `todo` |
+| CC-364 | The skills' descriptions, the pinned Notion MCP server, howto's repeated guide | the fork's fifteen descriptions, its skill check, brain-connect-notion, brain-howto, brain-weekly-review; vendored | after CC-363 is merged | `done` (#468) |
 | CC-365 | The four largest skills move detail into their references | the fork's brain-catch-up, brain-sync, brain-ingest, brain-query; vendored | after CC-364's fork PR is merged | `todo` |
 
 ### CC-362 · The smoke-run scorer reads No rule on record and does not release as an abstention · `done` (#465)
