@@ -674,6 +674,8 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
   - `on`: the user chose a scheduled catch-up, installed on that computer by `brain schedule install` before 0.17.0, whose times are in its entry and not in the brain. The entries keep running as they are (an entry from before 0.17.0 runs `claude -p` directly, cli.md §5.21). `brain status` reports the schedule as not recorded (`schedule.recorded: false`, cli.md §5.2), and the next `brain schedule install <job> --at …` writes the object: `agent` `claude` (the only agent before 0.17.0), the `model` it is given, that job's slot, and the other job's slot read from this computer's entry for it, or `off` when it has none.
   - absent: as `off` for setup's question, which is asked (setup.md §7).
 
+  From `off` or absent, `brain schedule install <job>` writes the object as from `on`: `agent` as given (`claude` when not), the `model` it is given, that job's slot, and the other job's slot read from this computer's entry for it, or `off` (cli.md §5.21).
+
   `brain upgrade` doesn't change the value. A brain's `weekly.schedule` is read the same way for the weekly job while `schedule` is a string.
 - `gh` (0086 §3): whether skills may use the GitHub CLI (the backup, its privacy check, the setup report and "fix my backup"). For early access `gh` is required, so setup always records `on` (setup.md §6.1, §7). `off` stays a valid value, for a brain set up before 0.14.0 and for 1.0, when `gh` becomes optional again; the CLI only validates it.
 - `style` (0081, from 0.14.0): how the agent talks to the user, in its own words. An object with up to four keys, each optional, and no others:
