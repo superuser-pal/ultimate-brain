@@ -59,7 +59,7 @@ const person = (id: string, title: string, extra: Record<string, unknown> = {}):
 /** One case of each mechanical kind (two repeated values), a near duplicate, and three drafts the rule leaves alone; committed, with one rename. */
 async function fixture(context: TestContext, extra: NoteSpec[] = []): Promise<string> {
   const root = await world(context, [
-    meeting(MEET, "Harbor sync", "2026-11-02"),
+    meeting(MEET, "Harbor sync", "2026-11-02", { tags: ["harbor", "harbor"] }), // a repeated tag: the meeting's record, never a target
     decision(PAIRED, "Launch in March", { decided_in: MEET }),
     decision(LINKER, "Hire a second tester"),
     person(LENA, "Lena Hart", { path: "knowledge/people/lena-hart.md", aliases: ["Lena", "Lena"] }),
@@ -112,6 +112,7 @@ test("plan finds each mechanical kind once, in §15.2's order, and leaves the ne
   for (const item of items) assert.match(item.proposal_input.source, /^agent:brain-weekly-review\/20261109T080000Z$/);
   const all = JSON.stringify(items);
   for (const id of [PAINT_A, PAINT_B, YOUNG, LINKED, OLD_REVIEWED]) assert.equal(all.includes(id), false, `${id} is no mechanical item`);
+  assert.equal(items.some((item: any) => item.tidy === "repeated_value" && item.targets[0] === MEET), false, "a meeting's lists other than decisions and questions are never cleaned up");
   assert.deepEqual(await tree(root), before, "plan writes nothing");
 });
 

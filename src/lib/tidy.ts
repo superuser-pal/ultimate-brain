@@ -253,6 +253,8 @@ function repeatedValues(notes: readonly Note[], restricted: (note: Note) => bool
   for (const note of notes) {
     if (neverTarget(note, true) || restricted(note)) continue;
     for (const field of Object.keys(note.attributes).sort(compareCodePoints)) {
+      // A meeting is a target only for its decisions and questions (weekly-review.md §15.2): its other lists are the meeting's record.
+      if (note.type === "meeting" && field !== "decisions" && field !== "questions") continue;
       const value = note.attributes[field];
       if (!Array.isArray(value) || value.length < 2 || !value.every((entry) => ["string", "number", "boolean"].includes(typeof entry))) continue;
       const kept: unknown[] = [];
