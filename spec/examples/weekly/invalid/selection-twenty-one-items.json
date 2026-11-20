@@ -1,0 +1,692 @@
+{
+  "week": "2026-W46",
+  "input_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "items": [
+    {
+      "n": 1,
+      "part": "A",
+      "key": "theme:term-1",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 2,
+      "part": "A",
+      "key": "theme:term-2",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 3,
+      "part": "A",
+      "key": "theme:term-3",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 4,
+      "part": "A",
+      "key": "theme:term-4",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 5,
+      "part": "A",
+      "key": "theme:term-5",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 6,
+      "part": "A",
+      "key": "theme:term-6",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 7,
+      "part": "A",
+      "key": "theme:term-7",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 8,
+      "part": "A",
+      "key": "theme:term-8",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 9,
+      "part": "A",
+      "key": "theme:term-9",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 10,
+      "part": "A",
+      "key": "theme:term-10",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 11,
+      "part": "A",
+      "key": "theme:term-11",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 12,
+      "part": "A",
+      "key": "theme:term-12",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 13,
+      "part": "A",
+      "key": "theme:term-13",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 14,
+      "part": "A",
+      "key": "theme:term-14",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 15,
+      "part": "A",
+      "key": "theme:term-15",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 16,
+      "part": "A",
+      "key": "theme:term-16",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 17,
+      "part": "A",
+      "key": "theme:term-17",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 18,
+      "part": "A",
+      "key": "theme:term-18",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 19,
+      "part": "A",
+      "key": "theme:term-19",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 20,
+      "part": "A",
+      "key": "theme:term-20",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    },
+    {
+      "n": 21,
+      "part": "A",
+      "key": "theme:term-21",
+      "stream": "knowledge",
+      "kind": "Theme",
+      "category": "theme",
+      "subject": "Pricing tiers",
+      "decide": "keep the draft Document?",
+      "write": true,
+      "proposal": null,
+      "targets": [
+        "ref-5n2q8w4c"
+      ],
+      "because": "new",
+      "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "recommendation": null,
+      "finding": {
+        "cluster": "recurring_term:pricing-tiers",
+        "kind": "theme",
+        "fingerprint": "theme:pricing-tiers",
+        "targets": [
+          "ref-5n2q8w4c"
+        ],
+        "evidence": [
+          "mtg-8c4n2p7w",
+          "src-4r7t2k9m"
+        ],
+        "subject": "Pricing tiers",
+        "decide": "keep the draft Document?"
+      }
+    }
+  ],
+  "queued": [],
+  "counts": {
+    "actions": 6,
+    "doubtful": 0,
+    "cleaned": 0,
+    "targets": 0,
+    "queued": 0
+  },
+  "earlier_open": 1,
+  "omitted": {
+    "clusters": [],
+    "correction_targets": 0
+  },
+  "coverage": "complete"
+}
