@@ -2,7 +2,7 @@
 // meets name the Notion agent by its new name, older names are kept only where they are history or an old database name,
 // and migration 0030's part B renames it in an existing space. Text checks only.
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
 import { test } from "node:test";
 
@@ -10,23 +10,46 @@ const root = join(import.meta.dirname, "..");
 const read = (path: string) => readFile(join(root, path), "utf8");
 const MIGRATION = "notion/migrations/0030-your-fields-after-your-yes-the-path-without-notion-ai-and-the-weekly-row.md";
 
-// The product's current texts: the agent's page, the Notion design and its build prompts, the guides and the setup contract.
-const CURRENT = [
-  "notion/brain-assistant.md", "notion/views-guide.md", "notion/TEMPLATE.md", "notion/CHECKLIST.md", "notion/template-examples.md",
-  "notion/pasting-the-minutes-prompt.md", "notion/voice-format.md", "notion/modules/documents.md", "notion/modules/reports.md",
-  "notion/prompts/01-pages.md", "notion/prompts/06-templates.md", "notion/prompts/07-spaces-views.md", "notion/prompts/09-assistant-and-guide.md",
+// The texts the package ships (package.json `files`: notion/, the two docs, README, the templates, the CLI's source) and
+// the contracts and guides beside them. Not checked, by the task's acceptance: the migrations before 0.17.0's (0030),
+// decisions, build/ and CHANGELOG.md (history); .agents/skills, the vendored fork release, which says the new name once
+// 0.17.0's skills release is vendored.
+const SHIPPED_DIRS = ["notion", "templates", "src"];
+const SHIPPED_FILES = [
   "docs/notion-space-design.md", "docs/setup.md", "docs/guide.md", "README.md", "PRIVACY.md",
-  "spec/setup.md", "spec/assistant.md", "spec/weekly-review.md", "spec/cli.md",
+  "spec/setup.md", "spec/assistant.md", "spec/weekly-review.md", "spec/cli.md", "spec/capture-and-review.md",
 ];
+const OLDER_MIGRATION = /^notion\/migrations\/(00[0-2]\d)-/;
 
-// A bare "Brain Assistant" is allowed only where it says the old name: the database "Brain Assistant Skills" of a space
-// built before 0.14.0, a sentence about the rename, or a history line.
-const OLD_NAME_ALLOWED = /Brain Assistant Skills|before 0\.17\.0|still (named|says) Brain Assistant|Brain Assistant became Notion Brain Assistant|History \(retired in 0\.16\.0/;
+// A bare "Brain Assistant" is allowed only where it says the old name, each listed here: the database "Brain Assistant
+// Skills" of a space built before 0.14.0; a sentence about the rename; a history line or record; the older migrations'
+// rows of the migrations index; the parser of the retired Review pages' "For Brain Assistant" toggle.
+const OLD_NAME_ALLOWED = new RegExp([
+  "Brain Assistant Skills", "before 0\\.17\\.0", "Until you do B1", "still (named|says) Brain Assistant", "is renamed Notion Brain Assistant",
+  "Brain Assistant became Notion Brain Assistant", "History \\(retired in 0\\.16\\.0", "^\\| \\[00[0-2]\\d\\]", "\"For Brain Assistant\"",
+].join("|"));
+// spec/capture-and-review.md's records: what migration 0023 changed, the retired Review database, the 0.8.0 tests (§7 table, §9).
+const RECORDS = /\*\*Migration 0023, text only\.\*\*|Review queue and Grill review|M10 · a format-2 Review page|T1 · Recording|9\.5 Round trip of a format-2 page|\*\*The grill\.\*\* The user ran the draft Grill review/;
 
-test("the current texts call the Notion agent Notion Brain Assistant", async () => {
-  for (const path of CURRENT) {
+async function walk(dir: string): Promise<string[]> {
+  const out: string[] = [];
+  for (const entry of await readdir(join(root, dir), { withFileTypes: true })) {
+    const path = `${dir}/${entry.name}`;
+    if (entry.isDirectory()) out.push(...(await walk(path)));
+    else if (/\.(md|ts|json|txt)$/.test(entry.name)) out.push(path);
+  }
+  return out;
+}
+
+test("the shipped texts call the Notion agent Notion Brain Assistant, the old name only where listed", async () => {
+  const files = [...(await Promise.all(SHIPPED_DIRS.map(walk))).flat(), ...SHIPPED_FILES].filter((p) => !OLDER_MIGRATION.test(p));
+  assert.ok(files.includes("notion/brain-assistant.md") && files.includes(MIGRATION) && files.includes("src/lib/setup.ts"));
+  const partB = (await read(MIGRATION)).split("## Part B · ")[1].split("\n## Part C")[0];
+  for (const path of files) {
     for (const line of (await read(path)).split("\n")) {
       if (!/(?<!Notion )Brain Assistant(?! Skills)/.test(line)) continue;
+      if (path === MIGRATION && partB.includes(line)) continue; // part B's steps quote the old name they replace
+      if (path === "spec/capture-and-review.md" && RECORDS.test(line)) continue;
       assert.match(line, OLD_NAME_ALLOWED, `${path}: ${line.slice(0, 160)}`);
     }
   }
