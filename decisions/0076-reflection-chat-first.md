@@ -6,6 +6,7 @@
 **Amends:** [0052](0052-reflection.md) (how a run reaches the user, its schedule, skips, themes, the `note-size` scope and U-21's gate)
 **Clarified:** 2026-11-08 (CC-160, the user's yes): in §1's table, "attributed to the user" applies to a value of the user's own; a value one of the claims holds keeps that claim's source.
 **Keeps:** 0052's four signals, their thresholds and the 30-day window; its five finding kinds and their severity order; the fingerprint; the `orphan` and `near-duplicate` warnings; 0003; 0055's exclusion rules; 0064's boundary (the assistant reviews the structure of your work, reflection the content of your notes); 0061's feature cutoff
+**Amended by:** [0110](0110-the-weekly-row-scheduling-on-mac-and-windows-and-0-16-x-folded-into-0-17-0.md) (2026-11-20; 0.17.0): §1: an exact duplicate is merged by the weekly clean-up without a yes, with an undo; §4: a theme's draft is also offered as a tickable weekly Action
 
 ## Context
 0052 was decided on 2026-10-29, before three later decisions changed the ground it stands on. 0071 retired concepts in 0.9.1, and 0052 writes a recurring theme as a draft concept. 0072 made Ultimate Assistant report first in a live chat, while 0052 writes Review rows only. 0075 plans one weekly brief for 0.13.0, on Monday at 08:00, that already includes knowledge corrections under shared limits, while 0052 plans its own weekly run. The 0.11.0 opening grill, on 2026-11-08, settled these points before the contracts (CC-65) are written.
