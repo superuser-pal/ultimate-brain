@@ -239,7 +239,7 @@ A feature release, by explicit roadmap change after the cutoff ([0106](../decisi
 | U-36 | The path without Notion AI on a Free workspace | a test brain and workspace | after CC-328 and CC-329 are merged | author's task |
 | U-43 | Scheduling on a Mac and on Windows, and one weekly row end to end | your brain, a Windows machine | after 0.17.0 is released (CC-369 to CC-372 merged) | author's task |
 
-### CC-325 · Brain Assistant sets your operational fields after your yes (0101 §3) · `todo`
+### CC-325 · Brain Assistant sets your operational fields after your yes (0101 §3) · `in progress`
 **Release:** 0.17.0
 **Changelog:** In Notion, Brain Assistant can set a task's status or due date, or a project's status, once you say yes; it never changes what the brain knows.
 **Output:** `notion/brain-assistant.md`: the Instructions' rule (after your yes to a change it names with its value, it may set status, priority, dates and due dates, and progress values on Tasks, Projects, Areas, Goals and Key Results; never a brain-owned property, a brain-written section, Brain Status, an Accept, a request flag or a Task from minutes), its Tools and access to match, and Weekly review's steps 6 and 8 setting what you agreed on a task instead of listing it; `docs/notion-space-design.md`, the views guide and the How it works page where they say Brain Assistant never edits a property; a Notion migration for the Instructions and access; through a fork PR, brain-howto's Everyday guide. If the rename to Notion Brain Assistant (noted above) is built in the same release, the two share the migration.
