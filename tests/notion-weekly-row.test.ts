@@ -64,6 +64,8 @@ test("Weekly review reads the two parts, decides nothing in the row, and ends wi
   const weekly = section(assistant, "### Weekly review\n", "### Plan check\n");
   assert.match(weekly, /A row whose headings are "Your week" and "Clean-up": steps 5 to 9\./);
   assert.match(weekly, /by their labels \(A1, U1, C1\)/);
+  assert.match(weekly, /\*\*Description:\*\* Optional:[^\n]*Claude Code or Codex writes the row and does its clean-up; this skill only reads it with me\./, "an optional companion (the author's answer of 2026-11-20)");
+  assert.match(await read("notion/views-guide.md"), /an optional companion that only reads the row/);
   assert.match(weekly, /Show the change toggle/);
   assert.ok(weekly.includes("Then set this row's Brain Status to Ready: the next catch-up applies your ticks."));
   assert.match(weekly, /none marked as a suggestion/, "Focus first suggests no value (the author's answer of 2026-11-20)");
