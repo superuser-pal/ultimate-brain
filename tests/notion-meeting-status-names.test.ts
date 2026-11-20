@@ -115,10 +115,12 @@ test("no shipped text outside earlier migrations, history and read-before-0.16.2
 });
 
 test("the vendored skills read a meeting's Reviewed as Ready and write Done, never Ingested", async () => {
+  // CC-365 moved the fetch and re-read detail from brain-ingest's SKILL.md to references/notion.md, which step 2 reads first.
   const ingest = await read(".agents/skills/brain-ingest/SKILL.md");
-  assert.match(ingest, /pages with Brain Status = \*\*Ready\*\* \(or \*\*Reviewed\*\*, its name before 0\.16\.2, decision 0109\)/);
-  assert.match(ingest, /set the meeting's Brain Status back to \*\*Done\*\* through the MCP yourself \(never Ingested/);
+  assert.match(ingest, /\*\*Fetch\*\* \*\(Notion\)\*\. Read \[references\/notion\.md\]\(references\/notion\.md\), "Fetch", before it/);
   const query = await read(".agents/skills/brain-ingest/references/notion.md");
+  assert.match(query, /pages with Brain Status = \*\*Ready\*\* \(or \*\*Reviewed\*\*, its name before 0\.16\.2, decision 0109\)/);
+  assert.match(query, /set the meeting's Brain Status back to \*\*Done\*\* through the MCP yourself \(never Ingested/);
   assert.match(query, /\*\*Brain Status = Ready\*\*[^\n]*still named \*\*Reviewed\*\*: take those too/);
   const selection = await read(".agents/skills/brain-ingest/references/selection.md");
   assert.match(selection, /a meeting's \*\*Reviewed\*\*, its name before 0\.16\.2, counts as Ready/);
