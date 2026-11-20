@@ -224,6 +224,7 @@ export const cleanupTicksCommand: Command = {
     const writes: NotionWrite[] = [];
     const remove: string[] = [];
     const unticked: TickItem[] = [];
+    const undoLog: LogEntry[] = [];
     const sorted = [...items].sort((a, b) => { const [x, y] = [labelOrder(a.label), labelOrder(b.label)]; return x[0] - y[0] || x[1] - y[1]; });
     const decide = (id: string, action: "approve" | "reject", note?: string) => applyAll(workspace, { decisions: [{ proposal: id, action, decided_at: decidedAt, decided_by: "tick", ...(note === undefined ? {} : { note }) }] }, { now, recordOnly: false });
     for (const item of sorted) {
@@ -240,6 +241,7 @@ export const cleanupTicksCommand: Command = {
           const plan = await undoPlan(root, workspace, proposal.id);
           if (plan.changed.length > 0) { results.push({ ...base, result: "stale", reason: "UNDO_STALE", note: plan.changed.join(", ") }); continue; }
           remove.push(...stageUndo(workspace, plan, now));
+          undoLog.push({ op: "tidy-undo", id: proposal.id, title: plan.title, pairs: [["restored", plan.restored.length]] });
           results.push({ ...base, result: "undone" });
         } catch (error) {
           results.push({ ...base, result: "failed", reason: error instanceof BrainError ? error.code : "INTERNAL" });
@@ -278,7 +280,9 @@ export const cleanupTicksCommand: Command = {
       const slot = row[item.label]!;
       if (holding) { results.push({ label: item.label, proposal: slot.proposal, result: "open" }); continue; }
       const outcome = decide(slot.proposal, "reject", "unticked when the row was set Ready").decisions[0]!;
-      results.push({ label: item.label, proposal: slot.proposal, result: outcome.result === "applied" ? "declined" : "failed", ...(outcome.result === "applied" ? {} : { reason: outcome.reason ?? outcome.result.toUpperCase() }) });
+      // A reject ends the proposal `closed` with the reject decision (apply's rule): that is the decline.
+      const declined = outcome.result === "closed" && outcome.reason === undefined;
+      results.push({ label: item.label, proposal: slot.proposal, result: declined ? "declined" : "failed", ...(declined ? {} : { reason: outcome.reason ?? outcome.result.toUpperCase() }) });
     }
     results.sort((a, b) => { const [x, y] = [labelOrder(a.label), labelOrder(b.label)]; return x[0] - y[0] || x[1] - y[1] || a.label.localeCompare(b.label); });
     // Done (§15.4): every A and C item of the row decided, closed or moved, and nothing left waiting, asked or open.
@@ -287,7 +291,7 @@ export const cleanupTicksCommand: Command = {
       return a === undefined || a.status !== "pending" || (typeof a.weekly === "string" && a.weekly !== week);
     });
     const count = (result: TickResult) => results.filter((entry) => entry.result === result).length;
-    const log: LogEntry[] = [{ op: "weekly-ticks", id: "-", title: "", pairs: [["week", week], ["applied", count("applied")], ["declined", count("declined")], ["open", count("open")], ["stale", count("stale")], ["waiting", count("waiting")], ["undone", count("undone")], ["skipped", count("skipped")]] }];
+    const log: LogEntry[] = [...undoLog, { op: "weekly-ticks", id: "-", title: "", pairs: [["week", week], ["applied", count("applied")], ["declined", count("declined")], ["open", count("open")], ["stale", count("stale")], ["waiting", count("waiting")], ["undone", count("undone")], ["skipped", count("skipped")]] }];
     await workspace.commit(log, now);
     for (const path of remove) await rm(join(root, path), { force: true });
     return {

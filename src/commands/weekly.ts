@@ -77,8 +77,8 @@ export const weeklyPlanCommand: Command = {
     // Titles keep no history in their notes: the renames since the correction cursor are read from Git (weekly-review.md §8.1).
     const titles = await titleChanges(brain!.root, titlesSince(state, now), scanned.notes);
     const loaded = requireSuppressions(brain!.root);
-    // The mechanical items (weekly-review.md §15.2), as `brain cleanup plan` finds them now.
-    const cleanup = await findTidyItems(brain!.root, scanned.notes, loaded, now, localDate(now));
+    // The mechanical items (weekly-review.md §15.2), as `brain cleanup plan` finds them now, with this week's own row items kept for a rerun.
+    const cleanup = await findTidyItems(brain!.root, scanned.notes, loaded, now, localDate(now), isoWeek(localDate(now)));
     const data = computePlan({ snapshot, notes: scanned.notes, loaded, config, dismissals: store.entries, state, now, titles, cleanup });
     const shown = data.findings.filter((finding) => finding.repetition.show).length;
     const files = handoffPaths(brain!.root, environment.homeDirectory ?? homedir());

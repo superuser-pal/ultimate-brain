@@ -61,10 +61,12 @@ const plural = (n: number, one: string, many: string): string => `${n} ${n === 1
 
 /**
  * Find the mechanical items now (cli.md §5.38 `plan`). `held` counts those left out because their fingerprint was undone or declined before.
- * An item whose fingerprint lives in a Weekly row (`weekly` set) or is being applied (`approved`, `edited`) is left out too, uncounted: it is
- * already somebody's question. A pending one with no row (queued, or written while `settings.cleanup.auto` was off) is found again.
+ * An item whose fingerprint lives in a Weekly row (`weekly` set; with `week`, a row of another week) or is being applied (`approved`, `edited`)
+ * is left out too, uncounted: it is already somebody's question. A pending one with no row (queued, or written while `settings.cleanup.auto`
+ * was off) is found again, and so is one of `week`'s own row, so a same-week rerun offers it with its label.
+ * Declined means rejected: a proposal turned down ends `closed` with `decision.action: reject` (schema §11.2).
  */
-export async function findTidyItems(root: string, notes: readonly Note[], loaded: Pick<Loaded, "suppressions"> & Partial<Pick<Loaded, "restores">>, now: Date, localDate: string): Promise<TidyPlan> {
+export async function findTidyItems(root: string, notes: readonly Note[], loaded: Pick<Loaded, "suppressions"> & Partial<Pick<Loaded, "restores">>, now: Date, localDate: string, week?: string): Promise<TidyPlan> {
   const context = contextFor(notes, loaded);
   const restricted = (note: Note): boolean => {
     const r = restrictionOf(note, context);
@@ -81,8 +83,9 @@ export async function findTidyItems(root: string, notes: readonly Note[], loaded
     ...staleDrafts(notes, restricted, source, localDate),
   ];
   const proposals = notes.filter((note) => note.type === "proposal" && typeof note.attributes.fingerprint === "string");
-  const heldPrints = new Set(proposals.filter((p) => (p.attributes.status === "closed" && p.attributes.closed_reason === "undone") || p.attributes.status === "rejected").map((p) => String(p.attributes.fingerprint)));
-  const busy = new Set(proposals.filter((p) => ["approved", "edited"].includes(String(p.attributes.status)) || (p.attributes.status === "pending" && typeof p.attributes.weekly === "string")).map((p) => String(p.attributes.fingerprint)));
+  const rejected = (p: Note) => p.attributes.status === "rejected" || (p.attributes.status === "closed" && record(p.attributes.decision).action === "reject");
+  const heldPrints = new Set(proposals.filter((p) => (p.attributes.status === "closed" && p.attributes.closed_reason === "undone") || rejected(p)).map((p) => String(p.attributes.fingerprint)));
+  const busy = new Set(proposals.filter((p) => ["approved", "edited"].includes(String(p.attributes.status)) || (p.attributes.status === "pending" && typeof p.attributes.weekly === "string" && p.attributes.weekly !== week)).map((p) => String(p.attributes.fingerprint)));
   const items: TidyItem[] = [];
   let held = 0;
   for (const item of found) {
@@ -237,7 +240,7 @@ async function movedLinks(root: string, notes: readonly Note[], restricted: (not
       const why = fixed === 1 ? "The file this link pointed to was renamed; Git records where it went." : "The files these links pointed to were renamed; Git records where they went.";
       items.push({
         tidy: "moved_link", title, why, fingerprint, targets: [note.id], paths: [note.path],
-        proposal_input: input("fix_structure", "moved_link", title, why, fingerprint, source, { target: note.id, line_before: line, line_after: after, before_hash: bodyHash(note.body) }),
+        proposal_input: input("fix_structure", "moved_link", title, why, fingerprint, source, { target: note.id, line_before: line, line_after: after }),
       });
     }
   }
@@ -331,7 +334,8 @@ function staleDrafts(notes: readonly Note[], restricted: (note: Note) => boolean
   for (const note of notes) {
     if (note.type === "view") continue;
     if (note.type === "proposal") {
-      if (WAITING.has(String(note.attributes.status))) for (const text of strings(note.attributes)) named.add(text);
+      // The draft's own archive_draft (offered in a row while settings.cleanup.auto is off) is not a question about it.
+      if (WAITING.has(String(note.attributes.status)) && note.attributes.tidy !== "stale_draft") for (const text of strings(note.attributes)) named.add(text);
       continue;
     }
     for (const text of strings(note.attributes)) if (text !== note.id) named.add(text);
