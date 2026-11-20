@@ -88,6 +88,7 @@ export function parseLean(markdown: string): Summary {
   const quickItems: Item[] = [];
   const readable: (LeanItem & { line: string })[] = [];
   const entries = new Map<string, QuoteEntry>();
+  const untaggedTodos: string[] = []; // to-dos of Quick follow-ups with no `q` id (cli §5.36 step 4)
   const selections = new Map<string, string>(); // subject id → the raw value of its Selection line
   const unreadable = (id: string | null, reason: string) => problems.push({ code: "SELECTION_UNREADABLE", id, reason });
 
@@ -184,6 +185,7 @@ export function parseLean(markdown: string): Summary {
     const todo = TODO.exec(line);
     const done = todo !== null && (todo[1] ?? " ") !== " ";
     if (tag.kind === "item") {
+      if (todo !== null) untaggedTodos.push(tag.rest);
       // Fail closed, as in the inline-quote shape: read like an item, so an excluded one keeps its paragraphs out.
       quick.push({ subject: null, id: tag.id, text: tag.rest, done: TICKED.test(line), follow_up: null, task: false, recorded: null });
       const named = subjectOfId(tag.id);
@@ -195,6 +197,7 @@ export function parseLean(markdown: string): Summary {
     if (SELECTION_LINE.test(line)) { unreadable(null, `a Selection line outside the For the brain toggle: ${line.slice(0, 60)}`); return; }
     const rest = line.replace(/^(?:[-*+]|\d+[.)])\s+/, "");
     const followUp = todo !== null ? followUpOf(todo[2] ?? "") : { id: null, text: rest };
+    if (todo !== null && followUp.id === null) untaggedTodos.push(followUp.text);
     quick.push({ subject: null, id: null, text: followUp.text, done, follow_up: followUp.id, task: false, recorded: null });
     if (controlLike(followUp.text) || mixedScript(followUp.text)) unreadable(null, `a control in Quick follow-ups: ${followUp.text.slice(0, 60)}`);
   }
@@ -317,6 +320,6 @@ export function parseLean(markdown: string): Summary {
 
   return {
     subjects, items, problems, lines, unnumbered, quick, quickItems, scopes, shape: "lean",
-    readable: readable.map(({ line: _line, ...item }) => item), orphans,
+    readable: readable.map(({ line: _line, ...item }) => item), orphans, untagged_todos: untaggedTodos,
   };
 }
