@@ -144,13 +144,13 @@ There is no Review page or Review database since 0.16.0 (decision 0096): the wee
 
 ### The weekly row
 
-Nothing to build: the row is an Inbox row of Kind Weekly, shown in Home's Inbox tab (view 5b) until it is Done. It adds no property, option, view or database (decision 0110 §1). The brain writes its page body in two parts:
+Claude Code or Codex writes the row, when the weekly review runs on its schedule or you say "weekly review", and does its clean-up. Nothing to build: the row is an Inbox row of Kind Weekly, shown in Home's Inbox tab (view 5b) until it is Done. It adds no property, option, view or database (decision 0110 §1). The brain writes its page body in two parts:
 - **Your week:** In short, Highlights, Done this week, **Actions** (at most 5 to-dos, `A1 · <what the brain will do on your tick>`), Focus first, and **Waiting for you** (how many decisions wait in your agent session).
 - **Clean-up:** **Already cleaned** (what the weekly run did on its own, each a to-do `U1 · … · tick to undo`), then **For you to tick** (at most 10 to-dos, `C1 · <the change> · recommended: …`).
 - Under each Action and each item to tick: a toggle **Show the change**, with the before and after, and an empty line **Your note:**.
 
 How you use it:
-1. Read it, or ask Brain Assistant "Run Weekly review" to read it with you. It explains each item and decides nothing.
+1. Read it. If you like, ask Brain Assistant "Run Weekly review" to read it with you: an optional companion that only reads the row, explains each item and decides nothing.
 2. Tick what you agree with. To change an item, write what you want on its **Your note:** line: that item waits for your next session in Claude Code or Codex, where your agent reads your note with you. Tick a `U` item to undo what the run did.
 3. Set the row's Brain Status to **Ready**. The next catch-up, on its schedule or asked for, applies each plain tick after checking that nothing changed since the row was written (an item that changed isn't applied, and the catch-up's report names it). An item you left unticked is declined for now, once nothing else in the row waits; until then you can still tick it. The row turns **Done** once nothing in it waits.
 
