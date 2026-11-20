@@ -24,9 +24,11 @@ const STATE = "_weekly/state.json";
 const P = (n: number) => `b0000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 
 /** Extra stalled projects in Health, numbered from 3: more candidates than the limits hold. */
+const STALLED_IDS = ["2c6v8m3q", "5w9h2k7d", "7j3n6r8x", "3d8k2w6p", "8f4m7q2v"];
+const STALLED_NAMES = ["Orchard fence", "Tide charts", "Kiln repair", "Barn roof", "Seed library"];
 const stalled = (count: number): NoteSpec[] => Array.from({ length: count }, (_, index) =>
-  project(`prj-${["2c6v8m3q", "5w9h2k7d", "7j3n6r8x"][index]}`, ["Orchard fence", "Tide charts", "Kiln repair"][index]!, HEALTH, { notion: P(index + 3) }));
-const stalledRows = (count: number) => Array.from({ length: count }, (_, index) => projectRow(index + 3, `prj-${["2c6v8m3q", "5w9h2k7d", "7j3n6r8x"][index]}`, ["Orchard fence", "Tide charts", "Kiln repair"][index]!));
+  project(`prj-${STALLED_IDS[index]}`, STALLED_NAMES[index]!, HEALTH, { notion: P(index + 3) }));
+const stalledRows = (count: number) => Array.from({ length: count }, (_, index) => projectRow(index + 3, `prj-${STALLED_IDS[index]}`, STALLED_NAMES[index]!));
 
 async function busy(context: TestContext, extra: { stalled?: number; notes?: NoteSpec[] } = {}): Promise<string> {
   const root = await world(context, [
@@ -76,37 +78,46 @@ const state = async (root: string) => JSON.parse(await readText(root, STATE));
 const frontmatter = async (root: string, path: string) => parseFrontmatter(await readText(root, path)).attributes as Record<string, any>;
 const section = (body: string, heading: string) => body.split(`## ${heading}\n`)[1]!.split("\n## ")[0]!;
 
-test("busy: one report with three sections, the limits held in priority order, cited bullets, the rest queued, nothing applied", async (context) => {
-  const root = await busy(context, { stalled: 3 });
-  const week = await runWeek(root, busySnapshot(NOW, { stalled: 3 }), NOW, { judge });
+test("busy: one row with Your week and Clean-up, the caps held in priority order, cited bullets, the rest queued, nothing applied", async (context) => {
+  const root = await busy(context, { stalled: 5 });
+  const week = await runWeek(root, busySnapshot(NOW, { stalled: 5 }), NOW, { judge });
   assert.equal(week.record!.code, 0, week.record!.stdout);
   const data = week.record!.json.data;
   assert.equal(data.path, REPORT);
   assert.equal(data.week, "2026-W46");
 
   const selection = week.select!.json.data;
-  const { decisions, new_items, targets } = selection.counts;
-  assert.ok(decisions <= 5 && new_items <= 5 && targets <= 5, JSON.stringify(selection.counts));
-  assert.equal(decisions, 5);
-  // §5.2: the contradiction first, then overdue and stalled work in the assistant's rank; structure cleanup comes after and is queued here.
-  assert.deepEqual(selection.items.map((item: any) => item.category), ["contradiction", "overdue", "stalled", "stalled", "stalled"]);
-  assert.ok(selection.queued.length >= 2, JSON.stringify(selection.queued));
+  const { actions, doubtful, targets } = selection.counts;
+  // §5: six stalled projects for five Actions; the contradiction is a session item (T); the empty Area is doubtful (C).
+  assert.deepEqual([actions, doubtful, targets], [5, 1, 1], JSON.stringify(selection.counts));
+  assert.deepEqual(selection.items.map((item: any) => [item.part, item.category]), [["T", "contradiction"], ...Array(5).fill(["A", "stalled"]), ["C", "structure"]]);
+  assert.equal(selection.queued.length, 1, JSON.stringify(selection.queued));
+  assert.match(selection.queued[0].key, /^project_stalled:/);
   assert.equal(selection.counts.queued, selection.queued.length);
-  assert.ok(selection.queued.some((entry: any) => entry.key === `area_empty:${GARDEN}`), "the structure item waits for next week");
+  assert.equal(selection.items.some((item: any) => item.key.startsWith("task_overdue:")), false, "an overdue task is Focus first only (§6.1)");
 
   const text = await readText(root, REPORT);
   const body = text.split("\n---\n")[1]!;
-  for (const heading of ["What changed", "Task analysis", "What needs your decision"]) assert.ok(body.includes(`## ${heading}\n`), heading);
-  for (const bullet of section(body, "What changed").trim().split("\n")) assert.match(bullet, /^- \*\*(Decided|Changed|Open|Answered|Next):\*\* .+\]\(.+\), \d{1,2} [A-Z][a-z]{2}\)/);
-  assert.match(section(body, "Task analysis"), /Order of attention:\n1\. Send the logo proposals: due 30 Oct, 10 days late\./);
-  assert.match(body, new RegExp(`${selection.queued.length} more findings? wait(s)? for next week\\. Say "weekly review more" in a session for the rest\\.`));
-  const words = body.split("\n").slice(2).join(" ").replace(/\]\([^)]*\)/g, "]").split(/\s+/).filter(Boolean).length;
+  assert.deepEqual(body.match(/^## .+$/gm), ["## Your week", "## Clean-up"]);
+  const yours = section(body, "Your week");
+  const highlights = yours.split("**Highlights**\n")[1]!.split("\n\n")[0]!.trim().split("\n");
+  for (const bullet of highlights) assert.match(bullet, /^- \*\*(Decided|Changed|Open|Answered|Next):\*\* .+\]\(.+\), \d{1,2} [A-Z][a-z]{2}\)/);
+  const actionLines = yours.split("\n").filter((line) => line.startsWith("- [ ] A"));
+  assert.deepEqual(actionLines.map((line) => line.split(" · ")[0]), ["- [ ] A1", "- [ ] A2", "- [ ] A3", "- [ ] A4", "- [ ] A5"]);
+  assert.match(yours, /\*\*Focus first\*\*\n1\. Send the logo proposals: due 30 Oct, 10 days late\./);
+  assert.match(yours, /\*\*Waiting for you:\*\* 1 decision waits in the session: say \*what needs my decision\* in Claude Code or Codex\./);
+  assert.match(section(body, "Clean-up"), /^\*\*For you to tick\*\*\n- \[ \] C1 · Set archived of Garden to true · recommended: yes · \[Show the change\]\(\.\.\/_proposals\/[^)]+\.md\)$/m);
+  assert.equal(body.includes("Already cleaned"), false, "nothing was applied alone");
+  const words = yours.split("\n").filter((line) => !line.startsWith("- [ ]")).join(" ").replace(/\]\([^)]*\)/g, "]").split(/\s+/).filter(Boolean).length;
   assert.ok(words <= 450, `${words} words`);
 
-  // Every new item is a pending proposal: a weekly run applies nothing.
+  // Every row item and session item is a pending proposal: a weekly run applies nothing.
   const files = await proposalFiles(root);
-  assert.equal(files.length, new_items);
+  assert.equal(files.length, actions + doubtful + targets);
   for (const name of files) assert.equal((await frontmatter(root, `_proposals/${name}`)).status, "pending", name);
+  const rowItems = [];
+  for (const name of files) { const fm = await frontmatter(root, `_proposals/${name}`); if (fm.weekly !== undefined) rowItems.push(fm.weekly); }
+  assert.deepEqual(rowItems, Array(actions + doubtful).fill("2026-W46"), "row items carry the week (§6.2); the contradiction stays in the session");
   const fm = await frontmatter(root, REPORT);
   assert.deepEqual([fm.type, fm.view_kind, fm.week, fm.coverage, fm.counts], ["view", "weekly_review", "2026-W46", "complete", selection.counts]);
   assert.equal(fm.title, "Weekly review · 9–15 Nov 2026");
@@ -114,12 +125,13 @@ test("busy: one report with three sections, the limits held in priority order, c
 
   const lines = await weeklyLines(root);
   assert.equal(lines.length, 1);
-  assert.match(lines[0]!, /^- 2026-11-09T08:00:00Z weekly - "" mode=unattended week=2026-W46 coverage=complete decisions=5 new_items=\d targets=\d queued=\d+ changes=4 failed=0 published=no notes_read=3 seconds=60$/);
+  assert.match(lines[0]!, /^- 2026-11-09T08:00:00Z weekly - "" mode=unattended week=2026-W46 coverage=complete actions=5 doubtful=1 cleaned=0 targets=1 queued=1 changes=4 failed=0 published=no notes_read=3 seconds=60$/);
 
   const saved = await state(root);
   assert.deepEqual(saved.last_success, { week: "2026-W46", report: data.id, covered_to: NOW, covered_on_to: [], coverage: "complete" });
   assert.deepEqual(saved.weeks["2026-W46"].items, selection.items.map((item: any) => item.key));
   assert.equal(saved.weeks["2026-W46"].path, REPORT);
+  assert.deepEqual(Object.keys(saved.weeks["2026-W46"].row).sort(), ["A1", "A2", "A3", "A4", "A5", "C1"]);
   assert.deepEqual(saved.queued.map((entry: any) => entry.key), selection.queued.map((entry: any) => entry.key));
   const lint = await brain(["lint", "--brain", root, "--json"]);
   const ours = lint.json.data.issues.filter((issue: any) => issue.severity === "error" && /^(reports|_weekly|_proposals)\//.test(issue.path));
@@ -138,10 +150,11 @@ test("quiet: a first run with nothing to say, and a week where every finding was
   const tasks = [task(2, "Book the venue", { status: "Waiting On", projects: [P(2)] })];
   const week1 = await runWeek(root, busySnapshot(NOW, { tasks }), NOW, { judge });
   assert.equal(week1.record!.code, 0, week1.record!.stdout);
-  // The contradiction is decided; next week brings nothing new, and the stalled project's row is still pending.
-  const contradiction = (await proposalFiles(root)).find((name) => name.includes("lena-hart"))!;
-  const decided = await decide(root, (await frontmatter(root, `_proposals/${contradiction}`)).id, "reject", "2026-11-10T09:00:00Z");
-  assert.equal(decided.code, 0, decided.stdout);
+  // The contradiction and the row's items are decided (an undecided row item would carry, §15.6); next week brings nothing new.
+  for (const name of await proposalFiles(root)) {
+    const decided = await decide(root, (await frontmatter(root, `_proposals/${name}`)).id, "reject", "2026-11-10T09:00:00Z");
+    assert.equal(decided.code, 0, decided.stdout);
+  }
   const snapshotBefore = await tree(root);
   const week2 = await plan(root, busySnapshot(NEXT, { tasks }), NEXT);
   assert.equal(week2.code, 0, week2.stdout);
@@ -163,6 +176,7 @@ test("same-week rerun: unchanged is quiet; with a new change it rewrites the sam
   assert.equal(week1.record!.code, 0, week1.record!.stdout);
   const first = await frontmatter(root, REPORT);
   const proposalsBefore = await proposalFiles(root);
+  const labels = (await state(root)).weeks["2026-W46"].row;
 
   const later = "2026-11-09T10:00:00Z";
   const unchanged = await tree(root);
@@ -183,7 +197,8 @@ test("same-week rerun: unchanged is quiet; with a new change it rewrites the sam
   const fm = await frontmatter(root, REPORT);
   assert.deepEqual([fm.window.from, fm.window.to, fm.created], [first.window.from, later, first.created]);
   assert.ok((await readText(root, REPORT)).includes("Move the Harbor demo to Friday"));
-  assert.equal((await readText(root, REPORT)).match(/## What needs your decision/g)!.length, 1);
+  assert.equal((await readText(root, REPORT)).match(/## Clean-up/g)!.length, 1);
+  assert.deepEqual((await state(root)).weeks["2026-W46"].row, labels, "each label keeps its proposal and base");
   assert.equal((await weeklyLines(root)).length, 2);
 });
 
@@ -191,7 +206,7 @@ test("repeated finding: shown ones are counted, not items; new evidence and a ne
   const root = await busy(context);
   const week1 = await runWeek(root, busySnapshot(), NOW, { judge });
   assert.equal(week1.record!.code, 0, week1.record!.stdout);
-  assert.deepEqual(week1.select!.json.data.items.map((item: any) => item.key), [`contradiction:${LENA}:role`, `task_overdue:notion:${"c0000000-0000-4000-8000-000000000001"}`, `project_stalled:${SIGNAGE}`, `area_empty:${GARDEN}`]);
+  assert.deepEqual(week1.select!.json.data.items.map((item: any) => item.key), [`contradiction:${LENA}:role`, `project_stalled:${SIGNAGE}`, `area_empty:${GARDEN}`]);
 
   // The user rejects the stalled project's proposal and dismisses the empty Area.
   const stalledRow = (await proposalFiles(root)).find((name) => name.includes("pinecrest"))!;
@@ -209,11 +224,14 @@ test("repeated finding: shown ones are counted, not items; new evidence and a ne
   assert.equal(week2.record!.code, 0, week2.record!.stdout);
   const items = week2.select!.json.data.items;
   const byKey = Object.fromEntries(items.map((item: any) => [item.key, item]));
-  assert.equal(byKey[`task_overdue:notion:c0000000-0000-4000-8000-000000000001`]?.because, "evidence");
-  assert.equal(byKey[`task_overdue:notion:c0000000-0000-4000-8000-000000000003`]?.because, "new");
-  // The contradiction on a reviewed note stays visible while unresolved, linking its pending row (D 1, I 0).
+  // Overdue tasks are Focus first only (§6.1): shown again by the plan's repetition, never row items.
+  const shownAgain = Object.fromEntries(week2.plan.json.data.findings.map((finding: any) => [finding.key, finding.repetition.because]));
+  assert.equal(shownAgain[`task_overdue:notion:c0000000-0000-4000-8000-000000000001`], "evidence");
+  assert.equal(shownAgain[`task_overdue:notion:c0000000-0000-4000-8000-000000000003`], "new");
+  assert.match(section(await readText(root, "reports/2026-11-16-weekly-review.md"), "Your week"), /\*\*Focus first\*\*\n1\. (Send the logo proposals|Draft the Harbor brief): /);
+  // The contradiction on a reviewed note stays visible while unresolved, linking its pending proposal (T, in the session).
   const contradiction = byKey[`contradiction:${LENA}:role`];
-  assert.deepEqual([contradiction?.because, contradiction?.write, contradiction?.new_items], ["critical", false, 0]);
+  assert.deepEqual([contradiction?.because, contradiction?.write, contradiction?.part], ["critical", false, "T"]);
   assert.match(contradiction.proposal, /^prp-/);
   assert.equal(byKey[`project_stalled:${SIGNAGE}`], undefined, "rejected: held 30 days");
   assert.equal(byKey[`area_empty:${GARDEN}`], undefined, "dismissed");
@@ -221,7 +239,7 @@ test("repeated finding: shown ones are counted, not items; new evidence and a ne
   assert.ok(await readFile(join(root, "reports/2026-11-16-weekly-review.md"), "utf8"));
 });
 
-test("missed week: four weeks since the last review, the 8 most consequential changes, the rest counted", async (context) => {
+test("missed week: four weeks since the last review, the 6 most consequential changes, the rest counted", async (context) => {
   const decisions = Array.from({ length: 10 }, (_, index) => {
     const date = `2026-11-${String(16 + index).padStart(2, "0")}`;
     return note({ id: `dec-${"abcdefghjk"[index]}${"2m4n6p8q".slice(0, 7)}`, type: "decision", title: `Synthetic decision ${index + 1}`, created: date, date });
@@ -239,12 +257,12 @@ test("missed week: four weeks since the last review, the 8 most consequential ch
   assert.equal(week5.record!.code, 0, week5.record!.stdout);
   const planned = week5.plan.json.data;
   assert.equal(planned.window.from, NOW, "from the last success");
-  assert.equal(planned.changes.filter((change: any) => change.bullet).length, 8);
+  assert.equal(planned.changes.filter((change: any) => change.bullet).length, 6);
   const body = await readText(root, "reports/2026-12-07-weekly-review.md");
-  assert.match(body, /\n28 days since the last review\. Covered: 10 changes from 0 meetings and 0 sources\. 2 not shown: 2 decided\./);
-  assert.equal(section(body, "What changed").trim().split("\n").length, 8);
+  assert.match(body, /\n28 days since the last review\. Covered: 10 changes from 0 meetings and 0 sources\. 4 not shown: 4 decided\./);
+  assert.equal(section(body, "Your week").split("**Highlights**\n")[1]!.split("\n\n")[0]!.trim().split("\n").length, 6);
   assert.match(body, new RegExp(`Covered: ${planned.changes.length} changes`));
-  assert.match(body, new RegExp(`${planned.changes.length - 8} not shown`));
+  assert.match(body, new RegExp(`${planned.changes.length - 6} not shown`));
 });
 
 test("partial: clusters beyond the budget are omitted honestly, the limits hold, and next week judges them first", async (context) => {
@@ -267,7 +285,7 @@ test("partial: clusters beyond the budget are omitted honestly, the limits hold,
   const fm = await frontmatter(root, REPORT);
   assert.deepEqual([fm.coverage, fm.omitted.clusters], ["partial", 1]);
   assert.match(await readText(root, REPORT), /Partial: /);
-  assert.ok(selection.counts.decisions <= 5 && selection.counts.new_items <= 5 && selection.counts.targets <= 5);
+  assert.ok(selection.counts.actions <= 5 && selection.counts.doubtful <= 10 && selection.counts.targets <= 5);
   assert.deepEqual((await state(root)).carry.clusters, [left]);
 
   const week2 = await plan(root, busySnapshot(NEXT), NEXT);
@@ -288,32 +306,37 @@ test("the boundary day: a change dated on the last review's day is reported once
   assert.equal(keys.includes("decided:dec-9q3t6w2y"), true, "not missed");
 });
 
-test("record checks the shape: a bullet without its label, a dead link, too many words, and an unattended publish without settings.publish auto write nothing", async (context) => {
+test("record checks the shape: a highlight without its label, a dead link, too many words, too many highlights, and an unattended publish without settings.publish auto write nothing", async (context) => {
   const root = await busy(context);
   const prepared = await prepare(root, busySnapshot(), NOW, { judge });
   const before = await tree(root);
-  const base = { input_hash: prepared.plan.json.data.input_hash, proposals: prepared.proposals, task_analysis: ["- No overdue, stalled or blocked work."], mode: "attended", publish: false, failures: [], notes_read: 1, seconds: 5 };
+  const base = { input_hash: prepared.plan.json.data.input_hash, proposals: prepared.proposals, in_short: "One decision this week.", focus_first: ["- No overdue, stalled or blocked work."], cleaned: [], mode: "attended", publish: false, failures: [], notes_read: 1, seconds: 5 };
   const ok = "- **Decided:** Launch Harbor app in March ([decision](../knowledge/decisions/dec-2p9f6h1r.md), 4 Nov).";
 
-  const noLabel = await record(root, { ...base, what_changed: ["- Launch Harbor app in March ([decision](../knowledge/decisions/dec-2p9f6h1r.md), 4 Nov)."] }, NOW);
+  const noLabel = await record(root, { ...base, highlights: ["- Launch Harbor app in March ([decision](../knowledge/decisions/dec-2p9f6h1r.md), 4 Nov)."] }, NOW);
   assert.equal(noLabel.json.error.code, "INPUT_INVALID");
-  const dead = await record(root, { ...base, what_changed: ["- **Decided:** Launch Harbor app in March ([decision](../knowledge/decisions/dec-0000zzzz.md), 4 Nov)."] }, NOW);
+  const dead = await record(root, { ...base, highlights: ["- **Decided:** Launch Harbor app in March ([decision](../knowledge/decisions/dec-0000zzzz.md), 4 Nov)."] }, NOW);
   assert.equal(dead.json.error.code, "INPUT_INVALID", dead.stdout);
   assert.match(dead.json.error.message, /dec-0000zzzz/);
-  const long = await record(root, { ...base, what_changed: [ok, ...Array.from({ length: 7 }, () => `- **Open:** ${"word ".repeat(70).trim()} ([q](../knowledge/questions/que-7h3m9q2c.md), 5 Nov).`)] }, NOW);
+  const tooMany = await record(root, { ...base, highlights: Array.from({ length: 7 }, () => ok) }, NOW);
+  assert.equal(tooMany.json.error.code, "INPUT_INVALID", tooMany.stdout);
+  const long = await record(root, { ...base, highlights: [ok, ...Array.from({ length: 5 }, () => `- **Open:** ${"word ".repeat(90).trim()} ([q](../knowledge/questions/que-7h3m9q2c.md), 5 Nov).`)] }, NOW);
   assert.equal(long.json.error.code, "WEEKLY_TOO_LONG", long.stdout);
   assert.equal(long.code, 4);
+  // A cleaned entry must be a proposal the clean-up applied (cli.md §5.34).
+  const notCleaned = await record(root, { ...base, highlights: [ok], cleaned: [{ proposal: prepared.proposals[0]!.proposal, tidy: "pair_half", title: "Add the pair", commit: "op-00000000" }] }, NOW);
+  assert.equal(notCleaned.json.error.code, "INPUT_INVALID", notCleaned.stdout);
   // Embedded, the plan and its selection must belong together: a selection made from another plan is refused.
   const { input_hash: _hash, ...embeddedBase } = base;
-  const otherPlan = await record(root, { ...embeddedBase, plan: prepared.plan.json.data, selection: { ...prepared.select!.json.data, input_hash: `sha256:${"0".repeat(64)}` }, what_changed: [ok] }, NOW);
+  const otherPlan = await record(root, { ...embeddedBase, plan: prepared.plan.json.data, selection: { ...prepared.select!.json.data, input_hash: `sha256:${"0".repeat(64)}` }, highlights: [ok] }, NOW);
   assert.equal(otherPlan.json.error.code, "INPUT_INVALID", otherPlan.stdout);
   assert.ok(otherPlan.json.error.details.some((detail: any) => detail.pointer === "/selection/input_hash"), JSON.stringify(otherPlan.json.error.details));
   // An unattended run publishes only with settings.publish: auto (weekly-review.md §9.3, cli.md §5.34); ask is the default.
-  const asked = await record(root, { ...base, what_changed: [ok], mode: "unattended", publish: true }, NOW);
+  const asked = await record(root, { ...base, highlights: [ok], mode: "unattended", publish: true }, NOW);
   assert.equal(asked.json.error.code, "INPUT_INVALID", asked.stdout);
   assert.ok(asked.json.error.details.some((detail: any) => detail.pointer === "/publish" && /settings\.publish/.test(detail.message)), JSON.stringify(asked.json.error.details));
   await configure(root, (config) => { config.settings = { ...config.settings, publish: "ask" }; });
-  const askedExplicitly = await record(root, { ...base, what_changed: [ok], mode: "unattended", publish: true }, NOW);
+  const askedExplicitly = await record(root, { ...base, highlights: [ok], mode: "unattended", publish: true }, NOW);
   assert.equal(askedExplicitly.json.error.code, "INPUT_INVALID", askedExplicitly.stdout);
   const brainJson = (lines: string[]) => lines.filter((line) => !line.startsWith("brain.json "));
   assert.deepEqual(brainJson(await tree(root)), brainJson(before), "nothing written");
@@ -376,11 +399,12 @@ test("publishing: a busy week is one Inbox row, Kind Weekly, with Documents and 
     "Brain Status": { type: "select", value: "New" },
     "Brain ID": { type: "rich_text", value: id },
   });
-  assert.match(first.body, new RegExp(`^1\\. Contradiction · Lena Hart: role · now leads design\\? → ${IN_SESSION.replace(/[*]/g, "\\*")}$`, "m"));
-  assert.match(first.body, /^2\. Overdue · "Send the logo proposals" · .+ → \[the task\]\(https:\/\/www\.notion\.so\/c0000000000040008000000000000001\)$/m);
+  // The row (§3.3, §15.5): an Action takes a Your note line; a doubtful item the Show the change toggle and Your note; the session's items are counted.
+  assert.match(first.body, /^- \[ \] A1 · Set status of Pinecrest signage to "On Hold" \(.+\)\n\tYour note:$/m);
+  assert.match(first.body, /^- \[ \] C1 · Set archived of Garden to true · recommended: yes\n\t<details>\n\t<summary>Show the change<\/summary>\n\t\tarchived: false → true\n\t<\/details>\n\tYour note:$/m);
+  assert.match(first.body, /^\*\*Waiting for you:\*\* 1 decision waits in the session: say \*what needs my decision\* in Claude Code or Codex\.$/m);
   assert.equal(/_proposals\/|Review/.test(first.body), false, "no brain path and no Review row in Notion");
-  assert.match(await readText(root, REPORT), /^1\. Contradiction · .+ → \[decide in the session\]\(\.\.\/_proposals\/[^)]+\)$/m, "in Git, the item links its proposal file");
-  assert.equal(/\bReview\b/.test((await readText(root, REPORT)).split("## What needs your decision")[1]!), false);
+  assert.match(await readText(root, REPORT), /^- \[ \] C1 · .+ · \[Show the change\]\(\.\.\/_proposals\/[^)]+\)$/m, "in Git, the item links its proposal file");
 
   // --changed selects it too, whatever the modules; nothing else is a Documents row.
   const changed = await renderChanged(root);
@@ -410,23 +434,27 @@ test("publishing: a same-week rerun updates the week's Inbox row in place, and t
   const rerun = await runWeek(root, busySnapshot(later), later, { judge, mode: "unattended", publish: true });
   assert.equal(rerun.record!.code, 0, rerun.record!.stdout);
   assert.equal(rerun.record!.json.data.id, id);
-  const updated = (await renderChanged(root, later)).items.filter((item: any) => item.id === id);
+  // A Weekly row is updated only with the user's ticks and notes read just before (cli.md §5.34, --row-state).
+  const blind = await renderChanged(root, later);
+  assert.deepEqual([blind.items.some((item: any) => item.id === id), blind.skipped.filter((entry: any) => entry.id === id).map((entry: any) => entry.reason)], [false, ["ROW_STATE_REQUIRED"]]);
+  const rowState = await inputFile(root, [{ page: PAGE, items: [{ label: "A1", ticked: true, note: "" }, { label: "C1", ticked: false, note: "Keep it for spring" }] }]);
+  const updated = (await brain(["sync", "render", "--changed", "--row-state", rowState, "--brain", root, "--json", "--now", later])).json.data.items.filter((item: any) => item.id === id);
   assert.equal(updated.length, 1, "one row for the week");
   assert.deepEqual([updated[0].database, updated[0].action, updated[0].page_id], ["inbox", "update", PAGE]);
   assert.match(updated[0].body, /Move the Harbor demo to Friday/, "the new report goes out");
+  assert.match(updated[0].body, /^- \[x\] A1 · /m, "the tick is kept");
+  assert.match(updated[0].body, /^\tYour note: Keep it for spring$/m, "the note is kept");
   assert.deepEqual(Object.keys(updated[0].properties).sort(), ["Last Synced"], "Name, Kind, Brain Status and Brain ID are unchanged");
   assert.equal((await recordPage(root, id, updated[0].published, later)).code, 0);
 
-  // Each proposal its items name is decided in the session; the task item doesn't hold the row open.
-  const named = [...(await readText(root, REPORT)).matchAll(/\(\.\.\/(_proposals\/[^)]+)\)/g)].map((match) => match[1]!);
-  assert.ok(named.length >= 2, JSON.stringify(named));
-  assert.match(await readText(root, REPORT), /→ \[the task\]\(/, "a task item stays");
-  const ids = await Promise.all(named.map(async (path) => (await frontmatter(root, path)).id as string));
+  // Each row item is decided (here in the session); the session's own items don't hold the row open (§15.4).
+  const ids = Object.entries((await state(root)).weeks["2026-W46"].row).filter(([label]) => !label.startsWith("U")).map(([, slot]: [string, any]) => slot.proposal as string);
+  assert.equal(ids.length, 2, JSON.stringify(ids));
   for (const [index, proposal] of ids.entries()) {
     const decided = await decide(root, proposal, "reject", "2026-11-10T09:00:00Z");
     assert.equal(decided.code, 0, decided.stdout);
     const row = (await renderChanged(root, "2026-11-10T09:30:00Z")).items.filter((item: any) => item.id === id);
-    if (index < ids.length - 1) { assert.deepEqual(row, [], "still New while a decision waits"); continue; }
+    if (index < ids.length - 1) { assert.deepEqual(row, [], "still New while an item waits"); continue; }
     assert.equal(row.length, 1);
     assert.deepEqual([row[0].action, row[0].properties["Brain Status"], row[0].body], ["update", { type: "select", value: "Done" }, null]);
   }
@@ -436,7 +464,7 @@ test("publishing: a week whose decisions are already terminal at its first publi
   const root = await inboxOnly(context);
   const week = await runWeek(root, busySnapshot(), NOW, { judge, mode: "unattended", publish: true });
   assert.equal(week.record!.code, 0, week.record!.stdout);
-  for (const proposal of week.proposals) assert.equal((await decide(root, proposal, "reject", "2026-11-09T09:00:00Z")).code, 0);
+  for (const [, slot] of Object.entries((await state(root)).weeks["2026-W46"].row) as Array<[string, any]>) assert.equal((await decide(root, slot.proposal, "reject", "2026-11-09T09:00:00Z")).code, 0);
   const first = (await renderIds(root, week.record!.json.data.id)).items[0];
   assert.deepEqual([first.action, first.properties["Brain Status"]], ["create", { type: "select", value: "Done" }]);
 });
@@ -465,7 +493,7 @@ test("status: unattended.weekly from the log line and the attempt marker, weekly
   assert.equal((await runWeek(root, busySnapshot(), NOW, { judge })).record!.code, 0);
   await writeFile(join(root, "_weekly/attempt.json"), JSON.stringify({ week: "2026-W47", started: "2026-11-16T08:00:00Z", mode: "unattended" }));
   const fresh = (await brain(["status", "--brain", root, "--json", "--now", "2026-11-16T09:00:00Z"])).json.data.unattended.weekly;
-  assert.deepEqual(fresh, { last: NOW, week: "2026-W46", coverage: "complete", decisions: 4, failed: 0, failures: [], report: REPORT, unfinished: null });
+  assert.deepEqual(fresh, { last: NOW, week: "2026-W46", coverage: "complete", decisions: 2, actions: 1, doubtful: 1, cleaned: 0, failed: 0, failures: [], report: REPORT, unfinished: null });
   const stuck = (await brain(["status", "--brain", root, "--json", "--now", "2026-11-16T10:30:00Z"])).json.data.unattended.weekly;
   assert.deepEqual(stuck.unfinished, { week: "2026-W47", started: "2026-11-16T08:00:00Z", mode: "unattended" });
   assert.match(await readFile(join(root, ".gitignore"), "utf8"), /^_weekly\/attempt\.json$/m, "the marker is never committed");
@@ -545,7 +573,7 @@ test("the hand-off files: plan prints a summary and saves the plan beside the sn
   assert.equal(planned.stdout.includes('"clusters":['), false, "the plan itself is not printed");
   assert.equal(dirname(summary.file), folder, "beside the snapshot, outside the brain");
   assert.equal(summary.file.startsWith(`${root}/`), false);
-  assert.deepEqual(summary.counts, { changes: 4, findings: planned.json.data.findings.length, findings_shown: planned.json.data.findings.filter((finding: any) => finding.repetition.show).length, clusters: 1, clusters_left: 0, corrections: 0, pending: 0, earlier_open: 0 });
+  assert.deepEqual(summary.counts, { changes: 4, findings: planned.json.data.findings.length, findings_shown: planned.json.data.findings.filter((finding: any) => finding.repetition.show).length, clusters: 1, clusters_left: 0, corrections: 0, pending: 0, earlier_open: 0, cleanup: 0, done: 0, carry: 0 });
   const status = (await brain(["status", "--brain", root, "--json"], homeOf(root))).json.data;
   assert.equal(summary.file, status.weekly_snapshot.replace(/\.json$/, ".plan.json"));
 
@@ -564,7 +592,7 @@ test("the hand-off files: plan prints a summary and saves the plan beside the sn
   // A new plan drops the selection of the earlier one.
   await plan(root, busySnapshot(), NOW);
   await assert.rejects(readFile(selectionFile));
-  const noSelection = await record(root, { input_hash: summary.input_hash, proposals: [], what_changed: ["- Nothing new this week."], task_analysis: ["- No overdue, stalled or blocked work."], mode: "attended", publish: false, failures: [], notes_read: 0, seconds: 1 }, NOW);
+  const noSelection = await record(root, { input_hash: summary.input_hash, proposals: [], in_short: "Nothing new in your notes this week.", highlights: ["- Nothing new this week."], focus_first: ["- No overdue, stalled or blocked work."], cleaned: [], mode: "attended", publish: false, failures: [], notes_read: 0, seconds: 1 }, NOW);
   assert.equal(noSelection.json.error.code, "INPUT_INVALID");
   assert.match(noSelection.json.error.message, /no saved selection/);
 

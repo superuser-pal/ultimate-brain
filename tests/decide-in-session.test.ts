@@ -152,7 +152,7 @@ test("a mixed waiting list comes in 0096 §5's order: changes, then answers, the
     [syncPilot!.id, 3], [syncHiring!.id, 3], [kickoff!.id, 3],
     [link!.id, 4], [FIXTURE_PENDING, 4],
   ], "the sync's two parts are listed together, in the place of its first");
-  assert.deepEqual(out.counts, { waiting: 7, held: 0 });
+  assert.deepEqual(out.counts, { waiting: 7, held: 0, in_weekly_row: 0 });
   // The skill asks them in rounds of at most five, a source's parts counting as one question (capture-and-review §7.5): here the first round
   // is the change, the answer, the sync, the kickoff and the link; "more" asks the fixture's own addition.
 });

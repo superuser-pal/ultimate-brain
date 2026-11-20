@@ -7,12 +7,13 @@ import { reflectCandidates, reflectionNotes } from "./reflect.ts";
 import type { Loaded } from "./suppressions.ts";
 import { formatTimestamp } from "./time.ts";
 import { computeClaims, type Claim, type Cursor, type TitleChange } from "./weekly-corrections.ts";
-import { addDays, hashOf, isoWeek, localDate, weeklySettings, ZERO, type Counts, type WeeklyState } from "./weekly-state.ts";
+import { cleanupSource, type TidyItem, type TidyPlan } from "./tidy.ts";
+import { addDays, hashOf, isoWeek, localDate, weeklySettings, ZERO, type Counts, type OldCounts, type WeeklyState } from "./weekly-state.ts";
 
 // `brain weekly plan` (spec/cli.md §5.34; spec/weekly-review.md §1 step 3, §4, §7, §9.1, §10). Writes nothing.
 
 const DAY_MS = 86_400_000;
-const BULLETS = 8;
+const BULLETS = 6; // Highlights holds at most 6 (weekly-review.md §3.2, §4.3)
 const WEIGHT = { decided: 4, changed: 3, open: 2, answered: 2, next: 1 } as const;
 type ChangeKind = keyof typeof WEIGHT;
 const TASK_SIGNALS = new Set(["task_overdue", "task_stalled", "task_no_project"]);
@@ -37,12 +38,26 @@ export interface PlanData {
   clusters: Array<Record<string, unknown> & { key: string; carried: boolean }>;
   clusters_left: string[];
   corrections: Claim[];
-  pending: Array<{ key: string; proposal: string }>;
-  week_state: { counts: Counts; items: string[] };
+  pending: Array<{ key: string; proposal: string; weekly: string | null }>;
+  week_state: { counts: Counts | OldCounts; items: string[] };
+  /** 0.17.0 (§15): the run's source for the proposals select words, the mechanical items (§15.2) and whether they are applied alone. */
+  source: string;
+  cleanup: TidyItem[];
+  cleanup_auto: boolean;
+  /** Done this week (§3.2): the snapshot's tasks and projects finished in the window, newest first. */
+  done: DoneEntry[];
+  /** The pending Actions and doubtful items of earlier rows never set Ready, to carry (§15.6), in their rows' order. */
+  carry: CarryEntry[];
   earlier_open: number;
   budget: { minutes: number; max_judged: number };
   input_hash: string;
   quiet: boolean;
+}
+
+export interface DoneEntry { kind: "task" | "project"; title: string; project: string | null; date: string; url: string }
+export interface CarryEntry {
+  week: string; label: string; part: "A" | "C"; proposal: string; key: string; category: string;
+  stream: "work" | "knowledge" | "cleanup"; kind: string; subject: string; decide: string; targets: string[];
 }
 
 export const taskUrl = (page: string): string => `https://www.notion.so/${page.replaceAll("-", "")}`;
@@ -123,6 +138,8 @@ export interface PlanInput {
   now: Date;
   /** The titles changed since the cursor, read from Git by the caller (weekly-review.md §8.1); none when absent. */
   titles?: readonly TitleChange[];
+  /** The mechanical items now (`brain cleanup plan`, §15.2), found by the caller; none when absent. */
+  cleanup?: TidyPlan;
 }
 
 /** The correction cursor a plan reads (weekly-review.md §8.1): as this week's first report found it on a rerun, else the state's. */
@@ -255,13 +272,13 @@ export function computePlan(input: PlanInput): PlanData {
 
   // ---- Reflection clusters in the window, carried ones first (§4.1, §10)
   const candidates = reflectCandidates(notes, input.loaded, now, Number.MAX_SAFE_INTEGER, 0);
-  const carry = new Set(state?.carry.clusters ?? []);
+  const carriedClusters = new Set(state?.carry.clusters ?? []);
   const clusterDates = (cluster: Record<string, unknown>): string[] => [
     ...list(cluster.notes).filter(isRecord).map((member) => dateOf(member.updated)),
     ...list(cluster.evidence).filter(isRecord).map((item) => dateOf(item.date)),
   ].filter((date): date is string => date !== null);
-  const carried = candidates.clusters.filter((cluster) => carry.has(cluster.key));
-  const windowed = candidates.clusters.filter((cluster) => !carry.has(cluster.key) && clusterDates(cluster).some(datedIn));
+  const carried = candidates.clusters.filter((cluster) => carriedClusters.has(cluster.key));
+  const windowed = candidates.clusters.filter((cluster) => !carriedClusters.has(cluster.key) && clusterDates(cluster).some(datedIn));
   const ordered = [...carried.map((cluster) => ({ ...cluster, carried: true })), ...windowed.map((cluster) => ({ ...cluster, carried: false }))];
   const clusters = ordered.slice(0, settings.max_judged);
   const clusters_left = ordered.slice(settings.max_judged).map((cluster) => cluster.key);
@@ -272,10 +289,54 @@ export function computePlan(input: PlanInput): PlanData {
   // ---- This week, pending proposals and the earlier ones still open (§5.1, §7)
   const thisWeek = state?.weeks[week];
   const week_state = { counts: thisWeek?.counts ?? { ...ZERO }, items: thisWeek?.items ?? [] };
-  const pending = [...pendingBy].map(([key, proposal]) => ({ key, proposal })).sort((a, b) => compareCodePoints(a.key, b.key));
+  const weeklyOf = new Map(proposals.map((proposal) => [proposal.id, typeof proposal.attributes.weekly === "string" ? proposal.attributes.weekly : null]));
+  const pending = [...pendingBy].map(([key, proposal]) => ({ key, proposal, weekly: weeklyOf.get(proposal) ?? null })).sort((a, b) => compareCodePoints(a.key, b.key));
   const shownKeys = new Set((state?.shown ?? []).map((entry) => entry.key));
   const showing = new Set(findings.filter((finding) => finding.repetition.show).map((finding) => finding.key));
   const earlier_open = pending.filter((entry) => shownKeys.has(entry.key) && !showing.has(entry.key) && !week_state.items.includes(entry.key)).length;
+
+  // ---- Done this week (§3.2): tasks entered the done group and projects set Done, by last_edited in the window
+  const done: DoneEntry[] = [];
+  if (live) {
+    const projectTitle = new Map((snapshot.projects ?? []).map((row) => [row.page_id, row.title]));
+    if (tasksOn) for (const task of snapshot.tasks ?? []) {
+      if (stateOf(task.status) !== "done" || !datedIn(dateOf(task.last_edited))) continue;
+      done.push({ kind: "task", title: task.title, project: task.projects.map((page) => projectTitle.get(page)).find((title) => title !== undefined) ?? null, date: dateOf(task.last_edited)!, url: taskUrl(task.page_id) });
+    }
+    for (const project of snapshot.projects ?? []) {
+      if (project.status !== "Done" || project.archived || !datedIn(dateOf(project.last_edited))) continue;
+      done.push({ kind: "project", title: project.title, project: null, date: dateOf(project.last_edited)!, url: taskUrl(project.page_id) });
+    }
+    done.sort((a, b) => compareCodePoints(b.date, a.date) || compareCodePoints(a.title, b.title));
+  }
+
+  // ---- Carry (§15.6): the pending A and C items of an earlier row whose Brain Status is still New (or that was never published)
+  const carry: CarryEntry[] = [];
+  const statuses = new Map((snapshot.weekly_rows ?? []).map((row) => [row.week, row.brain_status]));
+  // A finding the user dismissed since stays out (§7): its item is not carried while the dismissal stands.
+  const dismissed = new Set(input.dismissals.filter((entry) => Date.parse(entry.until) > input.now.getTime()).map((entry) => entry.key));
+  const noteById = new Map(notes.map((note) => [note.id, note]));
+  if (live) for (const [earlier, entry] of Object.entries(state?.weeks ?? {}).sort(([a], [b]) => compareCodePoints(a, b))) {
+    if (compareCodePoints(earlier, week) >= 0 || entry.row === undefined || (entry.carried_to ?? null) !== null) continue;
+    const report = noteById.get(entry.report);
+    const status = statuses.get(earlier) ?? (report?.attributes.notion === undefined ? "New" : undefined);
+    if (status !== "New") continue;
+    const labels = Object.keys(entry.row).filter((label) => label.startsWith("A") || label.startsWith("C")).sort((a, b) => a[0]!.localeCompare(b[0]!) || Number(a.slice(1)) - Number(b.slice(1)));
+    for (const label of labels) {
+      const proposal = noteById.get(entry.row[label]!.proposal);
+      const a = proposal?.attributes;
+      if (proposal === undefined || a!.status !== "pending" || a!.weekly !== earlier || (typeof a!.finding === "string" && dismissed.has(a!.finding))) continue;
+      const key = String(a!.finding ?? a!.fingerprint ?? `proposal:${proposal.id}`);
+      const target = typeof a!.target === "string" ? a!.target : null;
+      carry.push({
+        week: earlier, label, part: label[0] as "A" | "C", proposal: proposal.id, key, category: carriedCategory(a!, label[0] as "A" | "C"),
+        stream: typeof a!.tidy === "string" ? "cleanup" : typeof a!.finding === "string" ? "work" : "knowledge", kind: label.startsWith("A") ? "Action" : "Clean-up",
+        subject: String(a!.title ?? proposal.id), decide: `${String(a!.title ?? proposal.id)}?`, targets: target === null ? [] : [target],
+      });
+    }
+  }
+  const cleanup = input.cleanup?.items ?? [];
+  const cleanupSettings = isRecord(config.settings) && isRecord(config.settings.cleanup) ? config.settings.cleanup : {};
 
   // ---- input_hash and quiet (§9.1)
   const input_hash = hashOf({
@@ -284,12 +345,14 @@ export function computePlan(input: PlanInput): PlanData {
     clusters: ordered.map((cluster) => ({ key: cluster.key, notes: list(cluster.notes).filter(isRecord).map((member) => [member.id, member.updated]), evidence: list((cluster as Record<string, unknown>).evidence).filter(isRecord).map((item) => [item.id, item.date]) })),
     blocked: blocked.map((subject) => subject.key),
     corrections: corrections.map((claim) => ({ claim: claim.claim, old: claim.old, new: claim.new, targets: claim.targets.map(({ note, field, line, before_hash }) => ({ note, field, line, before_hash })) })),
+    ...(cleanup.length + done.length + carry.length === 0 ? {} : { cleanup: cleanup.map((item) => item.fingerprint), done: done.map((entry) => [entry.url, entry.date]), carry: carry.map((entry) => entry.proposal) }),
   });
   // §7 rule 4: an unresolved contradiction on a reviewed note stays visible every week, so it holds off a quiet week too.
   const critical = criticalPending(pending, new Map([...proposals, ...eligible].map((note) => [note.id, note])));
   // A correction target already waiting for a decision is no queued check: it doesn't hold off a quiet week (§9.1).
   const queuedTargets = corrections.some((claim) => claim.targets.some((target) => target.pending === null));
-  const nothing = changes.length === 0 && !findings.some((finding) => finding.repetition.show) && ordered.length === 0 && critical.length === 0 && !queuedTargets;
+  const nothing = changes.length === 0 && !findings.some((finding) => finding.repetition.show) && ordered.length === 0 && critical.length === 0 && !queuedTargets
+    && cleanup.length === 0 && carry.length === 0 && done.length === 0;
   // A finding that can only be in Task analysis is "shown" once a report listed it (record keeps it in `shown`), so it doesn't hold off a quiet week.
   const unchanged = thisWeek !== undefined && thisWeek.input_hash === input_hash;
   const quiet = live && (nothing || unchanged);
@@ -300,7 +363,15 @@ export function computePlan(input: PlanInput): PlanData {
     report: thisWeek === undefined ? null : { id: thisWeek.report, path: thisWeek.path },
     changes, inputs, findings, skipped_signals: result.skipped_signals, task_analysis, clusters, clusters_left, corrections,
     pending, week_state, earlier_open, budget: { minutes: settings.minutes, max_judged: settings.max_judged }, input_hash, quiet,
+    source: cleanupSource(now), cleanup, cleanup_auto: cleanupSettings.auto !== "off", done, carry,
   };
+}
+
+/** The category of a carried item (§15.6), from its proposal: what kind of attention it asked for when first offered. */
+function carriedCategory(a: Record<string, unknown>, part: "A" | "C"): string {
+  if (typeof a.tidy === "string") return "cleanup";
+  const byKind: Record<string, string> = { merge: "duplicate", update_fact: "stale", add_to_note: "promotion", new_item: "theme", new_task: "no next step" };
+  return byKind[String(a.kind)] ?? (part === "A" ? "stalled" : "structure");
 }
 
 /**
