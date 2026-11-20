@@ -61,3 +61,15 @@ Left for later (not drop-folder rules):
 - `why` for an `add_to_note` that describes a document has no sentence to quote.
 - No rule on when a document detail deserves a new fact key (the extra output above).
 - SKILL.md picks the mode from `notion.configured` alone, while sources.md also covers "Notion tools not available in this session".
+
+## 2026-11-20 · 03-capture, three runs (CC-366), Claude Code, `inbox` configured, Notion tools unavailable
+
+The author's answer to CC-365's finding: the case gets an Inbox (README), and brain-ingest's "A capture needs Notion" rule is unchanged. Three blind runs with skills 1.11.3 (claude-opus-5-5), one brain each; the run evidence is kept outside this repo (0083 §6).
+
+**03-capture met expected.md 3 of 3 times:**
+- The same source key and kind each time: the case's `notion:` key (as expected.md has it), `capture`, in `sources/notion/`.
+- One learned Document on reusing the design system for pitches, in the Clients area (the concept note of 0.9.0 and earlier, 0071); one run also linked it to the Acme org.
+- Each said the Inbox row is set to Done (formerly Processed) at the next sync with Notion. No run asked whether to take it in without Notion.
+- Lint: only the fixture's `product-file` error, there before each run.
+
+Difference: two runs dated the source from the row's `last_edited_time`; one used today, because that date is in the future, and said so.
