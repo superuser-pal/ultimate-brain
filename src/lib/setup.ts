@@ -36,8 +36,6 @@ const ORDER: ReadonlyArray<readonly [item: string, what: string]> = [
 ];
 /** First value's four checks, in a `first-value` line's keys (spec/setup.md §4.1, §10). */
 const FIRST_VALUE_CHECKS = ["tasks", "report", "organised", "answer"] as const;
-/** Left out of the count and of `next` without Notion AI (spec/setup.md §13). */
-const NEEDS_NOTION_AI = new Set(["minutes-prompt", "brain-assistant"]);
 
 export interface SetupChecks {
   git_identity: boolean;
@@ -109,11 +107,11 @@ export async function setupStatus(root: string, config: Record<string, unknown>,
     if (step === "first-value") return [step, line.pairs.result === "done" && firstValuePasses(firstValue!, tasksOff) ? line.timestamp : null];
     return [step, line.pairs.result === "done" || line.pairs.result === "declined" ? line.timestamp : null];
   })) as SetupStatus["recorded"];
-  const notionAi = latest.get("prerequisites")?.pairs.notion_ai !== "no";
+  const taken = stepsTaken(latest.get("prerequisites")?.pairs);
 
   const doneOf = (item: string): boolean => item in checks ? checks[item as keyof SetupChecks] : recorded[item as keyof SetupStatus["recorded"]] !== null;
-  const items = ORDER.map(([item]) => item).filter((item) => notionAi || !NEEDS_NOTION_AI.has(item));
-  const required = [...Object.keys(checks), "notion-mcp", ...(notionAi ? ["minutes-prompt", "brain-assistant"] : [])];
+  const items = ORDER.map(([item]) => item).filter((item) => taken[item as keyof typeof taken] !== false);
+  const required = [...Object.keys(checks), "notion-mcp", ...(["minutes-prompt", "brain-assistant"] as const).filter((step) => taken[step])];
 
   const notion = isRecord(config.notion) ? config.notion : {};
   return {
@@ -127,6 +125,19 @@ export async function setupStatus(root: string, config: Record<string, unknown>,
     finished: lines.some((line) => line.pairs.step === "finished") || (lines.length === 0 && checks.databases && checks.owner_person),
     drop_folder: await dropFolderProposal(root, home ?? homedir(), env),
   };
+}
+
+/**
+ * Which of steps 4a and 4b the latest `prerequisites` line takes (spec/setup.md §13, cli.md §5.2). From 0.17.0 its `credits` and `meetings`
+ * keys decide: the minutes prompt with `notion-ai` among the meetings, Brain Assistant with `credits=yes`. A line without `credits` (before
+ * 0.17.0) takes both unless it has `notion_ai=no`; with no line, both are taken.
+ */
+export function stepsTaken(pairs: Readonly<Record<string, string>> | undefined): { "minutes-prompt": boolean; "brain-assistant": boolean } {
+  if (pairs?.credits === undefined) {
+    const notionAi = pairs?.notion_ai !== "no";
+    return { "minutes-prompt": notionAi, "brain-assistant": notionAi };
+  }
+  return { "minutes-prompt": (pairs.meetings ?? "").split(",").map((entry) => entry.trim()).includes("notion-ai"), "brain-assistant": pairs.credits === "yes" };
 }
 
 /** The first human line, shown only while setup is unfinished (cli.md §5.2); null once it is finished. */
