@@ -298,7 +298,7 @@ test("codex: the exec command with its sandbox, approvals and network, no FOLDER
   assert.deepEqual(installed.json.warnings, [], "trust changes nothing for a scheduled Codex run");
   assert.deepEqual(await settingOf(w), { runner: "system", agent: "codex", model: CODEX_MODEL, catch_up: { at: ["07:30"] }, weekly_review: "off" });
   const plist = await readFile(installed.json.data.path, "utf8");
-  assert.match(plist, /<string>[^<]*\/codex<\/string>\s*<string>exec<\/string>\s*<string>--model<\/string>\s*<string>gpt-5\.2-codex<\/string>\s*<string>--sandbox<\/string>\s*<string>workspace-write<\/string>/);
+  assert.match(plist, /<string>[^<]*[\\/]codex<\/string>\s*<string>exec<\/string>\s*<string>--model<\/string>\s*<string>gpt-5\.2-codex<\/string>\s*<string>--sandbox<\/string>\s*<string>workspace-write<\/string>/);
 
   const weekly = await schedule(w, ["install", "weekly-review"]);
   assert.equal(weekly.code, 0, JSON.stringify(weekly.json));
@@ -455,7 +455,7 @@ test("elsewhere install still writes settings.schedule and returns the cron line
   const installed = await schedule(w, ["install", "catch-up", "--agent", "codex", "--model", CODEX_MODEL, "--at", "07:00", "--days", "sat,sun"]);
   assert.equal(installed.code, 0, JSON.stringify(installed.json));
   assert.deepEqual([installed.json.data.path, installed.json.data.written, installed.json.data.setting_written], [null, false, true]);
-  assert.match(installed.json.data.cron[0], /^0 7 \* \* 6,0 mkdir -p "\$HOME\/\.ultimate-brain\/logs" && cd '.+' && PATH='.+' '.+\/codex' 'exec' '--model' 'gpt-5\.2-codex' '--sandbox' 'workspace-write' '-c' 'approval_policy=never' '-c' 'sandbox_workspace_write\.network_access=true' 'catch up unattended' >> "\$HOME\/\.ultimate-brain\/logs\/eu\.ultimate-brain\..+\.catch-up\.log" 2>&1$/);
+  assert.match(installed.json.data.cron[0], /^0 7 \* \* 6,0 mkdir -p "\$HOME\/\.ultimate-brain\/logs" && cd '.+' && PATH='.+' '.+[\\/]codex' 'exec' '--model' 'gpt-5\.2-codex' '--sandbox' 'workspace-write' '-c' 'approval_policy=never' '-c' 'sandbox_workspace_write\.network_access=true' 'catch up unattended' >> "\$HOME\/\.ultimate-brain\/logs\/eu\.ultimate-brain\..+\.catch-up\.log" 2>&1$/);
   const listed = await schedule(w, ["list"]);
   assert.deepEqual([listed.json.data.schedules, listed.json.warnings[0].code, listed.json.data.setting.agent], [[], "SCHEDULE_NOT_MANAGED", "codex"]);
   const removed = await schedule(w, ["remove", "catch-up"]);
