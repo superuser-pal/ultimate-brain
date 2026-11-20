@@ -31,6 +31,8 @@ try {
   for (const file of notionFiles) assert.ok(packedPaths.has(file), `npm pack does not list ${file}`);
   // The setup guide ships, so the skill and the reader see the same text (0078 §6, CC-192).
   assert.ok(packedPaths.has("docs/setup.md"), "npm pack does not list docs/setup.md");
+  // The guides for meetings from other tools and for ChatGPT ship with it (0101 §8, CC-329).
+  for (const file of ["docs/meetings-from-other-tools.md", "docs/chatgpt.md"]) assert.ok(packedPaths.has(file), `npm pack does not list ${file}`);
   await exec("npm", ["install", "--ignore-scripts", tarball], { cwd: temp });
   // HOME is a temp folder, so the user's global skill folders never show up as competing copies (spec/skills-delivery.md §5.2).
   const home = join(temp, "home");
