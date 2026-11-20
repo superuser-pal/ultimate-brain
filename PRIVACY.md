@@ -6,7 +6,7 @@ Ultimate Brain is published by Sentina. It has no server and collects nothing. T
 |---|---|---|
 | Your AI agent's provider (Anthropic, for Claude Code) | Everything the agent reads while it works: meeting minutes, documents, notes, Notion pages | Every session |
 | Notion | The pages your brain publishes: sources, Review rows, documents, tasks, reports | When you approve a publish, or automatically if you set publishing to auto |
-| Notion AI | The meeting transcripts and pages you run the minutes prompt or Brain Assistant on | Only when you use those features |
+| Notion AI | The meeting transcripts and pages you run the minutes prompt or Notion Brain Assistant on | Only when you use those features |
 | GitHub | A private repository that backs up your brain. Setup creates it | Each time your brain pushes: after each change, or when you say so, as your push setting says |
 
 Each of these processes your content under your own account and plan with that company. Read their terms before you put client material in your brain.
