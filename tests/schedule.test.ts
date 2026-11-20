@@ -265,6 +265,29 @@ test("the real Windows path registers the task through PowerShell, keeps a local
   await assert.rejects(readFile(path), "the copy is deleted");
 });
 
+test("on Windows an agent installed with npm is found as its .cmd shim, for claude and codex; an .exe in the same folder comes first", async (context) => {
+  const w = await world(context, "win32", { git: true });
+  await rm(join(w.bin, "claude.exe"));
+  await rm(join(w.bin, "codex.exe"));
+  // An earlier PATH folder holding only the shims, as npm's global folder does.
+  const npm = join(w.home, "npm");
+  await mkdir(npm);
+  for (const name of ["claude.cmd", "codex.cmd"]) {
+    await writeFile(join(npm, name), "@echo off\r\n");
+    await chmod(join(npm, name), 0o755);
+  }
+  const env = { ...w.env, PATH: [npm, w.bin].join(process.platform === "win32" ? ";" : ":") };
+  const claude = await schedule({ ...w, env }, ["install", "catch-up", "--model", CLAUDE_MODEL]);
+  assert.equal(claude.code, 0, JSON.stringify(claude.json));
+  assert.equal(claude.json.data.command[0], join(npm, "claude.cmd"));
+  assert.match(unxml(tag(await readFile(claude.json.data.path, "utf8"), "Arguments")[0]!), new RegExp(`&& "${join(npm, "claude.cmd").replaceAll("\\", "\\\\").replaceAll(".", "\\.")}" "-p" "catch up unattended"`));
+  const codex = await schedule({ ...w, env }, ["install", "catch-up", "--agent", "codex", "--model", CODEX_MODEL]);
+  assert.equal(codex.json.data.command[0], join(npm, "codex.cmd"));
+  await writeFile(join(npm, "codex.exe"), "");
+  await chmod(join(npm, "codex.exe"), 0o755);
+  assert.equal((await schedule({ ...w, env }, ["install", "catch-up"])).json.data.command[0], join(npm, "codex.exe"), "the .exe first");
+});
+
 // --- the agents -----------------------------------------------------------------------------------------
 
 test("codex: the exec command with its sandbox, approvals and network, no FOLDER_TRUST, NO_SPEND_CEILING on the weekly review, BRAIN_NOT_GIT outside Git", async (context) => {

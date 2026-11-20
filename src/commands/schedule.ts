@@ -218,7 +218,8 @@ async function plan(context: CommandContext, job: Job, slot: Slot, agent: Agent,
     throw new BrainError("SKILL_MISSING", `This brain has no ${JOBS[job].skill} skill for the ${job} job; run brain upgrade with a version that ships it`);
   }
   const windows = platformOf(env) === "win32";
-  const executable = await which(windows ? [`${agent}.exe`] : [agent], env.PATH);
+  // On Windows the .exe, else the .cmd shim an npm install writes, folder by folder (§5.21).
+  const executable = await which(windows ? [`${agent}.exe`, `${agent}.cmd`] : [agent], env.PATH);
   if (executable === null) {
     throw new BrainError("AGENT_NOT_FOUND", `No ${agent === "claude" ? "claude" : "codex"} on PATH: install ${agent === "claude" ? "Claude Code" : "Codex"}, then schedule again`);
   }
