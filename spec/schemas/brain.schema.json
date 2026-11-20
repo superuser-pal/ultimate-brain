@@ -102,9 +102,30 @@
           "default": "off"
         },
         "schedule": {
-          "description": "Guided setup's optional item: the user chose a scheduled catch-up (decision 0078, spec/setup.md §7). Absent: off.",
-          "enum": ["on", "off"],
-          "default": "off"
+          "description": "The schedule kept in the brain (decision 0110 §7 to §9, spec/schema.md §12, cli.md §5.21). The string on/off is the 0.14.0-0.16.x choice, still valid and read as before; from 0.17.0 an object with the runner, the agent, its pinned model and the two slots. Absent: not asked yet.",
+          "oneOf": [
+            { "enum": ["on", "off"] },
+            {
+              "type": "object",
+              "required": ["agent", "model"],
+              "additionalProperties": false,
+              "properties": {
+                "runner": { "description": "The computer's own scheduler (launchd, Task Scheduler, cron lines elsewhere). The only runner in 0.17.0.", "const": "system", "default": "system" },
+                "agent": { "description": "The agent every job runs: Claude Code (claude -p) or Codex (codex exec).", "enum": ["claude", "codex"] },
+                "model": { "description": "The model the runs pin, a full id of the agent's models, never a name that moves (decision 0051). For claude it starts with claude- (checked by brain schedule, cli.md §5.21).", "type": "string", "pattern": "^[a-z0-9][a-z0-9.\\-]*$" },
+                "catch_up": { "description": "The daily catch-up's slot, or off. Default when asked: 07:30 every day.", "$ref": "#/$defs/scheduleSlotOrOff" },
+                "weekly_review": { "description": "The weekly review's slot, or off. Default when asked: Monday 08:00.", "$ref": "#/$defs/scheduleSlotOrOff" }
+              }
+            }
+          ]
+        },
+        "cleanup": {
+          "description": "The weekly run's clean-up (decision 0110 §3, spec/weekly-review.md §15). Absent, or auto absent: on.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "auto": { "description": "on: mechanical items are applied alone, each in its own commit with an undo; off: they are offered as doubtful items.", "enum": ["on", "off"], "default": "on" }
+          }
         },
         "style": {
           "description": "How the agent talks to the user, in its own words (decision 0081, spec/schema.md §12, cli.md §5.3.1). A set dial overrides the preset's value. Absent or {}: Standard.",
@@ -424,6 +445,20 @@
     }
   },
   "$defs": {
+    "scheduleSlotOrOff": {
+      "oneOf": [
+        { "const": "off" },
+        {
+          "type": "object",
+          "required": ["at"],
+          "additionalProperties": false,
+          "properties": {
+            "at": { "description": "Local times, 24-hour HH:MM, sorted, without repeats.", "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$" } },
+            "days": { "description": "Days of the week, mon to sun in that order; absent: every day.", "type": "array", "minItems": 1, "uniqueItems": true, "items": { "enum": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"] } }
+          }
+        }
+      ]
+    },
     "dbId": {
       "description": "Notion database id; empty string until `brain connect-notion` fills it.",
       "type": "string",
