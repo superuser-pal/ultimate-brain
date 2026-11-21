@@ -16,12 +16,12 @@ The brain folder is where your knowledge is kept. Notion is where you read it, r
 | Node 22.6 or later | The `brain` CLI runs on it. | Yes |
 | Git, with your name and email | Every change the brain makes is a commit. Without a name and email, Git saves nothing. | Yes. Set them before `brain init` (Get started, step 1); `init` stops and tells you how when they're missing. |
 | Claude Code or Codex | The agent does the work: it reads your material, writes notes and talks to Notion. | Yes |
-| Notion AI | It writes your meeting minutes and runs Notion Brain Assistant. | Yes, for early access. See [Without Notion AI](#without-notion-ai). |
-| Business or Enterprise, with Notion credits | Notion Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits. Notion Brain Assistant runs as a Custom Agent whose access you limit to your brain's pages, and Custom Agents use Notion credits each time they run; Notion sells credits only on Business and Enterprise ([Notion's help on credits](https://www.notion.com/help/buy-and-track-notion-credits-for-custom-agents)). Without credits, Notion Brain Assistant's skills run from your personal Instructions, asked by name, and its buttons don't work. | No |
+| Notion AI | Its meeting notes record a meeting and write the minutes from the prompt. [AI Meeting Notes](https://www.notion.com/help/ai-meeting-notes) are on Notion's Business and Enterprise plans; Free and Plus get only a [limited number of free AI responses](https://www.notion.com/help/notion-ai-faqs) (both checked 2026-11-20). | No. Without it, bring meetings from another tool and your agent writes the minutes: see [Without Notion AI](#without-notion-ai). |
+| Business or Enterprise, with Notion credits | Notion Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits. Notion Brain Assistant runs as a Custom Agent whose access you limit to your brain's pages, and Custom Agents use Notion credits each time they run; Notion sells credits only on Business and Enterprise ([Notion's help on credits](https://www.notion.com/help/buy-and-track-notion-credits-for-custom-agents)). Without credits, ask Claude Code or Codex for the same skills by name ("prep my 3pm"), and the buttons don't work. | No |
 | The GitHub CLI (`gh`), signed in | Setup creates your backup with it, checks that the backup stays private, and sends your setup report if you say yes. | Yes, for early access. |
 | Python and MarkItDown | MarkItDown turns PDFs, Word files, slides, spreadsheets and saved web pages into exact text, so quotes are exact. It runs on Python. | Yes, for early access. |
 
-Setup checks all of these at once, at the start. It asks you about your Notion plan, since nothing can read it. Install everything and sign in to `gh` before you say "set up my brain", with the commands for your computer in Get started's step 1 (Mac or Windows): without them, setup stops at step 1 and gives the same commands.
+Setup checks all of these at once, at the start. It asks you two questions, since nothing can read your Notion plan: whether you have Business or Enterprise with Notion credits, and where your meeting transcripts come from. Install everything and sign in to `gh` before you say "set up my brain", with the commands for your computer in Get started's step 1 (Mac or Windows): without them, setup stops at step 1 and gives the same commands.
 
 On a Mac and on Windows alike, the weekly review and a daily catch-up can run on their own, with Claude Code or Codex (see the settings, item 12).
 
@@ -31,17 +31,17 @@ On a Mac and on Windows alike, the weekly review and a daily catch-up can run on
 
 | # | Step | What you do | Why it is here |
 |---|---|---|---|
-| 1 | Prerequisites | Answer one question about your Notion plan. | Everything after needs them. |
+| 1 | Prerequisites | Answer two questions: do you have Notion's Business or Enterprise plan with Notion credits, and where do your meeting transcripts come from (Notion AI meeting notes, another tool, pasting, or files; several allowed). | Everything after needs them. The answers decide whether steps 4a and 4b are taken. |
 | 2 | Settings | Read one screen, then say "keep these" or change a line. | Setup creates your backup, and later steps use your drop folder. |
 | 3 | Notion template and connection | Duplicate the template, connect your agent to Notion, restart the agent. | The brain needs a space to write to. |
 | 4 | Connect the brain to Notion | Say yes to moving the template's example rows to Notion's trash. | The brain stores each database's id and the template's version. The example rows go before anything reads your space, so none of them ever enters your brain. |
-| 4a | The minutes prompt | Paste a short invented meeting into a new Meetings page. Open the Notion AI chat on that page, paste the prompt followed by the line "Write the minutes on this page, below the transcript, and nothing else.", and send. Delete the test page afterwards. | Your meeting minutes come out in the shape the brain reads, and the transcript stays on the page. |
-| 4b | Notion Brain Assistant | Create your own: duplicating the template doesn't give you one. Follow **First things first**, the page linked from Start here: give it the Brain Data, How it works and Skills under your space's top page, paste its Instructions and replace the mentions, check the mentions in its skills, and select it in **Send message to** of the Tidy capture, Write up and Refresh report buttons. Then ask it **Run Today** once (by name: a Custom Agent doesn't run `/` commands), and click each button on the sample page setup creates for it. | Today must list only the tasks of your space's Tasks database, and each button must reach your own agent. Setup reads the sample pages; what only Notion's interface shows (the agent's access, a button's Send message to) you check and tell it. |
+| 4a | The minutes prompt | Only when your transcripts come from Notion AI meeting notes. Paste a short invented meeting into a new Meetings page. Open the Notion AI chat on that page, paste the prompt followed by the line "Write the minutes on this page, below the transcript, and nothing else.", and send. Delete the test page afterwards. | Your meeting minutes come out in the shape the brain reads, and the transcript stays on the page. |
+| 4b | Notion Brain Assistant | Only with Business or Enterprise and Notion credits. Create your own: duplicating the template doesn't give you one. Follow **First things first**, the page linked from Start here: give it the Brain Data, How it works and Skills under your space's top page, paste its Instructions and replace the mentions, check the mentions in its skills, and select it in **Send message to** of the Tidy capture, Write up and Refresh report buttons. Then ask it **Run Today** once (by name: a Custom Agent doesn't run `/` commands), and click each button on the sample page setup creates for it. | Today must list only the tasks of your space's Tasks database, and each button must reach your own agent. Setup reads the sample pages; what only Notion's interface shows (the agent's access, a button's Send message to) you check and tell it. |
 | 5 | Identities | Say which names you appear under in meetings and in Notion. | The brain knows which tasks and commitments are yours. |
 | 6 | Seeding | Describe your work in a few sentences, answer one preview, then drop 3 to 5 key documents in your drop folder. | Your brain starts with your Areas, Projects, people and documents, so the first meeting doesn't create duplicates. Nothing is written before your yes. |
 | 7 | First value | Judge four checks (below). | It proves the brain works on your own material. |
 
-**Only the brain creates a meeting's Tasks.** It creates them once, when it takes in a meeting you set Ready. If a notetaker (Granola, Fireflies or another) or an automation exports tasks into Notion, turn off its export to your brain's Tasks database, or each of those tasks would arrive twice. Don't ask Notion AI to create Tasks from a meeting either. A task you create yourself stays yours.
+**Only the brain creates a meeting's Tasks.** It creates them once, when it takes in a meeting you set Ready. If a notetaker (Granola, Fireflies or another) or an automation exports tasks into Notion, turn off its export to your brain's Tasks database, or each of those tasks would arrive twice ([Bringing meetings from another tool](meetings-from-other-tools.md#turn-off-the-tools-own-tasks)). Don't ask Notion AI to create Tasks from a meeting either. A task you create yourself stays yours.
 | 8 | The schedule | Keep, change or decline two times: the weekly review (Monday 08:00) and a catch-up (every day at 07:30). | It is offered only once first value passes. |
 | — | Setup report | Read it, and send it if you like. | It helps fix setup for the next person. |
 
@@ -185,7 +185,7 @@ Then say "set up my brain" again. With `gh` installed but signed out, only the s
 
 ### Your Notion plan has no Notion AI (`notion-ai-missing`)
 
-Early access needs Notion AI. Add it to your plan, then say "set up my brain" again. Not sure what your plan includes? It is in Notion's settings, or ask your workspace's admin. There is also a path without Notion AI, which becomes supported at 1.0: see [Without Notion AI](#without-notion-ai).
+Since 0.17.0 you don't need Notion AI, and setup doesn't stop for it. An older setup report may still name this reason: update Ultimate Brain ([Updating later](#updating-later)) and say "set up my brain" again. Setup asks its two questions, and [Without Notion AI](#without-notion-ai) says what works on your plan.
 
 ### The backup couldn't be created (`remote-failed`)
 
@@ -322,18 +322,29 @@ It ends with one line: `Backup fixed: <n> changes backed up.` or `Backup checked
 
 ## Without Notion AI
 
-**For 1.0.** Early access needs Notion AI. At 1.0, setup also works without it. Before then, setup offers this path only when you choose it after hearing it isn't supported yet.
+Since 0.17.0 Notion AI is optional (decision [0101](../decisions/0101-where-notion-ai-and-the-brain-each-write.md) §8). What works depends on your Notion plan:
 
-Without Notion AI:
-- The minutes prompt and Notion Brain Assistant are left out, so setup has 7 required items instead of 9.
-- You lose structured minutes and the choice of what enters the brain from a meeting. You also lose Notion Brain Assistant's skills, such as Today, and the Notion buttons that message it.
-- **Meetings:** paste any transcript or summary onto the meeting page. The brain takes it in whole.
-- **How-to questions** go to your agent instead.
-- Rewriting a pasted transcript into the minutes format is not offered.
+| Your Notion | Meetings | Notion Brain Assistant and its buttons |
+|---|---|---|
+| Business or Enterprise, with Notion credits | Notion AI meeting notes and the minutes prompt, or any other tool | Yes |
+| Business or Enterprise, without credits | Notion AI meeting notes and the minutes prompt, or any other tool | No: ask Claude Code or Codex for the same skills |
+| Free or Plus | Any other tool, pasting, or transcript files: your agent writes the minutes | No: ask Claude Code or Codex for the same skills |
+
+Checked on 2026-11-20 against Notion's pages: [AI Meeting Notes](https://www.notion.com/help/ai-meeting-notes) need the Business or Enterprise plan; Free and Plus get only a [limited number of free Notion AI responses](https://www.notion.com/help/notion-ai-faqs); [Custom Agents](https://www.notion.com/help/custom-agents) need Business or Enterprise and use [Notion credits](https://www.notion.com/help/buy-and-track-notion-credits-for-custom-agents) each time they run, which only Business and Enterprise can buy. Plans and prices: [Notion's pricing](https://www.notion.com/pricing).
+
+**Meetings.** A Meetings row holds a transcript, minutes in the format, or both, from any tool: your notetaker's Notion integration, an automation, a transcript you paste under a **Transcript** heading, or a transcript file in your drop folder's `meetings/`. [Bringing meetings from another tool](meetings-from-other-tools.md) shows each way, and what to turn off in the other tool.
+
+**Minutes.** For a meeting with a transcript and no minutes, your agent writes them on the page, in the format, from the same prompt: it offers in a session and writes in a scheduled catch-up, checks every quote against the transcript first, and changes nothing else on the page. You can also run the prompt in another tool and paste the result ([In another tool](../notion/pasting-the-minutes-prompt.md#in-another-tool)). Either way you read the minutes, mark **Meeting only** what stays out, and set the meeting Ready: the choice of what enters your brain works as with Notion AI. A summary that isn't in the format is taken in whole, with no choice.
+
+**Notion Brain Assistant's skills.** Without Notion credits there is no Notion Brain Assistant, and Tidy capture, Write up and Refresh report do nothing. Ask your agent instead, by name or by what the skill does: "prep my 3pm", "what's due today", "tidy that capture", "write up this document", "refresh this report". It runs the same text, and shows a change before it writes it. ChatGPT can run them too, optionally: [ChatGPT with your brain](chatgpt.md).
+
+**Setup** leaves out what your answers don't need: the minutes prompt (step 4a) when your transcripts don't come from Notion AI meeting notes, and Notion Brain Assistant (step 4b) without credits. Setup then has 7, 8 or 9 required items. Change an answer later by asking your agent to ask the two questions again; nothing it installed in Notion is removed.
+
+**How-to questions** go to your agent, with or without Notion Brain Assistant.
 
 ## Building the Notion space yourself
 
-The template is the quick way. If you prefer to build the space yourself from Notion AI prompts, tell your agent at step 3. It gives you the text of [notion/CHECKLIST.md](../notion/CHECKLIST.md), one step at a time, adapted to the modules you chose.
+The template is the quick way, and needs no Notion AI. If you prefer to build the space yourself from Notion AI prompts (which needs Notion AI), tell your agent at step 3. It gives you the text of [notion/CHECKLIST.md](../notion/CHECKLIST.md), one step at a time, adapted to the modules you chose.
 
 ## Updating later
 
