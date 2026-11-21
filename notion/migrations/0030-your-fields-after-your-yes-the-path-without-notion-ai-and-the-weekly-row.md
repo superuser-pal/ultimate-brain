@@ -4,6 +4,7 @@
 
 **What changes:**
 - **Brain Assistant sets your operational fields after your yes** (0101 §3). In its chat, after you say yes to a change it names with its value, Brain Assistant may set a task's Status or Due, a project's Status, Priority or Dates, a goal's Status, and a key result's Current, Done or Due. Nothing else: never a property the brain owns, a section the brain writes, Brain Status, Accepted, Document asked or Refresh asked; asked to, it says where that is done. Its **Weekly review** asks about the week's task items in numbered options and sets the ones you pick ("1a"), instead of only listing them. These stay your fields: the brain reads them as pointers and stores none of them, so nothing Brain Assistant sets is knowledge. Its Instructions, its Weekly review skill, its Tools and access, and First things first's "Give it access" item change.
+- **The path without Notion AI** (0101 §7, §8). Notion AI and Notion credits are optional: without credits, Brain Assistant's skills run from Claude Code or Codex, and without Notion AI, your agent writes a meeting's minutes from its transcript. First things first's **Check your plan** item says so, instead of sending you to your personal Notion Agent, and the Start here callout gets a table of what works on each Notion plan.
 
 Run this migration after `brain upgrade` has put 0.17.0 in place, in an attended session (never from a schedule). **The template's copy** (no brain) does the same steps.
 
@@ -74,9 +75,34 @@ The agent can confirm the values from its side, with your yes: query the test ro
 
 *Added to this migration by CC-352 before the release. Until then, this part has no step.*
 
-## Part C · The path without Notion AI: First things first's item 1 (0101 §8; CC-329)
+## Part C · The path without Notion AI: First things first's item 1 and the plan table in Start here (0101 §7, §8; CC-329)
 
-*Added to this migration by CC-329 before the release (docs/notion-space-design.md §10.1, "Item 1's wording changed in 0.17.0"). Until then, this part has no step.*
+Two texts in your space say what works on your Notion plan: First things first's item 1 (docs/notion-space-design.md §10.1, "Item 1's wording changed in 0.17.0") and a plan table in the Start here callout (§10). Nothing else changes: setup asks its two questions from the brain, not from Notion (spec/setup.md §13).
+
+### C1 · First things first, item 1 (the agent, or by hand)
+
+The page **First things first** (under your top page; migration 0028) starts with the item **Check your plan.** Its text after the bold words, "Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits. Without credits, skip items 2, 3 and 6 (the buttons won't work on your plan): put the Instructions of item 4 and the skills in your personal Notion Agent instead, and ask for a skill by its name.", becomes (docs/notion-space-design.md §10.1, the exact text):
+
+`Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits. Without credits, skip items 2 to 6 and 8 (the buttons won't work on your plan): do item 7, then ask Claude Code or Codex for a skill by its name instead, such as "prep my 3pm" or "tidy that capture".`
+
+1. **Already done?** The item says "ask Claude Code or Codex for a skill by its name". Then change nothing.
+2. **Otherwise,** the agent, with your yes, replaces the item's text after **Check your plan.** with the text above, in the same to-do block. It keeps the bold words, the link on "Notion credits" (https://www.notion.com/help/buy-and-track-notion-credits-for-custom-agents) and the tick as they are, then reads the block back: the new text once, "personal Notion Agent" nowhere on the page. Or edit the text by hand.
+3. **No First things first page** (a space that skipped 0028's part A): nothing to change.
+
+### C2 · The plan table in Start here (by hand, or the agent)
+
+Inside the **Start here** callout, right below its line "Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits.", add a simple table with a header row, three columns and three rows (docs/notion-space-design.md §10, the exact text):
+
+| Your Notion | Meetings | Brain Assistant and its buttons |
+|---|---|---|
+| Business or Enterprise, with Notion credits | Notion AI meeting notes and the minutes prompt, or any other tool | Yes |
+| Business or Enterprise, without credits | Notion AI meeting notes and the minutes prompt, or any other tool | No: ask Claude Code or Codex for the same skills |
+| Free or Plus | Any other tool, pasting, or transcript files: your agent writes the minutes | No: ask Claude Code or Codex for the same skills |
+
+- **Already there?** The callout holds a table whose first column starts "Your Notion". Then change nothing.
+- **By hand:** click at the end of the line on Notion credits, press Enter, type `/table`, choose **Table** (the simple one, not a database), make it 3 columns and 4 rows, turn on **Header row**, and type the cells above. If Notion puts the table below the callout instead of inside it, drag it into the callout, right below that line.
+- **The agent** adds it when the line on Notion credits is the callout's last block of its own: it appends a table block (3 columns, header row on, the four rows above) to the callout's children, then reads the callout back: the table once, right after that line. When the lines are the callout's own text, the table goes in by hand.
+- **No Start here callout** (a space built before 0.14.0 without it): nothing to change.
 
 ## Part D · The weekly row: Weekly review and the Instructions' line on Weekly rows (0110; CC-372)
 
@@ -91,6 +117,7 @@ If the System callout on your top page reads `Template version: …` with a lowe
 ## What this migration doesn't do
 
 - **Part A changes no database, property, option, view, button or template**, and no other skill: it changes what Brain Assistant may do, its access and two texts that describe it.
+- **Part C changes no database, property, view, button, skill or Brain Assistant itself**: it changes two texts that describe your plan. A Brain Assistant you already have keeps working; a personal Notion Agent you set up before 0.17.0 keeps its Instructions too, but setup no longer checks it ([../brain-assistant.md](../brain-assistant.md), Without a Custom Agent).
 - **The brain does nothing new.** A field Brain Assistant sets is yours, as if you had set it: the brain reads Status, Due, Priority, Dates and progress values as pointers, as before, and stores none of them. A task tracking an open question that Brain Assistant sets Done is asked about in your next attended session, as one you set Done is (0101 §6).
 - **Brain-owned values stay asked in the session.** Brain Assistant refuses them; and an edit to one by any AI or by hand is still asked in your agent session before the brain takes it (0101 §4).
 - **The buttons don't change.** A button's message carries its skill's confirmation only, never a yes to set a field ([../views-guide.md](../views-guide.md) §9).
@@ -107,6 +134,11 @@ Part A, Brain Assistant sets your fields after your yes (decision 0101 §3):
 - [ ] *(API)* Where Skills is shared with the integration: the Weekly review page's Description property and its body, read together, hold a step 8 starting "8. End with one short list", and neither holds "I set it myself".
 - [ ] *(API)* First things first's item **Give it access** names Tasks, Projects, Goals and Key Results.
 - [ ] *(you)* A5's checks: Weekly review set the test task's Due after `1a` and not before; "leave it" changed nothing; the project's Status changed only after your yes; Key Facts and the meeting's Brain Status were refused and are unchanged; *(API)* the values read back as each step says; the four test rows are in the trash.
+
+Part C, the path without Notion AI (decision 0101 §7, §8):
+- [ ] *(API)* First things first's item **Check your plan.** says "ask Claude Code or Codex for a skill by its name", and "personal Notion Agent" is nowhere on the page.
+- [ ] *(API)* The Start here callout holds the plan table once, its first column "Your Notion", "Business or Enterprise, with Notion credits", "Business or Enterprise, without credits" and "Free or Plus", right after the line on Notion credits.
+- [ ] *(you)* The table shows inside the callout, with its header row, and the link on "Notion credits" in item 1 still opens Notion's help page.
 
 The last steps:
 - [ ] *(API)* The System callout reads `Template version: 0030`.
