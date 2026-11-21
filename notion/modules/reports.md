@@ -27,7 +27,7 @@ Build the Documents module first if your space doesn't have it ([documents.md](d
 ### 3 · The Refresh report button and the layout
 
 **By hand** (the API can't create buttons or edit page layouts):
-1. **Documents → Update:** open Documents as a full page → `•••` → Properties → **New property** → **Button**, named "Update", with the label "Refresh report". Action **Send message to** Brain Assistant, with the Refresh report message of [views-guide.md](../views-guide.md) §9. It shows on every Documents row; Brain Assistant acts on it only on a report. To queue a full refresh from Git instead, tick **Refresh asked** by hand.
+1. **Documents → Update:** open Documents as a full page → `•••` → Properties → **New property** → **Button**, named "Update", with the label "Refresh report". Action **Send message to** Notion Brain Assistant, with the Refresh report message of [views-guide.md](../views-guide.md) §9. It shows on every Documents row; Notion Brain Assistant acts on it only on a report. To queue a full refresh from Git instead, tick **Refresh asked** by hand.
 2. **Accept** is the Documents module's button (label "Accept"): it works for a refreshed report as for a write-up.
 3. **Page layout** (open any Documents row → **Customize layout**): pin Update next to Write and Accept, and put Refresh asked and What to fix at the top of the property group, after Accepted and Accepted at ([views-guide.md](../views-guide.md) §9).
 

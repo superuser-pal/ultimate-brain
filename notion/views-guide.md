@@ -195,14 +195,14 @@ Notion lets you shape how each database page opens. Set it once per database: op
 |---|---|---|---|---|
 | Keep | Keep as document | Inbox | Document asked → checked; Brain Status → Ready | Documents |
 | Keep | Keep as document | Tasks | Document asked → checked (nothing else: decision 0100) | Tasks (the brain acts on it with Documents on) |
-| Update | Refresh report | Documents (on the Inbox before 0.9.1, 0071) | Send message to Brain Assistant (0054; before 0.8.0: Refresh asked → checked). Refresh asked is now ticked by hand to queue a full refresh | Reports |
-| Tidy | Tidy capture | Inbox | Send message to Brain Assistant | core |
-| Write | Write up | Documents | Send message to Brain Assistant | Documents |
+| Update | Refresh report | Documents (on the Inbox before 0.9.1, 0071) | Send message to Notion Brain Assistant (0054; before 0.8.0: Refresh asked → checked). Refresh asked is now ticked by hand to queue a full refresh | Reports |
+| Tidy | Tidy capture | Inbox | Send message to Notion Brain Assistant | core |
+| Write | Write up | Documents | Send message to Notion Brain Assistant | Documents |
 | Accept | Accept | Documents | Accepted → checked; Accepted at → now: a write-up or a refreshed report (0071; Accept write-up on Documents and Accept refresh on the Inbox before 0.9.1) | Documents |
 
 The name and the label differ, so the layout doesn't show the same text twice (#144). The brain reads the boxes the checkbox buttons tick (and Accepted and Accepted at), never a button.
 
-**The Brain Assistant buttons (decision 0054)** use the action **Send message to** → Brain Assistant. The page a button sits on is not identified implicitly (verified for Tidy capture on a test Inbox row; that nothing else is passed is an inference, and the Write up and Refresh report messages are not yet run, docs/notion-space-design.md §3.16), so each message names the skill, references the row with an @ mention of **This page**, carries your confirmation and says what not to touch (verified on a test row, docs/notion-space-design.md §3.16). Type `@` and pick the current page where `@This page` is shown below:
+**The Notion Brain Assistant buttons (decision 0054)** use the action **Send message to** → Notion Brain Assistant. The page a button sits on is not identified implicitly (verified for Tidy capture on a test Inbox row; that nothing else is passed is an inference, and the Write up and Refresh report messages are not yet run, docs/notion-space-design.md §3.16), so each message names the skill, references the row with an @ mention of **This page**, carries your confirmation and says what not to touch (verified on a test row, docs/notion-space-design.md §3.16). Type `@` and pick the current page where `@This page` is shown below:
 
 | Button | Message |
 |---|---|
@@ -210,7 +210,7 @@ The name and the label differ, so the layout doesn't show the same text twice (#
 | Write up | `Run your Write up skill on this Documents page: @This page. I confirm: do it as the skill says. Do not change any property or any other page.` |
 | Refresh report | `Run your Refresh report skill on this report: @This page. I confirm: add or replace the Proposed refresh toggle as the skill says. Do not change the report's text outside it, or any property.` |
 
-**Select your own agent** (decision 0103 §1). In **Send message to**, select the Brain Assistant you created in your workspace: a duplicate of the template never carries a configured agent, so in a duplicate each of the three buttons is opened (database ••• → Properties → the button) and your agent selected, as **First things first** lists. Selecting the agent says who receives the message; the **@This page** in the message says which page it is about: keep the message as it is, one never replaces the other. The buttons that message Brain Assistant need Notion's Business or Enterprise plan with Notion credits, as Brain Assistant does (decision 0101 §7). A message without the page reference makes Brain Assistant stop and say so. A message carries the confirmation for its skill's page text only, never a yes to set a field: Brain Assistant sets your operational fields only in its chat, after your yes to the change it names with its value (decision 0101 §3, docs/notion-space-design.md §2). The Accept button uses **Edit property** on **This page**: Accepted → checked and Accepted at → Now.
+**Select your own agent** (decision 0103 §1). In **Send message to**, select the Notion Brain Assistant you created in your workspace: a duplicate of the template never carries a configured agent, so in a duplicate each of the three buttons is opened (database ••• → Properties → the button) and your agent selected, as **First things first** lists. Selecting the agent says who receives the message; the **@This page** in the message says which page it is about: keep the message as it is, one never replaces the other. The buttons that message Notion Brain Assistant need Notion's Business or Enterprise plan with Notion credits, as Notion Brain Assistant does (decision 0101 §7). A message without the page reference makes Notion Brain Assistant stop and say so. A message carries the confirmation for its skill's page text only, never a yes to set a field: Notion Brain Assistant sets your operational fields only in its chat, after your yes to the change it names with its value (decision 0101 §3, docs/notion-space-design.md §2). The Accept button uses **Edit property** on **This page**: Accepted → checked and Accepted at → Now.
 
 | Database | Heading (in order) | Property group: where · order | Hidden | Backlinks | Why |
 |---|---|---|---|---|---|
@@ -248,7 +248,7 @@ A row is on a Domain page when its Area has that Domain. A row with no Area, or 
 
 ## 10. Navigation (instead of Prompt 8)
 
-1. **On the "System" page,** create a synced block named "Tier 1 nav": one line of links, Home · Tasks · Meetings · Projects · Plan · Knowledge · Archive · How it works, unthemed (Tasks with the Tasks module, Plan with Planning). For questions, use Brain Assistant ([brain-assistant.md](brain-assistant.md)).
+1. **On the "System" page,** create a synced block named "Tier 1 nav": one line of links, Home · Tasks · Meetings · Projects · Plan · Knowledge · Archive · How it works, unthemed (Tasks with the Tasks module, Plan with Planning). For questions, use Notion Brain Assistant ([brain-assistant.md](brain-assistant.md)).
 2. **Still on "System",** create one synced block per Space, "Tier 2 nav – Plan" and so on. Each lists that Space's view names as links (right-click a view tab → *Copy link to view*), with its own icon and a light background color.
 3. **On each Space page,** add a narrow left column containing: Tier 1 nav, a divider, then that Space's Tier 2 nav. Home gets only Tier 1.
 4. **Above each page title,** add a small gray text label with the page name. It's a plain block, not synced.

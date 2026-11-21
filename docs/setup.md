@@ -17,7 +17,7 @@ The brain folder is where your knowledge is kept. Notion is where you read it, r
 | Git, with your name and email | Every change the brain makes is a commit. Without a name and email, Git saves nothing. | Yes. Set them before `brain init` (Get started, step 1); `init` stops and tells you how when they're missing. |
 | Claude Code or Codex | The agent does the work: it reads your material, writes notes and talks to Notion. | Yes |
 | Notion AI | Its meeting notes record a meeting and write the minutes from the prompt. [AI Meeting Notes](https://www.notion.com/help/ai-meeting-notes) are on Notion's Business and Enterprise plans; Free and Plus get only a [limited number of free AI responses](https://www.notion.com/help/notion-ai-faqs) (both checked 2026-11-20). | No. Without it, bring meetings from another tool and your agent writes the minutes: see [Without Notion AI](#without-notion-ai). |
-| Business or Enterprise, with Notion credits | Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits. Brain Assistant runs as a Custom Agent whose access you limit to your brain's pages, and Custom Agents use Notion credits each time they run; Notion sells credits only on Business and Enterprise ([Notion's help on credits](https://www.notion.com/help/buy-and-track-notion-credits-for-custom-agents)). Without credits, ask Claude Code or Codex for the same skills by name ("prep my 3pm"), and the buttons don't work. | No |
+| Business or Enterprise, with Notion credits | Notion Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits. Notion Brain Assistant runs as a Custom Agent whose access you limit to your brain's pages, and Custom Agents use Notion credits each time they run; Notion sells credits only on Business and Enterprise ([Notion's help on credits](https://www.notion.com/help/buy-and-track-notion-credits-for-custom-agents)). Without credits, ask Claude Code or Codex for the same skills by name ("prep my 3pm"), and the buttons don't work. | No |
 | The GitHub CLI (`gh`), signed in | Setup creates your backup with it, checks that the backup stays private, and sends your setup report if you say yes. | Yes, for early access. |
 | Python and MarkItDown | MarkItDown turns PDFs, Word files, slides, spreadsheets and saved web pages into exact text, so quotes are exact. It runs on Python. | Yes, for early access. |
 
@@ -36,7 +36,7 @@ On Windows, scheduled runs aren't available: you ask your agent for a catch-up o
 | 3 | Notion template and connection | Duplicate the template, connect your agent to Notion, restart the agent. | The brain needs a space to write to. |
 | 4 | Connect the brain to Notion | Say yes to moving the template's example rows to Notion's trash. | The brain stores each database's id and the template's version. The example rows go before anything reads your space, so none of them ever enters your brain. |
 | 4a | The minutes prompt | Only when your transcripts come from Notion AI meeting notes. Paste a short invented meeting into a new Meetings page. Open the Notion AI chat on that page, paste the prompt followed by the line "Write the minutes on this page, below the transcript, and nothing else.", and send. Delete the test page afterwards. | Your meeting minutes come out in the shape the brain reads, and the transcript stays on the page. |
-| 4b | Brain Assistant | Only with Business or Enterprise and Notion credits. Create your own: duplicating the template doesn't give you one. Follow **First things first**, the page linked from Start here: give it the Brain Data, How it works and Skills under your space's top page, paste its Instructions and replace the mentions, check the mentions in its skills, and select it in **Send message to** of the Tidy capture, Write up and Refresh report buttons. Then ask it **Run Today** once (by name: a Custom Agent doesn't run `/` commands), and click each button on the sample page setup creates for it. | Today must list only the tasks of your space's Tasks database, and each button must reach your own agent. Setup reads the sample pages; what only Notion's interface shows (the agent's access, a button's Send message to) you check and tell it. |
+| 4b | Notion Brain Assistant | Only with Business or Enterprise and Notion credits. Create your own: duplicating the template doesn't give you one. Follow **First things first**, the page linked from Start here: give it the Brain Data, How it works and Skills under your space's top page, paste its Instructions and replace the mentions, check the mentions in its skills, and select it in **Send message to** of the Tidy capture, Write up and Refresh report buttons. Then ask it **Run Today** once (by name: a Custom Agent doesn't run `/` commands), and click each button on the sample page setup creates for it. | Today must list only the tasks of your space's Tasks database, and each button must reach your own agent. Setup reads the sample pages; what only Notion's interface shows (the agent's access, a button's Send message to) you check and tell it. |
 | 5 | Identities | Say which names you appear under in meetings and in Notion. | The brain knows which tasks and commitments are yours. |
 | 6 | Seeding | Describe your work in a few sentences, answer one preview, then drop 3 to 5 key documents in your drop folder. | Your brain starts with your Areas, Projects, people and documents, so the first meeting doesn't create duplicates. Nothing is written before your yes. |
 | 7 | First value | Judge four checks (below). | It proves the brain works on your own material. |
@@ -239,26 +239,26 @@ The same thing can happen to a real meeting. Catch-up then leaves it Ready and s
 ### Today shows things from outside your brain (`assistant-reads-outside`)
 
 Setup's check says which Tasks database Today should read: the one under your space's top page › Brain Data. If Today lists a task or meeting from another space, one of two things happened:
-- **The run used another space's Today.** Picking "Today" from the `@` picker can pick another space's skill page, which reads that space. Ask Brain Assistant **Run Today** by name, or mention your Today page by its link (open it from your space's Skills database, ••• → Copy link).
-- **Brain Assistant can see more than your brain.** A Custom Agent: in Tools and access, keep only the Brain Data, How it works and Skills (in an older space, Brain Assistant Skills) under your top page, and remove any other. Personal Instructions: the instruction to stay inside Ultimate Brain is missing or was pasted in part. Paste the whole text again.
+- **The run used another space's Today.** Picking "Today" from the `@` picker can pick another space's skill page, which reads that space. Ask Notion Brain Assistant **Run Today** by name, or mention your Today page by its link (open it from your space's Skills database, ••• → Copy link).
+- **Notion Brain Assistant can see more than your brain.** A Custom Agent: in Tools and access, keep only the Brain Data, How it works and Skills (in an older space, Brain Assistant Skills) under your top page, and remove any other. Personal Instructions: the instruction to stay inside Ultimate Brain is missing or was pasted in part. Paste the whole text again.
 
-Then say "check Brain Assistant again".
+Then say "check Notion Brain Assistant again".
 
-### You have no Brain Assistant yet (`assistant-missing`)
+### You have no Notion Brain Assistant yet (`assistant-missing`)
 
-Duplicating the template copied its pages, not an agent. Create your own, as **First things first** says (the page linked from Start here): Agents → New Custom Agent, named Brain Assistant, with no triggers, then its access and Instructions. Then say "check Brain Assistant again". Already have one that answers in its chat? Keep it: setup checks it rather than asking for a second one.
+Duplicating the template copied its pages, not an agent. Create your own, as **First things first** says (the page linked from Start here): Agents → New Custom Agent, named Notion Brain Assistant, with no triggers, then its access and Instructions. Then say "check Notion Brain Assistant again". Already have one that answers in its chat? Keep it: setup checks it rather than asking for a second one.
 
 ### A skill mentions a page outside your space (`mentions-outside`)
 
-Setup read your Skills pages and found a mention of Brain Data or How it works that opens a page elsewhere, such as the template author's, or one it can't open. It names the skill page and the mention. Replace the mention with one of the page of that name under your top page, then say "check Brain Assistant again".
+Setup read your Skills pages and found a mention of Brain Data or How it works that opens a page elsewhere, such as the template author's, or one it can't open. It names the skill page and the mention. Replace the mention with one of the page of that name under your top page, then say "check Notion Brain Assistant again".
 
 ### A button didn't reach your agent (`button-unbound`)
 
-Setup clicked nothing itself: you clicked the button on a sample page, and setup read the page back and found it unchanged. Open the database as a full page → ••• → Properties → the button, and in **Send message to** select your own Brain Assistant. Keep the message as it is: its skill name, its "I confirm" and its **@This page**. Selecting the agent says who receives the message, and @This page says which page it is about. Then say "check Brain Assistant again". Setup can't read a button's settings: what you see there is your check, and setup says so.
+Setup clicked nothing itself: you clicked the button on a sample page, and setup read the page back and found it unchanged. Open the database as a full page → ••• → Properties → the button, and in **Send message to** select your own Notion Brain Assistant. Keep the message as it is: its skill name, its "I confirm" and its **@This page**. Selecting the agent says who receives the message, and @This page says which page it is about. Then say "check Notion Brain Assistant again". Setup can't read a button's settings: what you see there is your check, and setup says so.
 
 ### A sample page is still there (`samples-left`)
 
-Each button check uses a page titled `Setup check: … (delete me)`, and setup moves it to Notion's trash after reading it. When it couldn't, the step stays unfinished until the page is gone. Delete it yourself, then say "check Brain Assistant again". Nothing in your brain is made from a sample.
+Each button check uses a page titled `Setup check: … (delete me)`, and setup moves it to Notion's trash after reading it. When it couldn't, the step stays unfinished until the page is gone. Delete it yourself, then say "check Notion Brain Assistant again". Nothing in your brain is made from a sample.
 
 ### First value is unresolved (`first-value-unresolved`)
 
@@ -307,7 +307,7 @@ It ends with one line: `Backup fixed: <n> changes backed up.` or `Backup checked
 
 Since 0.17.0 Notion AI is optional (decision [0101](../decisions/0101-where-notion-ai-and-the-brain-each-write.md) §8). What works depends on your Notion plan:
 
-| Your Notion | Meetings | Brain Assistant and its buttons |
+| Your Notion | Meetings | Notion Brain Assistant and its buttons |
 |---|---|---|
 | Business or Enterprise, with Notion credits | Notion AI meeting notes and the minutes prompt, or any other tool | Yes |
 | Business or Enterprise, without credits | Notion AI meeting notes and the minutes prompt, or any other tool | No: ask Claude Code or Codex for the same skills |
@@ -319,11 +319,11 @@ Checked on 2026-11-20 against Notion's pages: [AI Meeting Notes](https://www.not
 
 **Minutes.** For a meeting with a transcript and no minutes, your agent writes them on the page, in the format, from the same prompt: it offers in a session and writes in a scheduled catch-up, checks every quote against the transcript first, and changes nothing else on the page. You can also run the prompt in another tool and paste the result ([In another tool](../notion/pasting-the-minutes-prompt.md#in-another-tool)). Either way you read the minutes, mark **Meeting only** what stays out, and set the meeting Ready: the choice of what enters your brain works as with Notion AI. A summary that isn't in the format is taken in whole, with no choice.
 
-**Brain Assistant's skills.** Without Notion credits there is no Brain Assistant, and Tidy capture, Write up and Refresh report do nothing. Ask your agent instead, by name or by what the skill does: "prep my 3pm", "what's due today", "tidy that capture", "write up this document", "refresh this report". It runs the same text, and shows a change before it writes it. ChatGPT can run them too, optionally: [ChatGPT with your brain](chatgpt.md).
+**Notion Brain Assistant's skills.** Without Notion credits there is no Notion Brain Assistant, and Tidy capture, Write up and Refresh report do nothing. Ask your agent instead, by name or by what the skill does: "prep my 3pm", "what's due today", "tidy that capture", "write up this document", "refresh this report". It runs the same text, and shows a change before it writes it. ChatGPT can run them too, optionally: [ChatGPT with your brain](chatgpt.md).
 
-**Setup** leaves out what your answers don't need: the minutes prompt (step 4a) when your transcripts don't come from Notion AI meeting notes, and Brain Assistant (step 4b) without credits. Setup then has 7, 8 or 9 required items. Change an answer later by asking your agent to ask the two questions again; nothing it installed in Notion is removed.
+**Setup** leaves out what your answers don't need: the minutes prompt (step 4a) when your transcripts don't come from Notion AI meeting notes, and Notion Brain Assistant (step 4b) without credits. Setup then has 7, 8 or 9 required items. Change an answer later by asking your agent to ask the two questions again; nothing it installed in Notion is removed.
 
-**How-to questions** go to your agent, with or without Brain Assistant.
+**How-to questions** go to your agent, with or without Notion Brain Assistant.
 
 ## Building the Notion space yourself
 
@@ -362,7 +362,7 @@ Setup put things in these places outside your brain folder. Remove the ones you 
 | Run state and logs | `~/.ultimate-brain/` and, on a Mac, `~/Library/Logs/ultimate-brain/` | Delete the folders. |
 | The drop folder | The folder you chose in setup, by default `~/Documents/brain-dropbox/` | Move out any file you still want, then delete it. |
 | The backup | A private repository on GitHub | Delete it on github.com (the repository's Settings, Danger Zone), or keep it as an archive. |
-| The Notion space | Your workspace | Delete the duplicated space. In Notion's Settings, under Connections, remove your agent's connection. Delete Brain Assistant, or its text in your personal Instructions. |
+| The Notion space | Your workspace | Delete the duplicated space. In Notion's Settings, under Connections, remove your agent's connection. Delete Notion Brain Assistant, or its text in your personal Instructions. |
 | Linked repositories | Each repository you linked with `brain link` | Unlinking only removes the brain's record of the repository. In the repository itself, delete `.brain`, `brain-kit.json`, the Ultimate Brain block in `AGENTS.md` and `CLAUDE.md`, and the brain's skills under `.agents/skills/` and `.claude/skills/`. |
 
 Setup may also have set your Git name and email for every repository on this computer, when they were missing. Leave them unless you want them gone: `git config --global --unset user.name` and `git config --global --unset user.email`.

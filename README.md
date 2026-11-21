@@ -197,14 +197,14 @@ claude
 set up my brain
 ```
 
-Your agent walks you through the rest, one step at a time: your settings, connecting Notion, the meeting minutes prompt and Brain Assistant when your plan has them, the names you appear under, a short description of your work, and a first check. Stop whenever you like. Say "set up my brain" again to pick up where you left off.
+Your agent walks you through the rest, one step at a time: your settings, connecting Notion, the meeting minutes prompt and Notion Brain Assistant when your plan has them, the names you appear under, a short description of your work, and a first check. Stop whenever you like. Say "set up my brain" again to pick up where you left off.
 
 ### 6. What you'll have at the end
 
 - **Your brain:** Markdown notes in a private Git repository, backed up to a private remote.
 - **Your Notion space,** connected: your Areas, Projects, the people you work with and a few key documents are already in it.
 - **Meetings that feed your brain:** Notion AI, another tool or your agent writes the minutes, you set the meeting Ready, and the next catch-up turns it into your tasks and notes.
-- **Brain Assistant's skills:** in Notion, with its buttons, when you have Notion credits (ask it "Run Today"); otherwise ask your agent for the same skills ("what's due today").
+- **Notion Brain Assistant's skills:** in Notion, with its buttons, when you have Notion credits (ask it "Run Today"); otherwise ask your agent for the same skills ("what's due today").
 - **A first check that passed:** tasks that are really yours, a report on your main project, notes in the right place, and an answer that cites its source.
 
 Why each step is there, every setting, and what to do when something fails: [docs/setup.md](docs/setup.md).

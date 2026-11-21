@@ -53,7 +53,7 @@ Create a default page template for each database below. Each item "Heading: data
 [Orgs]   "Which projects?": Projects where Client is this page, showing Name, Status, Countdown.
 [Orgs]   Then a toggle "My notes".
 - Inbox, a second template named "Voice note" (not the default; Brain Status New, Kind Capture; decision 0055, notion/voice-format.md):
-  A gray callout: "All subjects included unless marked Meeting only. Mark Ready to confirm. Creating the summary never creates a task." followed by a gray line "Record with your phone or Notion, paste the transcript into the Transcript toggle, then ask Brain Assistant: Voice summary."
+  A gray callout: "All subjects included unless marked Meeting only. Mark Ready to confirm. Creating the summary never creates a task." followed by a gray line "Record with your phone or Notion, paste the transcript into the Transcript toggle, then ask Notion Brain Assistant: Voice summary."
   A heading 2 "[s1] Voice note", the line "Selection: Use in brain", and three heading 3s "Highlights", "Commitments", "Ideas to explore", each empty.
   A toggle "Transcript" containing one empty paragraph.
 Set each of these templates as the database default, except the Inbox "Voice note", which stays a second template.
