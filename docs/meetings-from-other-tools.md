@@ -49,7 +49,7 @@ Open the meeting's page (**New meeting** on Home, or a new row in Meetings), typ
 
 ### A transcript file
 
-Put the file in the **`meetings/`** folder inside your drop folder (by default `~/Documents/brain-dropbox/meetings/`; create the folder if it isn't there). A caption file (`.vtt` or `.srt`) can also go straight in the drop folder. The next catch-up makes a Meetings row from it, with:
+Put the file in the **`meetings/`** folder inside your drop folder (the drop folder you chose in setup, [item 4 of the settings](setup.md#the-settings); by default `Documents/brain-dropbox/meetings/` in your home folder, on a Mac `~/Documents/brain-dropbox/meetings/` and on Windows `C:\Users\<you>\Documents\brain-dropbox\meetings\`; create the `meetings` folder if it isn't there). A caption file (`.vtt` or `.srt`) can also go straight in the drop folder. The next catch-up makes a Meetings row from it, with:
 - **Name and Date from the file name.** Start the name with the date: `2026-11-20 Kickoff with Example Co.vtt` becomes "Kickoff with Example Co" on 20 November 2026. Without a date, the Date is the day the file was last changed.
 - **The transcript** in a toggle titled **Transcript**, one paragraph per speaker turn for a caption file.
 
