@@ -55,9 +55,9 @@ export async function removeJournal(root: string, op: string): Promise<void> {
 }
 
 /** Commit the listed paths with the trailer `Op: <op>` (the durable link between the journal and the commit). */
-export async function commitWithOp(root: string, op: string, paths: string[], subject: string): Promise<void> {
-  await git(root, ["add", "--", ...paths]);
-  await git(root, ["commit", "-m", `${subject}\n\nOp: ${op}`, "--only", "--", ...paths]);
+export async function commitWithOp(root: string, op: string, paths: string[], subject: string, trailers: readonly string[] = []): Promise<void> {
+  await git(root, ["add", "-A", "--", ...paths]);
+  await git(root, ["commit", "-m", `${subject}\n\n${[`Op: ${op}`, ...trailers].join("\n")}`, "--only", "--", ...paths]);
 }
 
 async function commitExists(root: string, op: string): Promise<boolean> {
@@ -114,10 +114,12 @@ async function pruneEmpty(root: string, folder: string): Promise<void> {
  * Flush a workspace as one journaled operation (§7.11): the journal first, then the files and the log, then one Git commit carrying
  * `Op: <op>`, then the journal's removal. A failure rolls back at once; if that fails too the journal stays and every command refuses.
  */
-export async function commitJournaled(root: string, workspace: Workspace, log: readonly LogEntry[], now: Date, subject: string): Promise<string> {
+export async function commitJournaled(root: string, workspace: Workspace, log: readonly LogEntry[], now: Date, subject: string, options: { trailers?: readonly string[]; remove?: readonly string[] } = {}): Promise<string> {
   await assertCleanTree(root);
   const op = newOpId();
   const entries: JournalEntry[] = workspace.changedPaths.map((path) => ({ path, hash: sha(workspace.stagedContent(path) ?? ""), new: workspace.isNew(path) }));
+  // A removed path (a clean-up undo removes what the item created, cli §5.38): recovery puts it back from the last commit.
+  for (const path of options.remove ?? []) entries.push({ path, hash: null, new: false });
   if (log.length > 0) {
     // The log is appended, so its final content is not known beforehand: a null hash lets recovery treat it as the operation's own.
     const logPath = `log/${formatTimestamp(now).slice(0, 7)}.md`;
@@ -126,7 +128,8 @@ export async function commitJournaled(root: string, workspace: Workspace, log: r
   await writeJournal(root, { op, written: now.toISOString(), entries });
   try {
     await workspace.commit(log, now);
-    await commitWithOp(root, op, entries.map((entry) => entry.path), subject);
+    for (const path of options.remove ?? []) await rm(join(root, path), { force: true });
+    await commitWithOp(root, op, entries.map((entry) => entry.path), subject, options.trailers);
   } catch (error) {
     try { await recoverAll(root); } catch { /* journal kept */ }
     throw error instanceof BrainError ? error : new BrainError("INTERNAL", `The write failed and was rolled back: ${error instanceof Error ? error.message : String(error)}`);

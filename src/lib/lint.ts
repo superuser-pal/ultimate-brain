@@ -532,7 +532,7 @@ function collectIds(value: unknown, out: string[] = []): string[] {
 }
 
 /** Body lines outside fenced code blocks, with inline code removed: [index, text]. */
-function proseLines(body: string): Array<[number, string]> {
+export function proseLines(body: string): Array<[number, string]> {
   const out: Array<[number, string]> = [];
   let fence: string | null = null;
   body.split("\n").forEach((line, index) => {
@@ -547,7 +547,7 @@ function proseLines(body: string): Array<[number, string]> {
 }
 
 /** File existence with exact case on every segment, so macOS and Linux agree. */
-function caseSensitiveExists(root: string): (relative: string) => boolean {
+export function caseSensitiveExists(root: string): (relative: string) => boolean {
   const listings = new Map<string, Set<string> | null>();
   const entries = (dir: string): Set<string> | null => {
     if (!listings.has(dir)) {

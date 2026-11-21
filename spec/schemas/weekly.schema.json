@@ -15,16 +15,32 @@
     "hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
     "count": { "type": "integer", "minimum": 0 },
     "counts": {
-      "description": "The three shared limits and the queued remainder of one week (weekly-review.md §5): D, I, T and queued.",
-      "type": "object",
-      "required": ["decisions", "new_items", "targets", "queued"],
-      "additionalProperties": false,
-      "properties": {
-        "decisions": { "type": "integer", "minimum": 0, "maximum": 5 },
-        "new_items": { "type": "integer", "minimum": 0, "maximum": 5 },
-        "targets": { "type": "integer", "minimum": 0, "maximum": 5 },
-        "queued": { "$ref": "#/$defs/count" }
-      }
+      "description": "One week's counts (weekly-review.md §5, §9.5). From 0.17.0: A Actions (at most 5), C doubtful items (at most 10), the cleaned items, T targets of new session items (at most 5) and queued. A week written before 0.17.0 has decisions and new_items in place of actions, doubtful and cleaned, and stays valid.",
+      "anyOf": [
+        {
+          "type": "object",
+          "required": ["actions", "doubtful", "cleaned", "targets", "queued"],
+          "additionalProperties": false,
+          "properties": {
+            "actions": { "type": "integer", "minimum": 0, "maximum": 5 },
+            "doubtful": { "type": "integer", "minimum": 0, "maximum": 10 },
+            "cleaned": { "$ref": "#/$defs/count" },
+            "targets": { "type": "integer", "minimum": 0, "maximum": 5 },
+            "queued": { "$ref": "#/$defs/count" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["decisions", "new_items", "targets", "queued"],
+          "additionalProperties": false,
+          "properties": {
+            "decisions": { "type": "integer", "minimum": 0, "maximum": 5 },
+            "new_items": { "type": "integer", "minimum": 0, "maximum": 5 },
+            "targets": { "type": "integer", "minimum": 0, "maximum": 5 },
+            "queued": { "$ref": "#/$defs/count" }
+          }
+        }
+      ]
     },
     "claimKey": {
       "description": "A corrected claim (weekly-review.md §8.1): <target>:<field> for a fact, <decision id> for a supersede, <target>:rule:<proposal id> for a rule.",
@@ -32,9 +48,9 @@
       "pattern": "^[a-z]{2,4}-[0-9abcdefghjkmnpqrstvwxyz]{8}(:[a-z][a-z0-9_]*|:rule:prp-[0-9abcdefghjkmnpqrstvwxyz]{8})?$"
     },
     "fingerprint": {
-      "description": "A reflection finding (schema §11.4); the same pattern as proposal.schema.json $defs/fingerprint.",
+      "description": "A reflection finding or a clean-up item (schema §11.4); the same pattern as proposal.schema.json $defs/fingerprint.",
       "type": "string",
-      "pattern": "^(contradiction|stale):(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}:[a-z][a-z0-9_]*$|^merge:(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}\\+(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^promotion:(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}:(mtg|src)-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^theme:[a-z0-9]+(-[a-z0-9]+){1,2}$"
+      "pattern": "^(contradiction|stale):(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}:[a-z][a-z0-9_]*$|^merge:(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}\\+(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^promotion:(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}:(mtg|src)-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^theme:[a-z0-9]+(-[a-z0-9]+){1,2}$|^tidy:(pair_half|repeated_value):(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}:[a-z][a-z0-9_]*$|^tidy:moved_link:(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}:[0-9a-f]{8}$|^tidy:stale_draft:(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
     },
     "findingKey": {
       "description": "An Ultimate Assistant finding (assistant.md §3.3); the same pattern as assistant.schema.json $defs/findingKey.",
@@ -43,8 +59,13 @@
     },
     "correctionKey": { "description": "correction:<claim key> (weekly-review.md §7).", "type": "string", "pattern": "^correction:[a-z]{2,4}-[0-9abcdefghjkmnpqrstvwxyz]{8}(:[a-z][a-z0-9_]*|:rule:prp-[0-9abcdefghjkmnpqrstvwxyz]{8})?$" },
     "itemKey": {
-      "description": "A weekly finding key (weekly-review.md §7): an assistant key, a reflection fingerprint, or correction:<claim key>.",
-      "anyOf": [{ "$ref": "#/$defs/findingKey" }, { "$ref": "#/$defs/fingerprint" }, { "$ref": "#/$defs/correctionKey" }]
+      "description": "A weekly finding key (weekly-review.md §7): an assistant key, a reflection or clean-up fingerprint, correction:<claim key>, or proposal:<id> for a carried item whose proposal has no key (§15.6).",
+      "anyOf": [
+        { "$ref": "#/$defs/findingKey" },
+        { "$ref": "#/$defs/fingerprint" },
+        { "$ref": "#/$defs/correctionKey" },
+        { "type": "string", "pattern": "^proposal:prp-[0-9abcdefghjkmnpqrstvwxyz]{8}$" }
+      ]
     },
     "clusterKey": {
       "description": "A reflection cluster (cli.md §5.32): <signal>:<member ids sorted, joined by +>, or recurring_term:<slug>.",
@@ -52,24 +73,22 @@
       "pattern": "^(shared_ground|overtaken|near_duplicate):[a-z]{2,4}-[0-9abcdefghjkmnpqrstvwxyz]{8}(\\+[a-z]{2,4}-[0-9abcdefghjkmnpqrstvwxyz]{8})?$|^recurring_term:[a-z0-9]+(-[a-z0-9]+){1,2}$"
     },
     "category": {
-      "description": "What kind of attention a finding asks for: the assistant's categories (assistant.md §3.3) and the knowledge ones. overdue is the category §7 rule 2 compares.",
-      "enum": ["overdue", "stalled", "no next step", "structure", "correction", "contradiction", "stale", "promotion", "duplicate", "theme"]
+      "description": "What kind of attention a finding asks for: the assistant's categories (assistant.md §3.3) and the knowledge ones. overdue is the category §7 rule 2 compares. cleanup is a mechanical item (weekly-review.md §15.2).",
+      "enum": ["overdue", "stalled", "no next step", "structure", "correction", "contradiction", "stale", "promotion", "duplicate", "theme", "cleanup"]
     },
     "repetition": {
-      "description": "Whether a finding may be a decision item this week (weekly-review.md §7). show is false for a finding shown before whose evidence, overdue state and urgency are unchanged and that is no critical problem. because: new (never shown, or shown 26 weeks ago and dropped), this_week (already an item of this week: a rerun keeps it), evidence, overdue, urgency, critical (§7 rules 1 to 4), or null when show is false. pending is the finding's pending proposal, when it has one.",
+      "description": "Whether a finding may be a decision item this week (weekly-review.md §7). show is false for a finding shown before whose evidence, overdue state and urgency are unchanged and that is no critical problem. because: new (never shown, or shown 26 weeks ago and dropped), this_week (already an item of this week: a rerun keeps it), evidence, overdue, urgency, critical (§7 rules 1 to 4), or null when show is false. pending is the finding's pending proposal, when it has one. carried: an item of an earlier row never set Ready (§15.6).",
       "type": "object",
       "required": ["show", "because", "shown", "pending", "evidence_hash"],
       "additionalProperties": false,
       "properties": {
         "show": { "type": "boolean" },
-        "because": { "enum": ["new", "this_week", "evidence", "overdue", "urgency", "critical", null] },
+        "because": { "enum": ["new", "this_week", "evidence", "overdue", "urgency", "critical", "carried", null] },
         "shown": { "description": "The last week it was a decision item, or null.", "anyOf": [{ "$ref": "#/$defs/week" }, { "type": "null" }] },
         "pending": { "anyOf": [{ "$ref": "#/$defs/proposalId" }, { "type": "null" }] },
         "evidence_hash": { "$ref": "#/$defs/hash" }
       },
-      "allOf": [
-        { "if": { "properties": { "show": { "const": true } } }, "then": { "properties": { "because": { "type": "string" } } }, "else": { "properties": { "because": { "const": null } } } }
-      ]
+      "allOf": [{ "if": { "properties": { "show": { "const": true } } }, "then": { "properties": { "because": { "type": "string" } } }, "else": { "properties": { "because": { "const": null } } } }]
     },
     "change": {
       "description": "A What changed candidate (weekly-review.md §4.2). key is <kind>:<ref> (changed:<note>:<field>:<learned> for a fact). ref is a note id, or notion:<page id> for a task. path is the note's file (null for a task), url the task's page (null for a note). bullet marks the 8 a report shows (§4.3: by weight, then newest, then key); the rest are covered by count.",
@@ -172,9 +191,9 @@
       }
     },
     "plan": {
-      "description": "The full plan of brain weekly plan (cli.md §5.34): the hand-off file <label>.plan.json it saves next to the snapshot, which the skill reads in parts; its data is planSummary. clusters holds at most settings.weekly.max_judged clusters, carried ones first (weekly-review.md §10), then the window's in reflection's rank; clusters_left names the window's clusters beyond that limit, which a run omits (§10) and carries. findings excludes the dismissed (assistant.md §3.5) and keeps every other one, with its repetition. pending lists the pending proposals whose finding, fingerprint or correction is a candidate's key. week_state is this week's from _weekly/state.json (zeros and no items for a new week). earlier_open counts the earlier findings not shown again whose proposal is pending (§7). quiet is weekly-review.md §9.1, a same-week rerun with an unchanged input_hash included; it is false whenever notion is unreachable (a failure).",
+      "description": "The full plan of brain weekly plan (cli.md §5.34): the hand-off file <label>.plan.json it saves next to the snapshot, which the skill reads in parts; its data is planSummary. clusters holds at most settings.weekly.max_judged clusters, carried ones first (weekly-review.md §10), then the window's in reflection's rank; clusters_left names the window's clusters beyond that limit, which a run omits (§10) and carries. findings excludes the dismissed (assistant.md §3.5) and keeps every other one, with its repetition. pending lists the pending proposals whose finding, fingerprint or correction is a candidate's key. week_state is this week's from _weekly/state.json (zeros and no items for a new week). earlier_open counts the earlier findings not shown again whose proposal is pending (§7). quiet is weekly-review.md §9.1, a same-week rerun with an unchanged input_hash included; it is false whenever notion is unreachable (a failure). From 0.17.0 (weekly-review.md §15): source is the run's agent session, the source of the proposals select words; cleanup the mechanical items of brain cleanup plan (cli.md §5.38) and cleanup_auto settings.cleanup.auto; done the snapshot's tasks and projects finished in the window (§3.2), newest first; carry the pending Actions and doubtful items of earlier rows whose Brain Status in the snapshot's weekly_rows is New, or that were never published, in their rows' order (§15.6). pending's weekly is the week of the row that offers the proposal, or null.",
       "type": "object",
-      "required": ["week", "as_of", "local_date", "notion", "window", "report", "changes", "inputs", "findings", "skipped_signals", "task_analysis", "clusters", "clusters_left", "corrections", "pending", "week_state", "earlier_open", "budget", "input_hash", "quiet"],
+      "required": ["week", "as_of", "local_date", "notion", "window", "report", "changes", "inputs", "findings", "skipped_signals", "task_analysis", "clusters", "clusters_left", "corrections", "pending", "week_state", "earlier_open", "budget", "input_hash", "quiet", "source", "cleanup", "cleanup_auto", "done", "carry"],
       "additionalProperties": false,
       "properties": {
         "week": { "$ref": "#/$defs/week" },
@@ -186,12 +205,7 @@
           "type": "object",
           "required": ["from", "to", "first", "days"],
           "additionalProperties": false,
-          "properties": {
-            "from": { "$ref": "#/$defs/timestamp" },
-            "to": { "$ref": "#/$defs/timestamp" },
-            "first": { "type": "boolean" },
-            "days": { "$ref": "#/$defs/count" }
-          }
+          "properties": { "from": { "$ref": "#/$defs/timestamp" }, "to": { "$ref": "#/$defs/timestamp" }, "first": { "type": "boolean" }, "days": { "$ref": "#/$defs/count" } }
         },
         "report": {
           "description": "This week's report when one exists (a rerun updates it, weekly-review.md §2), else null.",
@@ -228,7 +242,12 @@
         "corrections": { "type": "array", "items": { "$ref": "#/$defs/claim" } },
         "pending": {
           "type": "array",
-          "items": { "type": "object", "required": ["key", "proposal"], "additionalProperties": false, "properties": { "key": { "$ref": "#/$defs/itemKey" }, "proposal": { "$ref": "#/$defs/proposalId" } } }
+          "items": {
+            "type": "object",
+            "required": ["key", "proposal", "weekly"],
+            "additionalProperties": false,
+            "properties": { "key": { "$ref": "#/$defs/itemKey" }, "proposal": { "$ref": "#/$defs/proposalId" }, "weekly": { "anyOf": [{ "$ref": "#/$defs/week" }, { "type": "null" }] } }
+          }
         },
         "week_state": {
           "type": "object",
@@ -245,7 +264,46 @@
           "properties": { "minutes": { "type": "integer", "minimum": 1 }, "max_judged": { "type": "integer", "minimum": 1 } }
         },
         "input_hash": { "$ref": "#/$defs/hash" },
-        "quiet": { "type": "boolean" }
+        "quiet": { "type": "boolean" },
+        "source": { "type": "string", "pattern": "^agent:brain-weekly-review/\\d{8}T\\d{6}Z$" },
+        "cleanup": { "type": "array", "items": { "$ref": "#/$defs/cleanupItem" } },
+        "cleanup_auto": { "type": "boolean" },
+        "done": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["kind", "title", "project", "date", "url"],
+            "additionalProperties": false,
+            "properties": {
+              "kind": { "enum": ["task", "project"] },
+              "title": { "type": "string", "minLength": 1 },
+              "project": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+              "date": { "$ref": "#/$defs/date" },
+              "url": { "$ref": "#/$defs/taskUrl" }
+            }
+          }
+        },
+        "carry": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["week", "label", "part", "proposal", "key", "category", "stream", "kind", "subject", "decide", "targets"],
+            "additionalProperties": false,
+            "properties": {
+              "week": { "$ref": "#/$defs/week" },
+              "label": { "type": "string", "pattern": "^[AC][1-9]\\d*$" },
+              "part": { "enum": ["A", "C"] },
+              "proposal": { "$ref": "#/$defs/proposalId" },
+              "key": { "$ref": "#/$defs/itemKey" },
+              "category": { "$ref": "#/$defs/category" },
+              "stream": { "enum": ["work", "knowledge", "cleanup"] },
+              "kind": { "enum": ["Action", "Clean-up"] },
+              "subject": { "type": "string", "minLength": 1 },
+              "decide": { "type": "string", "minLength": 1 },
+              "targets": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
       }
     },
     "judgedFinding": {
@@ -298,11 +356,20 @@
         "file": { "anyOf": [{ "type": "string", "pattern": "^(/|[A-Za-z]:[\\\\/]).+\\.plan\\.json$" }, { "type": "null" }] },
         "counts": {
           "type": "object",
-          "required": ["changes", "findings", "findings_shown", "clusters", "clusters_left", "corrections", "pending", "earlier_open"],
+          "required": ["changes", "findings", "findings_shown", "clusters", "clusters_left", "corrections", "pending", "earlier_open", "cleanup", "done", "carry"],
           "additionalProperties": false,
           "properties": {
-            "changes": { "$ref": "#/$defs/count" }, "findings": { "$ref": "#/$defs/count" }, "findings_shown": { "$ref": "#/$defs/count" }, "clusters": { "$ref": "#/$defs/count" },
-            "clusters_left": { "$ref": "#/$defs/count" }, "corrections": { "$ref": "#/$defs/count" }, "pending": { "$ref": "#/$defs/count" }, "earlier_open": { "$ref": "#/$defs/count" }
+            "changes": { "$ref": "#/$defs/count" },
+            "findings": { "$ref": "#/$defs/count" },
+            "findings_shown": { "$ref": "#/$defs/count" },
+            "clusters": { "$ref": "#/$defs/count" },
+            "clusters_left": { "$ref": "#/$defs/count" },
+            "corrections": { "$ref": "#/$defs/count" },
+            "pending": { "$ref": "#/$defs/count" },
+            "earlier_open": { "$ref": "#/$defs/count" },
+            "cleanup": { "$ref": "#/$defs/count" },
+            "done": { "$ref": "#/$defs/count" },
+            "carry": { "$ref": "#/$defs/count" }
           }
         }
       },
@@ -324,57 +391,97 @@
           "properties": {
             "clusters": { "type": "array", "items": { "$ref": "#/$defs/clusterKey" }, "uniqueItems": true },
             "findings": { "type": "array", "items": { "$ref": "#/$defs/judgedFinding" } },
-            "corrections": { "type": "array", "items": { "$ref": "#/$defs/correctionJudgment" } }
+            "corrections": { "type": "array", "items": { "$ref": "#/$defs/correctionJudgment" } },
+            "next_steps": {
+              "description": "The next steps the skill wrote from a project's own notes and inputs (weekly-review.md §6.1), one per project_no_next_step finding of the plan it can word: the task's words and why (citing the notes). Only such a finding becomes an Action (a new_task); the others are Focus first only.",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["key", "task_title", "why"],
+                "additionalProperties": false,
+                "properties": {
+                  "key": { "type": "string", "pattern": "^project_no_next_step:prj-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
+                  "task_title": { "type": "string", "pattern": "^[^\\n]+$", "minLength": 1 },
+                  "why": { "type": "string", "minLength": 1 }
+                }
+              }
+            }
           }
         }
       }
     },
     "item": {
-      "description": "A decision item (weekly-review.md §6.1), numbered n in the report. lives says where it is decided: in the Claude Code or Codex session (session, a proposal; capture-and-review §7.5) or on a task in Notion (task). write is true when step 8 must write its proposal (proposal null); false when it links an existing pending proposal (proposal set) or is a task (proposal null, url its page or null brain only). targets are the note ids it changes, or notion:<page id> for a task or a task's notion_change; new_items is what it adds to I (§5.1). recommendation (work stream, write true) is the assistant recommendation to propose; finding (knowledge stream, write true) is the judged finding. kind is the report's label (§3.4).",
+      "description": "An item of the week (weekly-review.md §6.1), numbered n in select's order. part: A an Action, C a doubtful item (both in the row, decided by a tick), T a session item counted in Waiting for you (a correction group or a contradiction). write is true when step 8 must write its proposal (proposal null); false when it links an existing pending proposal. proposal_input, when present on a write item, is the exact proposals list of its brain proposal new input: a correction group's review_notes and changes (§8.4), a next step's new_task, a mechanical item's merge, archive_draft or fix_structure while settings.cleanup.auto is off; the skill writes the other items' proposals from recommendation (work stream) or finding (knowledge stream). carried_from names the week of the row it came from (§15.6). targets are the note ids it changes, or notion:<page id>.",
       "type": "object",
-      "required": ["n", "key", "stream", "kind", "category", "subject", "decide", "lives", "write", "proposal", "url", "targets", "new_items", "because", "evidence_hash", "recommendation", "finding"],
+      "required": ["n", "part", "key", "stream", "kind", "category", "subject", "decide", "write", "proposal", "targets", "because", "evidence_hash", "recommendation", "finding"],
       "additionalProperties": false,
       "properties": {
-        "n": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "n": { "type": "integer", "minimum": 1, "maximum": 20 },
+        "part": { "enum": ["A", "C", "T"] },
         "key": { "$ref": "#/$defs/itemKey" },
-        "stream": { "enum": ["work", "knowledge", "correction"] },
-        "kind": { "enum": ["Correction", "Contradiction", "Stale fact", "Overdue", "Stalled", "No next step", "Done but open", "Misplaced", "Duplicate project", "No project", "No Domain", "Empty Area", "Duplicate", "Promotion", "Theme"] },
+        "stream": { "enum": ["work", "knowledge", "correction", "cleanup"] },
+        "kind": {
+          "enum": ["Correction", "Contradiction", "Stale fact", "Stalled", "No next step", "Done but open", "Misplaced", "Duplicate project", "No project", "No Domain", "Empty Area", "Duplicate", "Promotion", "Theme", "Clean-up", "Action"]
+        },
         "category": { "$ref": "#/$defs/category" },
         "subject": { "type": "string", "minLength": 1 },
         "decide": { "type": "string", "minLength": 1 },
-        "lives": { "enum": ["session", "task"] },
         "write": { "type": "boolean" },
         "proposal": { "anyOf": [{ "$ref": "#/$defs/proposalId" }, { "type": "null" }] },
-        "url": { "anyOf": [{ "$ref": "#/$defs/taskUrl" }, { "type": "null" }] },
-        "targets": { "type": "array", "minItems": 1, "items": { "type": "string" }, "uniqueItems": true },
-        "new_items": { "$ref": "#/$defs/count" },
-        "because": { "enum": ["new", "this_week", "evidence", "overdue", "urgency", "critical"] },
+        "targets": { "type": "array", "minItems": 0, "items": { "type": "string" }, "uniqueItems": true },
+        "because": { "enum": ["new", "this_week", "evidence", "overdue", "urgency", "critical", "carried"] },
         "evidence_hash": { "$ref": "#/$defs/hash" },
         "days_late": { "type": "integer" },
         "days_idle": { "type": "integer" },
-        "shown_of": { "description": "A correction group admitted in part: <k> of <size> shown (§5.2, §8.4).", "type": "object", "required": ["k", "size"], "additionalProperties": false, "properties": { "k": { "type": "integer", "minimum": 1 }, "size": { "type": "integer", "minimum": 1 } } },
-        "proposal_input": { "description": "A correction item with write true (weekly-review.md §8.4): the exact proposals list of the brain proposal new input for its group, the review_notes first, then one update_fact or replace_line per admitted target.", "type": "array", "minItems": 2, "items": { "type": "object" } },
-        "recommendation": { "anyOf": [{ "type": "object", "required": ["action", "value", "label"], "additionalProperties": false, "properties": { "action": { "type": "string" }, "value": {}, "label": { "type": "string" } } }, { "type": "null" }] },
-        "finding": { "anyOf": [{ "$ref": "#/$defs/judgedFinding" }, { "type": "null" }] }
+        "shown_of": {
+          "description": "A correction group admitted in part: <k> of <size> shown (§5.2, §8.4).",
+          "type": "object",
+          "required": ["k", "size"],
+          "additionalProperties": false,
+          "properties": { "k": { "type": "integer", "minimum": 1 }, "size": { "type": "integer", "minimum": 1 } }
+        },
+        "proposal_input": {
+          "description": "the exact proposals list of its brain proposal new input: a correction group's review_notes and changes (§8.4), a next step's new_task, a mechanical item's merge, archive_draft or fix_structure while settings.cleanup.auto is off; the skill writes the other items' proposals from recommendation (work stream) or finding (knowledge stream).",
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "object" }
+        },
+        "recommendation": {
+          "anyOf": [
+            { "type": "object", "required": ["action", "value", "label"], "additionalProperties": false, "properties": { "action": { "type": "string" }, "value": {}, "label": { "type": "string" } } },
+            { "type": "null" }
+          ]
+        },
+        "finding": { "anyOf": [{ "$ref": "#/$defs/judgedFinding" }, { "type": "null" }] },
+        "carried_from": { "$ref": "#/$defs/week" }
       },
       "allOf": [
-        { "if": { "properties": { "lives": { "const": "task" } } }, "then": { "properties": { "write": { "const": false }, "proposal": { "type": "null" }, "new_items": { "const": 0 } } } },
-        { "if": { "properties": { "write": { "const": true } } }, "then": { "properties": { "proposal": { "type": "null" }, "lives": { "const": "session" } } } },
-        { "if": { "properties": { "lives": { "const": "session" }, "write": { "const": false } } }, "then": { "properties": { "proposal": { "$ref": "#/$defs/proposalId" }, "new_items": { "const": 0 } } } }
+        { "if": { "properties": { "write": { "const": true } } }, "then": { "properties": { "proposal": { "type": "null" } } } },
+        { "if": { "properties": { "write": { "const": false } } }, "then": { "properties": { "proposal": { "$ref": "#/$defs/proposalId" } }, "not": { "required": ["proposal_input"] } } }
       ]
     },
     "selection": {
-      "description": "The data of brain weekly select (cli.md §5.34), also saved as the hand-off file <label>.selection.json next to the plan file: the plan's input_hash, the decision items in report order, the queued remainder, this week's counts after the items (the week's earlier counts included, §5.1), the earlier findings whose proposals still wait for a decision (§7), what the run omitted (§10) and its coverage.",
+      "description": "The data of brain weekly select (cli.md §5.34), also saved as the hand-off file <label>.selection.json next to the plan file: the plan's input_hash, the decision items in report order, the queued remainder, this week's counts after the items (the week's earlier counts included, §5.1), the earlier findings whose proposals still wait for a decision (§7), what the run omitted (§10) and its coverage. From 0.17.0 the items are the row's Actions (A, at most 5) and doubtful items (C, at most 10) and the session items (T, at most 5 targets); a carried item left out is queued with its proposal and the week it came from (§15.6).",
       "type": "object",
       "required": ["week", "input_hash", "items", "queued", "counts", "earlier_open", "omitted", "coverage"],
       "additionalProperties": false,
       "properties": {
         "week": { "$ref": "#/$defs/week" },
         "input_hash": { "description": "The input_hash of the plan it selected from.", "$ref": "#/$defs/hash" },
-        "items": { "type": "array", "maxItems": 5, "items": { "$ref": "#/$defs/item" } },
+        "items": { "type": "array", "maxItems": 20, "items": { "$ref": "#/$defs/item" } },
         "queued": {
           "type": "array",
-          "items": { "type": "object", "required": ["key", "category"], "additionalProperties": false, "properties": { "key": { "$ref": "#/$defs/itemKey" }, "category": { "$ref": "#/$defs/category" } } }
+          "items": {
+            "type": "object",
+            "required": ["key", "category"],
+            "additionalProperties": false,
+            "properties": {
+              "key": { "$ref": "#/$defs/itemKey" },
+              "category": { "$ref": "#/$defs/category" },
+              "proposal": { "$ref": "#/$defs/proposalId" },
+              "carried_from": { "$ref": "#/$defs/week" }
+            }
+          }
         },
         "counts": { "$ref": "#/$defs/counts" },
         "earlier_open": { "$ref": "#/$defs/count" },
@@ -382,24 +489,29 @@
           "type": "object",
           "required": ["clusters", "correction_targets"],
           "additionalProperties": false,
-          "properties": {
-            "clusters": { "type": "array", "items": { "$ref": "#/$defs/clusterKey" }, "uniqueItems": true },
-            "correction_targets": { "$ref": "#/$defs/count" }
-          }
+          "properties": { "clusters": { "type": "array", "items": { "$ref": "#/$defs/clusterKey" }, "uniqueItems": true }, "correction_targets": { "$ref": "#/$defs/count" } }
         },
         "coverage": { "enum": ["complete", "partial"] },
         "corrections": {
           "description": "What the run did with each claim of the plan (weekly-review.md §8.4): open lists the targets still queued (not admitted, or not judged), [] when the claim is finished; clarify counts its uncertain matches.",
           "type": "array",
-          "items": { "type": "object", "required": ["claim", "open", "clarify"], "additionalProperties": false, "properties": { "claim": { "$ref": "#/$defs/claimKey" }, "open": { "type": "array", "items": { "$ref": "#/$defs/noteId" }, "uniqueItems": true }, "clarify": { "$ref": "#/$defs/count" } } }
+          "items": {
+            "type": "object",
+            "required": ["claim", "open", "clarify"],
+            "additionalProperties": false,
+            "properties": { "claim": { "$ref": "#/$defs/claimKey" }, "open": { "type": "array", "items": { "$ref": "#/$defs/noteId" }, "uniqueItems": true }, "clarify": { "$ref": "#/$defs/count" } }
+          }
         }
       }
     },
     "recordInput": {
-      "description": "The input of brain weekly record (cli.md §5.34): plan's and select's data, by the plan's input_hash (record reads the two saved hand-off files, the scheduled run's way) or both embedded as they came, the proposal written for each item whose write is true (step 8; a DUPLICATE_PENDING names the existing one), the skill's What changed bullets (at most 8, each one line starting - **<Label>:**) and Task analysis lines (weekly-review.md §3.2, §3.3), the run's mode, whether the report will be published as the week's Inbox row (weekly-review.md §9.3: refused from an unattended run while settings.publish isn't auto), the failures of earlier steps, and the run's notes read and seconds for the log line. record renders the header (§3.1) and What needs your decision (§3.4) itself.",
+      "description": "The input of brain weekly record (cli.md §5.34): plan's and select's data, by the plan's input_hash (record reads the two saved hand-off files, the scheduled run's way) or both embedded as they came, the proposal written for each item whose write is true (step 8; a DUPLICATE_PENDING names the existing one), the skill's prose for Your week (weekly-review.md §3.2: in_short, highlights, focus_first), the mechanical items step 5a applied (cleaned: brain cleanup apply's data.applied as returned, [] when none or auto is off), the run's mode, whether the report will be published as the week's Inbox row (weekly-review.md §9.3: refused from an unattended run while settings.publish isn't auto), the failures of earlier steps, and the run's notes read and seconds for the log line. record renders the header (§3.1), Done this week, Actions, Waiting for you and Clean-up itself.",
       "type": "object",
-      "required": ["proposals", "what_changed", "task_analysis", "mode", "publish", "failures", "notes_read", "seconds"],
-      "oneOf": [{ "required": ["plan", "selection"], "not": { "required": ["input_hash"] } }, { "required": ["input_hash"], "not": { "anyOf": [{ "required": ["plan"] }, { "required": ["selection"] }] } }],
+      "required": ["proposals", "in_short", "highlights", "focus_first", "cleaned", "mode", "publish", "failures", "notes_read", "seconds"],
+      "oneOf": [
+        { "required": ["plan", "selection"], "not": { "required": ["input_hash"] } },
+        { "required": ["input_hash"], "not": { "anyOf": [{ "required": ["plan"] }, { "required": ["selection"] }] } }
+      ],
       "additionalProperties": false,
       "properties": {
         "plan": { "$ref": "#/$defs/plan" },
@@ -407,16 +519,42 @@
         "input_hash": { "description": "planSummary.input_hash: the saved plan and selection files must both have it (INPUT_INVALID otherwise).", "$ref": "#/$defs/hash" },
         "proposals": {
           "type": "array",
-          "items": { "type": "object", "required": ["key", "proposal"], "additionalProperties": false, "properties": { "key": { "$ref": "#/$defs/itemKey" }, "proposal": { "$ref": "#/$defs/proposalId" } } }
+          "items": {
+            "type": "object",
+            "required": ["key", "proposal"],
+            "additionalProperties": false,
+            "properties": { "key": { "$ref": "#/$defs/itemKey" }, "proposal": { "$ref": "#/$defs/proposalId" } }
+          }
         },
-        "what_changed": {
-          "description": "At most 8 bullets, each one line starting - **<Label>:** with the labels in §3.2's order, or the one line - Nothing new this week.",
+        "in_short": { "description": "One or two sentences on the week, one line, citing nothing new.", "type": "string", "pattern": "^[^\\n]+$", "minLength": 1 },
+        "highlights": {
+          "description": "At most 6 bullets, each one line starting - **<Label>:** with the labels in §3.2's order, linked and dated; or the one line - Nothing new this week.",
           "type": "array",
           "minItems": 1,
-          "maxItems": 8,
+          "maxItems": 6,
           "items": { "type": "string", "pattern": "^- \\*\\*(Decided|Changed|Open|Answered|Next):\\*\\* [^\\n]+$|^- Nothing new this week\\.$" }
         },
-        "task_analysis": { "description": "The section's lines without its heading (§3.3): the category bullets, then a blank line, Order of attention: and 1 to 3 numbered lines; or the one line - No overdue, stalled or blocked work. record checks the shape.", "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^[^\\n]*$" } },
+        "focus_first": {
+          "description": "1 to 3 numbered lines 1. <subject>: <reason>; or the one line - No overdue, stalled or blocked work.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": { "type": "string", "pattern": "^[1-3]\\. [^\\n]+$|^- No overdue, stalled or blocked work\\.$" }
+        },
+        "cleaned": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["proposal", "tidy", "title", "commit"],
+            "additionalProperties": false,
+            "properties": {
+              "proposal": { "$ref": "#/$defs/proposalId" },
+              "tidy": { "enum": ["pair_half", "moved_link", "repeated_value", "exact_duplicate", "stale_draft"] },
+              "title": { "type": "string", "minLength": 1 },
+              "commit": { "type": "string", "pattern": "^[0-9a-f]{7,64}$" }
+            }
+          }
+        },
         "mode": { "enum": ["attended", "unattended"] },
         "publish": { "type": "boolean" },
         "failures": { "type": "array", "items": { "type": "string", "minLength": 1 } },
@@ -464,7 +602,33 @@
               "input_hash": { "$ref": "#/$defs/hash" },
               "counts": { "$ref": "#/$defs/counts" },
               "items": { "type": "array", "items": { "$ref": "#/$defs/itemKey" }, "uniqueItems": true },
-              "corrections_from": { "description": "corrections as they were before this week's first report (weekly-review.md §8.1, §9.5): a rerun reads the cursor from here.", "$ref": "#/$defs/corrections" }
+              "corrections_from": {
+                "description": "corrections as they were before this week's first report (weekly-review.md §8.1, §9.5): a rerun reads the cursor from here.",
+                "$ref": "#/$defs/corrections"
+              },
+              "row": {
+                "description": "0.17.0 (weekly-review.md §9.5): each label of the week's row (A, C, U) → its proposal and base, the { path, hash } of each Git file its change would write, read when record wrote the row ([] for a Notion write, a new note or a cleaned item).",
+                "type": "object",
+                "propertyNames": { "pattern": "^[ACU][1-9]\\d*$" },
+                "additionalProperties": {
+                  "type": "object",
+                  "required": ["proposal", "base"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "proposal": { "$ref": "#/$defs/proposalId" },
+                    "base": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["path", "hash"],
+                        "additionalProperties": false,
+                        "properties": { "path": { "type": "string", "minLength": 1 }, "hash": { "$ref": "#/$defs/hash" } }
+                      }
+                    }
+                  }
+                }
+              },
+              "carried_to": { "description": "The week its pending items moved to (§15.6), else null.", "anyOf": [{ "$ref": "#/$defs/week" }, { "type": "null" }] }
             }
           }
         },
@@ -546,6 +710,78 @@
         "week": { "$ref": "#/$defs/week" },
         "started": { "$ref": "#/$defs/timestamp" },
         "mode": { "enum": ["attended", "unattended"] }
+      }
+    },
+    "cleanupItem": {
+      "description": "A mechanical item (weekly-review.md §15.2): its kind, title (imperative) and why, its fingerprint, the notes it changes and the files it may write, and the exact brain proposal new input of it (a merge, an archive_draft or a fix_structure with its tidy, fingerprint, why and source).",
+      "type": "object",
+      "required": ["tidy", "title", "why", "fingerprint", "targets", "paths", "proposal_input"],
+      "additionalProperties": false,
+      "properties": {
+        "tidy": { "enum": ["pair_half", "moved_link", "repeated_value", "exact_duplicate", "stale_draft"] },
+        "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "why": { "type": "string", "minLength": 1 },
+        "fingerprint": { "$ref": "#/$defs/fingerprint" },
+        "targets": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/noteId" } },
+        "paths": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "proposal_input": { "type": "object", "required": ["kind", "tidy", "title", "why", "target", "source", "passages", "fingerprint", "evidence"] }
+      }
+    },
+    "cleanupPlan": {
+      "description": "The data of brain cleanup plan (cli.md §5.38): the mechanical items in weekly-review.md §15.2's order, and held, the items left out because their fingerprint was undone or declined before.",
+      "type": "object",
+      "required": ["items", "held"],
+      "additionalProperties": false,
+      "properties": { "items": { "type": "array", "items": { "$ref": "#/$defs/cleanupItem" } }, "held": { "$ref": "#/$defs/count" } }
+    },
+    "rowState": {
+      "description": "One Weekly row's to-dos as the skill read them through the MCP (cli.md §5.34 --row-state, §5.38 ticks): each label, whether it is ticked, and the text after Your note:, trimmed (\"\" when empty).",
+      "type": "object",
+      "required": ["page", "items"],
+      "properties": {
+        "page": { "$ref": "#/$defs/pageId" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "ticked", "note"],
+            "additionalProperties": false,
+            "properties": { "label": { "type": "string", "pattern": "^[A-Z][1-9]\\d*$" }, "ticked": { "type": "boolean" }, "note": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "ticksInput": {
+      "description": "The input of brain cleanup ticks (cli.md §5.38): a Ready Weekly row as the skill read it, its week, its page and when it was read (the decisions' decided_at).",
+      "type": "object",
+      "required": ["week", "page", "read_at", "items"],
+      "additionalProperties": false,
+      "properties": { "week": { "$ref": "#/$defs/week" }, "page": { "$ref": "#/$defs/pageId" }, "read_at": { "$ref": "#/$defs/timestamp" }, "items": { "$ref": "#/$defs/rowState/properties/items" } }
+    },
+    "ticksResult": {
+      "description": "The data of brain cleanup ticks (cli.md §5.38): what happened to each item, the Notion writes for the skill to make through the MCP and settle, and whether nothing in the row waits any more.",
+      "type": "object",
+      "required": ["week", "results", "notion_writes", "done"],
+      "additionalProperties": false,
+      "properties": {
+        "week": { "$ref": "#/$defs/week" },
+        "results": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "proposal", "result"],
+            "additionalProperties": false,
+            "properties": {
+              "label": { "type": "string" },
+              "proposal": { "anyOf": [{ "$ref": "#/$defs/proposalId" }, { "type": "null" }] },
+              "result": { "enum": ["applied", "declined", "open", "stale", "waiting", "ask", "undone", "kept", "already", "skipped", "failed"] },
+              "reason": { "type": "string" },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        "notion_writes": { "type": "array", "items": { "type": "object" } },
+        "done": { "type": "boolean" }
       }
     }
   }
