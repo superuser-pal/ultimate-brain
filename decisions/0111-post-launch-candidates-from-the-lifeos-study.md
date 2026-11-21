@@ -3,7 +3,8 @@
 **Status:** Accepted
 **Date:** 2026-11-21
 **Release:** post-1.0, none assigned (recorded by CC-374 in 1.0.0's section; nothing is built)
-**Keeps:** the feature cutoff and the release sequence ([0061](0061-roadmap-and-launch-boundary.md), [0106](0106-beta-on-0-16-x-patches-0-17-0-and-0-18-0-before-1-0-and-the-launch-bar.md), [0110](0110-the-weekly-row-scheduling-on-mac-and-windows-and-0-16-x-folded-into-0-17-0.md)); [0008](0008-agent-memory-store.md) (memories never reach Notion); [0009](0009-memory-scope-levels.md) and [0074](0074-scoped-memory-handovers-and-bounded-recall.md) (reach, approval, the closing review); [0015](0015-notion-access-via-mcp.md) (only the agent reads Notion); [0051](0051-unattended-catch-up-and-schedules.md) (an unattended run interprets no text you wrote, with the one reading in §2 below); [0060](0060-hermes-operator-and-learning.md) and [0030](0030-capability-based-onboarding-profiles.md) as they are; [0104](0104-product-design-principles.md)
+**Amends:** [0051](0051-unattended-catch-up-and-schedules.md)'s rule that an unattended run interprets no text you wrote: a rule the user stated and approved in a session, kept in "My rules", is applied as written by a scheduled run (§2); it takes effect only when candidate 1 is built
+**Keeps:** the feature cutoff and the release sequence ([0061](0061-roadmap-and-launch-boundary.md), [0106](0106-beta-on-0-16-x-patches-0-17-0-and-0-18-0-before-1-0-and-the-launch-bar.md), [0110](0110-the-weekly-row-scheduling-on-mac-and-windows-and-0-16-x-folded-into-0-17-0.md)); [0008](0008-agent-memory-store.md) (memories never reach Notion); [0009](0009-memory-scope-levels.md) and [0074](0074-scoped-memory-handovers-and-bounded-recall.md) (reach, approval, the closing review); [0015](0015-notion-access-via-mcp.md) (only the agent reads Notion); [0060](0060-hermes-operator-and-learning.md) and [0030](0030-capability-based-onboarding-profiles.md) as they are; [0104](0104-product-design-principles.md)
 
 ## Context
 
@@ -32,7 +33,7 @@ What the evaluation found in the code and contracts of that day:
 ### 2. How candidate 1 works (the author's answers)
 
 - **A rule about brain work is saved in "My rules".** When the user says "remember this" about how the brain should work (minutes, ingest, reports), the closing review writes it, after the user's yes, into "My rules" in the brain's `AGENTS.md` instead of a memory. The skills are not changed to load memories. A lesson for a linked repo stays a memory with its reach, as today.
-- **Only a rule the user stated steers a scheduled run.** A rule the agent inferred from the user's behaviour is not written to "My rules"; it is offered as today and applies only once the user states it. This is the one reading of 0051's "interprets no text you wrote": a rule the user stated and approved in a session is their instruction, applied as written.
+- **Only a rule the user stated steers a scheduled run.** A rule the agent inferred from the user's behaviour is not written to "My rules"; it is offered as today and applies only once the user states it. This amends 0051's "interprets no text you wrote" with one exception: a rule the user stated and approved in a session is their instruction, applied as written.
 - **To check before it is built:** that a scheduled run and the assistant's sub-agent load "My rules" in both agents. The evaluation did not verify it.
 
 ### 3. The brain's program still never reads Notion
@@ -60,6 +61,7 @@ The beta's first independent reports decide the order. If they stay about setup 
 ## Consequences
 
 - `docs/v2-ideas.md` lists the five candidates as post-1.0, evidence-gated, with the answers of §2 and §3.
+- An "Amended by 0111" line in 0051.
 - No spec, CLI, skill, template, Notion or CHANGELOG change. The feature cutoff and 0.17.0's, 0.18.0's and 1.0.0's scope stay as agreed.
 - Promoting a candidate is an explicit roadmap change, made in its own scope review.
 
