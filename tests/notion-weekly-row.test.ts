@@ -106,3 +106,27 @@ test("the principles and the parity epic say scheduling is delivered in 0.17.0, 
   assert.match(epic, /\*\*Delivered in 0\.17\.0 by \[0110\]/);
   assert.match(epic, /One difference stays named and deferred past 0\.17\.0/);
 });
+
+test("migration 0030's part D: the three texts by hand, each with its already-done check, and a read-back on a synthetic two-part row", async () => {
+  const migration = await read("notion/migrations/0030-your-fields-after-your-yes-the-path-without-notion-ai-and-the-weekly-row.md");
+  const d = section(migration, "## Part D · ", "\n## The last steps");
+  for (const heading of ["### D1 · The Weekly review skill (by hand)", "### D2 · The Instructions (by hand)", "### D3 · Today (by hand)", "### D4 · Read it back (by hand)"]) {
+    assert.ok(d.includes(heading), heading);
+  }
+  assert.match(d, /changes no database, property, option, view or button/);
+  assert.match(d, /\*\*Already done\?\*\* The skill's text has a step 4 starting "4\. A row whose headings are "Your week" and "Clean-up""/);
+  assert.match(d, /Neither holds "6\. Then ask me about the task items in rounds of at most five" \(A3's text\) or "Ask me nothing to decide:"/);
+  assert.match(d, /replace "not here\." with "not here, except a Weekly row's Actions and clean-up items, which I tick in that row\."/);
+  const assistant = await read("notion/brain-assistant.md");
+  for (const quoted of ["- A Weekly row's ticks, its Your note lines and its Brain Status are mine:", "- Never touch a project's or area's \"Brief\"", "4. A row whose headings are \"Your week\" and \"Clean-up\"", "For a Weekly row whose Brain Status is New"]) {
+    assert.ok(assistant.includes(quoted), `brain-assistant.md holds what part D quotes: ${quoted}`);
+  }
+  const d4 = section(d, "### D4 · Read it back (by hand)", "\n## ");
+  assert.match(d4, /Kind \*\*Weekly\*\*, Brain Status \*\*New\*\*/);
+  assert.match(d4, /none marked as the review's suggestion\. Answer `1d`/);
+  assert.match(d4, /no to-do is ticked, both Your note lines are empty, and Brain Status reads \*\*New\*\*/);
+  assert.match(d4, /ask "tick C1 for me", then "set this row to Ready"\. It refuses each/);
+  assert.match(d4, /move the two test rows to the trash/);
+  assert.match(migration, /\*\*Already done\?\*\* The skill's text \(in Description, or in the body\) has a step 8 starting "8\. End with one short list", or D1's text/, "A3 accepts D1's text");
+  assert.match(migration, /Part D, the weekly row \(decision 0110\):\n- \[ \] \*\(you\)\*/);
+});

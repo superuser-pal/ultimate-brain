@@ -1,9 +1,10 @@
 # 0030 · 0.17.0: Brain Assistant sets your fields after your yes, Notion Brain Assistant, the path without Notion AI, the weekly row
 
-**Design change:** decision [0101](../../decisions/0101-where-notion-ai-and-the-brain-each-write.md) §3, moved to 0.17.0 by [0106](../../decisions/0106-beta-on-0-16-x-patches-0-17-0-and-0-18-0-before-1-0-and-the-launch-bar.md) §4; CC-325 (release 0.17.0; docs/notion-space-design.md §2 and §10.1, [../brain-assistant.md](../brain-assistant.md) Setup, Instructions and Weekly review, spec/weekly-review.md §13). It is 0.17.0's one Notion migration (0106 §4, [0110](../../decisions/0110-the-weekly-row-scheduling-on-mac-and-windows-and-0-16-x-folded-into-0-17-0.md)): CC-352 (Notion Brain Assistant), CC-329 (First things first's item 1, the path without Notion AI) and CC-372 (the weekly row) add their parts to it before the release. **Applies to:** every space built or migrated before 0.17.0, the template's copy included. Needs migration 0029. A step already done changes nothing, so running this again is safe.
+**Design change:** decision [0101](../../decisions/0101-where-notion-ai-and-the-brain-each-write.md) §3, moved to 0.17.0 by [0106](../../decisions/0106-beta-on-0-16-x-patches-0-17-0-and-0-18-0-before-1-0-and-the-launch-bar.md) §4; CC-325 (release 0.17.0; docs/notion-space-design.md §2 and §10.1, [../brain-assistant.md](../brain-assistant.md) Setup, Instructions and Weekly review, spec/weekly-review.md §13); part D: decision [0110](../../decisions/0110-the-weekly-row-scheduling-on-mac-and-windows-and-0-16-x-folded-into-0-17-0.md) §1 to §5, CC-372 (docs/notion-space-design.md §2 and §3.11, ../brain-assistant.md Instructions, Today and Weekly review, spec/weekly-review.md §13). It is 0.17.0's one Notion migration (0106 §4, [0110](../../decisions/0110-the-weekly-row-scheduling-on-mac-and-windows-and-0-16-x-folded-into-0-17-0.md)): CC-352 (Notion Brain Assistant), CC-329 (First things first's item 1, the path without Notion AI) and CC-372 (the weekly row) add their parts to it before the release. **Applies to:** every space built or migrated before 0.17.0, the template's copy included. Needs migration 0029. A step already done changes nothing, so running this again is safe.
 
 **What changes:**
 - **Brain Assistant sets your operational fields after your yes** (0101 §3). In its chat, after you say yes to a change it names with its value, Brain Assistant may set a task's Status or Due, a project's Status, Priority or Dates, a goal's Status, and a key result's Current, Done or Due. Nothing else: never a property the brain owns, a section the brain writes, Brain Status, Accepted, Document asked or Refresh asked; asked to, it says where that is done. Its **Weekly review** asks about the week's task items in numbered options and sets the ones you pick ("1a"), instead of only listing them. These stay your fields: the brain reads them as pointers and stores none of them, so nothing Brain Assistant sets is knowledge. Its Instructions, its Weekly review skill, its Tools and access, and First things first's "Give it access" item change.
+- **The weekly row** ([0110](../../decisions/0110-the-weekly-row-scheduling-on-mac-and-windows-and-0-16-x-folded-into-0-17-0.md) §1 to §5; part D). From 0.17.0 Claude Code or Codex writes the week's Inbox row in two parts, Your week and Clean-up, and you decide its Actions and clean-up items by ticking them in the row and setting it Ready; the next catch-up applies them. Nothing in Notion's structure changes: the row is an Inbox row of Kind Weekly with Brain Status New, Ready and Done, which exist. Only Brain Assistant's texts change: its **Weekly review** reads the two-part row with you, as an optional companion, and never ticks, writes a Your note line or sets Ready; its Instructions say the ticks, the notes and the row's Brain Status are yours; **Today** says to tick, then set Ready.
 
 Run this migration after `brain upgrade` has put 0.17.0 in place, in an attended session (never from a schedule). **The template's copy** (no brain) does the same steps.
 
@@ -34,12 +35,14 @@ Open **Agents → Brain Assistant → Instructions**. [../brain-assistant.md](..
 
 ### A3 · The Weekly review skill (by hand)
 
+**From the release, D1 replaces this page's text with the text the release ships,** which has these task rounds too: when you run the whole migration, skip A3 and do D1, then A5 with D1's text. A3 stays for a space that ran part A before part D existed; that space does D1 as well.
+
 Open **Skills** (on System; "Brain Assistant Skills" in a space built before 0.14.0) and the page **Weekly review**. [../brain-assistant.md](../brain-assistant.md) has the new texts, under "Weekly review": its **Description:** line and its text block (the code block, from "Goal:" to "Never recommend Approve or Reject."). First see where the page keeps the skill's text, and replace it there:
 - **The text is in the Description property and the page body is empty** (the template's layout, and every space duplicated from it): the agent runs what Description holds. Replace **Description's whole text** with the new text block, word for word, and leave the body empty. The short **Description:** line isn't copied into this layout.
 - **The text is in the page body** (a Skills database built by hand from Prompt 9): replace the whole **body** with the new text block, and Description with the new **Description:** line.
 
 Change nothing else on the page.
-1. **Already done?** The skill's text (in Description, or in the body) has a step 8 starting "8. End with one short list". Then change nothing.
+1. **Already done?** The skill's text (in Description, or in the body) has a step 8 starting "8. End with one short list", or D1's text (a step 11 starting "11. End with one short list"). Then change nothing.
 2. **Otherwise,** make the replacement above. Re-link *[@Brain Data]* with a real @mention of Brain Data under your top page. Keep **Use automatically** on. Steps 1 to 4 are as before; step 5 no longer says "I set it myself", and steps 6 to 8 ask about the task items in numbered options, set what you pick after your answer, and list what was set.
 3. **Check it took:** open Description and the body again. The old text ("6. End with one short list", "I set it myself") is in neither; if it is still in Description, the agent still runs the old skill.
 4. The other skills don't change: Today, Prep and Plan check stay read only.
@@ -78,9 +81,49 @@ The agent can confirm the values from its side, with your yes: query the test ro
 
 *Added to this migration by CC-329 before the release (docs/notion-space-design.md §10.1, "Item 1's wording changed in 0.17.0"). Until then, this part has no step.*
 
-## Part D · The weekly row: Weekly review and the Instructions' line on Weekly rows (0110; CC-372)
+## Part D · The weekly row: Weekly review, the Instructions and Today (0110; CC-372)
 
-*Added to this migration by CC-372 before the release. Its Weekly review text replaces the body A3 pastes, so a space that runs the whole migration replaces that page once, with the text the release ships. Until then, this part has no step.*
+The weekly row changes no database, property, option, view or button: only these three texts of Brain Assistant ([docs/notion-space-design.md](../../docs/notion-space-design.md) §3.11, "Notion steps for the weekly row"). **No Brain Assistant** (no Business or Enterprise plan with Notion credits): make D1 to D3 in your personal skills and your personal Instructions, if you set them up. The guide pages come with the skills release (below).
+
+### D1 · The Weekly review skill (by hand)
+
+Open **Skills** (on System; "Brain Assistant Skills" in a space built before 0.14.0) and the page **Weekly review**. [../brain-assistant.md](../brain-assistant.md) has the new texts, under "Weekly review": its **Description:** line, which now starts "Optional:", and its text block (from "Goal:" to "Never recommend Approve or Reject."). Replace them where the page keeps the skill's text, as A3 says: in the template's layout, **Description's whole text** with the new text block and the body left empty; in a Skills database built by hand from Prompt 9, the whole **body** with the new text block and Description with the new **Description:** line.
+1. **Already done?** The skill's text has a step 4 starting "4. A row whose headings are "Your week" and "Clean-up"". Then change nothing.
+2. **Otherwise,** make the replacement. Re-link *[@Brain Data]* with a real @mention of Brain Data under your top page. Keep **Use automatically** on. What the new text does: it reads a two-part row with you, item by item, by its labels (A1, U1, C1) and what each Show the change holds, decides nothing in it, and ends by telling you to tick, write on an item's Your note line to change it, then set the row Ready; it asks about the tasks Focus first names in numbered options, none marked as a suggestion, and sets only what you pick, after your answer; a row written before 0.17.0 is read as A3's text reads it; it never ticks or unticks a to-do, writes on a Your note line or sets Brain Status.
+3. **Check it took:** open Description and the body again. Neither holds "6. Then ask me about the task items in rounds of at most five" (A3's text) or "Ask me nothing to decide:" (0.16.x's text); if one still does, the agent still runs the old skill.
+
+### D2 · The Instructions (by hand)
+
+Open **Agents → Brain Assistant → Instructions**. [../brain-assistant.md](../brain-assistant.md) has the new text, under "Instructions".
+1. **Already done?** The Rules contain a line starting "- A Weekly row's ticks, its Your note lines and its Brain Status are mine:". Then change nothing.
+2. **Otherwise,** make two changes, and nothing else:
+   - Right after the line starting "- Never touch a project's or area's "Brief"", add the line starting "- A Weekly row's ticks, its Your note lines and its Brain Status are mine:", copied from brain-assistant.md as it is.
+   - In the line starting "- I decide what the brain proposes in Claude Code or Codex, not here.", replace "not here." with "not here, except a Weekly row's Actions and clean-up items, which I tick in that row." and keep the rest of the line.
+
+### D3 · Today (by hand)
+
+Open the page **Today** in Skills. Its step 3, which starts "3. Inbox: the newest row of Kind Weekly or Catch-up", becomes the step 3 of [../brain-assistant.md](../brain-assistant.md) under "Today" (for a Weekly row whose Brain Status is New, it says to tick what you agree with, then set it Ready), where the page keeps its text (Description, or the body), and nothing else on the page changes.
+1. **Already done?** Step 3 holds "For a Weekly row whose Brain Status is New". Then change nothing.
+2. **Otherwise,** replace that one step, word for word.
+
+### D4 · Read it back (by hand)
+
+Use made-up rows only, and delete them before any catch-up. In **Brain Data**:
+- In **Tasks**, a task `Weekly check: delete me`, Status **To Do**, Due a week ago.
+- In **Inbox**, a row `Week of <this week's Monday, like 23 Nov 2026>`, Kind **Weekly**, Brain Status **New**, whose body is:
+  - a heading 2 `Your week`; the line `**In short:** Test week: one action and two clean-up items.`; a bold line `Actions` and under it the to-do `A1 · Add the next step "Draft the outline" to Weekly check project: delete me`, with under it a toggle `Show the change` holding `New task: Draft the outline` and the line `Your note:`; a bold line `Focus first` and the line `1. Weekly check: delete me: due a week ago.`, with the task's name an @mention of the test task; the line `**Waiting for you:** nothing waits in the session.`;
+  - a heading 2 `Clean-up`; a bold line `Already cleaned` and the to-do `U1 · Archived the draft "Old shortlist" (never reviewed, no link to it, 74 days old) · tick to undo`; a bold line `For you to tick` and the to-do `C1 · Merge "Acme Corp" into "Acme" · recommended: yes`, with under it a toggle `Show the change` holding `Acme Corp will be merged into Acme` and the line `Your note:`.
+
+In Brain Assistant's chat:
+1. **It reads the two parts:** ask **Run Weekly review**. It summarises Your week, then reads A1, U1 and C1 by their labels, with what Show the change holds, and asks you nothing to decide about them. It ends by saying to tick, write on an item's Your note line to change it, then set the row's Brain Status to Ready, and that Waiting for you is decided in Claude Code or Codex.
+2. **Focus first's task, after your answer:** it asks about `Weekly check: delete me` with options (a new Due you name, Done, Won't Do, leave it), none marked as the review's suggestion. Answer `1d` (leave it): the task is unchanged.
+3. **It decides nothing in the row:** open the row: no to-do is ticked, both Your note lines are empty, and Brain Status reads **New**.
+4. **It refuses the row's decisions:** ask "tick C1 for me", then "set this row to Ready". It refuses each in one line and says to do it yourself; the row is unchanged.
+5. **Today:** ask **Run Today**. Its Inbox section shows the test row and says to tick what you agree with in it, then set it Ready.
+
+Then move the two test rows to the trash (••• → Delete), before any catch-up.
+
+The agent can confirm from its side, with your yes: query the test row and task and read back the row's Brain Status, its to-dos (none ticked) and the task's Due and Status. It can't read the agent's Instructions or its chat.
 
 ## The last steps
 
@@ -94,7 +137,8 @@ If the System callout on your top page reads `Template version: …` with a lowe
 - **The brain does nothing new.** A field Brain Assistant sets is yours, as if you had set it: the brain reads Status, Due, Priority, Dates and progress values as pointers, as before, and stores none of them. A task tracking an open question that Brain Assistant sets Done is asked about in your next attended session, as one you set Done is (0101 §6).
 - **Brain-owned values stay asked in the session.** Brain Assistant refuses them; and an edit to one by any AI or by hand is still asked in your agent session before the brain takes it (0101 §4).
 - **The buttons don't change.** A button's message carries its skill's confirmation only, never a yes to set a field ([../views-guide.md](../views-guide.md) §9).
-- **The guides come with the skills release.** brain-howto's Everyday guide and the user guide say that Brain Assistant sets your fields after your yes; republish your **Everyday guide** and **How it works** pages from the skills release that ships with 0.17.0, as for any guide change.
+- **Part D changes no database, property, option, view or button.** The weekly row is an Inbox row of Kind Weekly with Brain Status New, Ready and Done, which every space has; no Example row is added to the template for it.
+- **The guides come with the skills release.** brain-howto's Everyday guide and the user guide say that Brain Assistant sets your fields after your yes, and how the weekly row is ticked and set Ready; republish your **Everyday guide** and **How it works** pages from the skills release that ships with 0.17.0, as for any guide change.
 
 ## Verify
 
@@ -103,10 +147,16 @@ These come in two kinds. **Read back through the API** (the agent): the items ma
 Part A, Brain Assistant sets your fields after your yes (decision 0101 §3):
 - [ ] *(you)* Brain Assistant's Tools and access give **Can edit** on Tasks, Projects, Goals and Key Results (those your space has), as well as on Meetings, Inbox and Documents; everything else in Brain Data is view only.
 - [ ] *(you)* Its Instructions have the lines "- Never edit a page or a property, except as the rules below allow.", "- My fields, after my yes. …", "- Asked to change anything else, refuse in one line …" and "- Only these skills may edit page text: …", and end "… set my fields above after my yes."; "Never edit any property or page." is nowhere in them.
-- [ ] *(you)* The Weekly review page in Skills holds the new text with steps 1 to 8 where the page keeps its text (in Description, the template's layout, or in the body with the new Description line); "I set it myself" and "6. End with one short list" are nowhere on the page, Description included.
-- [ ] *(API)* Where Skills is shared with the integration: the Weekly review page's Description property and its body, read together, hold a step 8 starting "8. End with one short list", and neither holds "I set it myself".
+- [ ] *(you)* The Weekly review page in Skills holds the new text where the page keeps its text (in Description, the template's layout, or in the body with the new Description line): D1's text with steps 1 to 11, or, before part D existed, A3's with steps 1 to 8; "I set it myself" and "6. End with one short list" are nowhere on the page, Description included.
+- [ ] *(API)* Where Skills is shared with the integration: the Weekly review page's Description property and its body, read together, hold a step starting "11. End with one short list" (D1) or "8. End with one short list" (A3 alone), and neither holds "I set it myself".
 - [ ] *(API)* First things first's item **Give it access** names Tasks, Projects, Goals and Key Results.
 - [ ] *(you)* A5's checks: Weekly review set the test task's Due after `1a` and not before; "leave it" changed nothing; the project's Status changed only after your yes; Key Facts and the meeting's Brain Status were refused and are unchanged; *(API)* the values read back as each step says; the four test rows are in the trash.
+
+Part D, the weekly row (decision 0110):
+- [ ] *(you)* The Weekly review page holds D1's text where the page keeps its text: a step 4 starting "4. A row whose headings are "Your week" and "Clean-up"", a Description starting "Optional:"; neither "6. Then ask me about the task items in rounds of at most five" nor "Ask me nothing to decide:" is on the page.
+- [ ] *(API)* Where Skills is shared with the integration: the Weekly review page's Description and body, read together, hold "4. A row whose headings are "Your week" and "Clean-up"" and "Never tick or untick a to-do, never write on a Your note line, and never set Brain Status."; the Today page's step 3 holds "For a Weekly row whose Brain Status is New".
+- [ ] *(you)* Brain Assistant's Instructions have the line starting "- A Weekly row's ticks, its Your note lines and its Brain Status are mine:", right after the line starting "- Never touch a project's or area's "Brief"", and the line starting "- I decide what the brain proposes" says "not here, except a Weekly row's Actions and clean-up items, which I tick in that row."
+- [ ] *(you)* D4's checks: Weekly review read the two parts by label and ended with tick, then Ready; it set nothing on the Focus first task for `1d` and marked no option as a suggestion; the row was unticked, its notes empty and its Brain Status New after the chat; it refused to tick C1 and to set Ready; Today said to tick, then set Ready; *(API)* the values read back as each step says; the two test rows are in the trash.
 
 The last steps:
 - [ ] *(API)* The System callout reads `Template version: 0030`.
