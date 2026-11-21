@@ -124,5 +124,5 @@ test("migration 0030's part B renames the agent by hand and replaces its name, e
   assert.ok(design.includes(item2) && partB.includes(item2), "B4 pastes First things first's new sentence");
 
   const readme = await read("notion/migrations/README.md");
-  assert.match(readme, /\[0030\][^\n]*Notion Brain Assistant \(by hand, read back\)[^\n]*CC-352 \(release 0\.17\.0\) \|$/m);
+  assert.match(readme, /\[0030\][^\n]*Notion Brain Assistant \(by hand, read back\)[^\n]*CC-352 \(release 0\.17\.0\)[^\n]*\|$/m);
 });

@@ -23,7 +23,7 @@ The brain folder is where your knowledge is kept. Notion is where you read it, r
 
 Setup checks all of these at once, at the start. It asks you about your Notion plan, since nothing can read it. Install everything and sign in to `gh` before you say "set up my brain", with the commands for your computer in Get started's step 1 (Mac or Windows): without them, setup stops at step 1 and gives the same commands.
 
-On Windows, scheduled runs aren't available: you ask your agent for a catch-up or the weekly review when you want one (see the settings, item 12).
+On a Mac and on Windows alike, the weekly review and a daily catch-up can run on their own, with Claude Code or Codex (see the settings, item 12).
 
 ## The steps
 
@@ -42,7 +42,7 @@ On Windows, scheduled runs aren't available: you ask your agent for a catch-up o
 | 7 | First value | Judge four checks (below). | It proves the brain works on your own material. |
 
 **Only the brain creates a meeting's Tasks.** It creates them once, when it takes in a meeting you set Ready. If a notetaker (Granola, Fireflies or another) or an automation exports tasks into Notion, turn off its export to your brain's Tasks database, or each of those tasks would arrive twice. Don't ask Notion AI to create Tasks from a meeting either. A task you create yourself stays yours.
-| 8 | Scheduled catch-up | Choose on or off. | It is offered only once first value passes. |
+| 8 | The schedule | Keep, change or decline two times: the weekly review (Monday 08:00) and a catch-up (every day at 07:30). | It is offered only once first value passes. |
 | — | Setup report | Read it, and send it if you like. | It helps fix setup for the next person. |
 
 **Required steps stop setup** until they are done. Setup tells you what is missing and how to fix it. There is no skip list. An optional item is a setting you choose (on or off), so it never holds you up.
@@ -80,7 +80,20 @@ Step 2 shows one screen with every setting filled in. Change any of them later b
 
 11. **GitHub CLI (`gh`).** Shown `on`, since step 1 already checked that it is signed in. It creates your backup, checks that it stays private, and files your setup report for you. Early access needs it, so it can't be turned off.
 
-12. **Scheduled catch-up.** Default `off`, and asked in step 8. Catch-up then runs on its own at the times you choose. It only takes in what you've marked ready. It is offered only after first value passes, so it never runs on a brain that hasn't proved it works. On Windows it isn't offered: scheduled runs need macOS (or a crontab on Linux), so you ask your agent for a catch-up or the weekly review when you want one.
+12. **The schedule.** Asked in step 8, on a Mac and on Windows alike: "Run the weekly review on its own every Monday at 08:00, and a catch-up every day at 07:30? Keep them, change a time or a day, or say no to either." Say a change as you would to a person ("the weekly review on Fridays at 17:00"). It is offered only after first value passes, so nothing runs on its own in a brain that hasn't proved it works.
+    - **What runs.** Your computer's own scheduler starts your agent in your brain folder at those times: launchd on a Mac, Task Scheduler on Windows. With Claude Code it runs `claude -p`, with Codex `codex exec`, each with the model setup pins (with Claude Code a Sonnet model, with Codex the one you use; you can name another). The catch-up only takes in what you've marked ready. The weekly review writes the week's Inbox row and does only the mechanical clean-up on its own, each with an undo; you tick the rest in that row and set it Ready, and the next catch-up applies your ticks ([the weekly row](../notion/views-guide.md#the-weekly-row)).
+    - **What your computer needs.** Setup says it in one line for yours:
+
+      | At the time it's due | On a Mac | On Windows |
+      |---|---|---|
+      | Asleep | Runs when the Mac wakes; several missed times run once ([launchd.plist](https://keith.github.io/xcode-man-pages/launchd.plist.5.html)). | The computer is woken, and it runs ([WakeToRun](https://learn.microsoft.com/en-us/windows/win32/taskschd/tasksettings-waketorun)). |
+      | Off | Skipped: it runs at the next time ([Apple's Scheduling Timed Jobs](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/ScheduledJobs.html)). | Set to start as soon as it can once the computer is on again and you're logged in, about 10 minutes later ([StartWhenAvailable](https://learn.microsoft.com/en-us/windows/win32/taskschd/tasksettings-startwhenavailable); Microsoft's page doesn't say for certain that this covers a daily or weekly time). |
+      | You're logged out | Doesn't run ([Apple's Creating Launch Daemons and Agents](https://developer.apple.com/library/archive/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html)). | Doesn't run: it runs only while you're logged in ([TASK_LOGON_TYPE](https://learn.microsoft.com/en-us/windows/win32/api/taskschd/ne-taskschd-task_logon_type)). |
+
+      Nothing is lost by a missed run: the next catch-up takes in everything that waits. On a Mac, a weekly review missed because the Mac was off waits for next Monday, or say "weekly review" in your agent when you want it.
+    - **With Claude Code,** open Claude Code in your brain folder once and accept its trust dialog before the first run: a scheduled run never shows that dialog, and without it the run can't use the tools your brain allows ([Claude Code's permissions](https://code.claude.com/docs/en/permissions)). **With Codex** there is no such step: the scheduled command itself lets it edit your brain folder and reach the network ([Codex non-interactive mode](https://learn.chatgpt.com/docs/non-interactive-mode)).
+    - **One computer at a time.** The schedule is kept in your brain (`brain.json`), so on another computer `brain schedule install`, in the brain folder, sets the same times there. Then, on the old computer, run `brain schedule remove --here` so it doesn't run there too. On Linux, setup gives you the cron lines to add with `crontab -e`.
+    - **Change it later** by saying "schedule my brain", or say what you want ("the weekly review on Fridays at 17:00", "stop the daily catch-up"). `brain schedule list` shows what is set on this computer. A Windows brain set up before 0.17.0 never had the question: your agent offers it once after the upgrade.
 13. **How the brain talks to you.** Default Standard. Simple uses plain words, short answers and the answer first. Custom lets you choose how much it explains, how long its answers are and what comes first. Change it any time: "talk to me more simply", "shorter answers", "go back to normal".
 
 ## When something goes wrong
@@ -266,7 +279,11 @@ At least one of the four checks didn't pass. Setup shows one line for each, with
 - **Failed:** something was wrong, such as a task that is someone else's, a note under the wrong Area or a person listed twice. Fix it, or tell your agent what's wrong.
 - **Couldn't be shown:** your material can't show it. For example, no document you seeded holds one of your own commitments, or you said yes to no item from your documents. Drop a document that holds one of your commitments, or say yes to an item when your agent asks.
 
-Then say "set up my brain": only the checks that didn't pass run again. The scheduled catch-up waits until all of them pass.
+Then say "set up my brain": only the checks that didn't pass run again. The schedule waits until all of them pass.
+
+### The schedule didn't install (`schedule-not-loaded`)
+
+Your computer's scheduler refused the entry: launchd on a Mac, Task Scheduler on Windows. Setup shows its message. Your times are kept in your brain all the same, and `brain status` shows the job as not installed on this computer. Fix what the message names, then say "schedule my brain", or run `brain schedule install` in your brain folder: it installs every time your brain holds. When it says your agent can't be found (`AGENT_NOT_FOUND`), the scheduler looks for `claude` or `codex` where your terminal finds it: open a new terminal, check that `claude --version` or `codex --version` works there, and try again.
 
 ### Something else
 
@@ -345,10 +362,10 @@ Setup put things in these places outside your brain folder. Remove the ones you 
 
 | What | Where | How to remove it |
 |---|---|---|
-| The scheduled runs | On a Mac, `~/Library/LaunchAgents/eu.ultimate-brain.*.plist`. On Linux, lines you added to your crontab. On Windows, none. | On a Mac, in your brain folder: `brain schedule remove catch-up` and `brain schedule remove weekly-review`. Elsewhere, delete the lines with `crontab -e`. |
+| The scheduled runs | On a Mac, `~/Library/LaunchAgents/eu.ultimate-brain.*.plist`. On Windows, Task Scheduler tasks named `eu.ultimate-brain.*`, with copies in `%LOCALAPPDATA%\ultimate-brain\tasks`. On Linux, lines you added to your crontab. | On a Mac or Windows, in your brain folder: `brain schedule remove --here` (every run of this brain on this computer). On Linux, delete the lines with `crontab -e`. |
 | The `brain` command | npm's global folder | `npm uninstall -g ultimate-brain` |
 | The default brain setting | `~/.config/ultimate-brain/` | Delete the folder. |
-| Run state and logs | `~/.ultimate-brain/` and, on a Mac, `~/Library/Logs/ultimate-brain/` | Delete the folders. |
+| Run state and logs | `~/.ultimate-brain/`; on a Mac, `~/Library/Logs/ultimate-brain/`; on Windows, `%LOCALAPPDATA%\ultimate-brain\` | Delete the folders. |
 | The drop folder | The folder you chose in setup, by default `~/Documents/brain-dropbox/` | Move out any file you still want, then delete it. |
 | The backup | A private repository on GitHub | Delete it on github.com (the repository's Settings, Danger Zone), or keep it as an archive. |
 | The Notion space | Your workspace | Delete the duplicated space. In Notion's Settings, under Connections, remove your agent's connection. Delete Notion Brain Assistant, or its text in your personal Instructions. |

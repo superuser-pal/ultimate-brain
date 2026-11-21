@@ -187,7 +187,7 @@ claude
 set up my brain
 ```
 
-Your agent walks you through the rest, one step at a time: your settings, connecting Notion, the meeting minutes prompt, Notion Brain Assistant, the names you appear under, a short description of your work, and a first check. Stop whenever you like. Say "set up my brain" again to pick up where you left off.
+Your agent walks you through the rest, one step at a time: your settings, connecting Notion, the meeting minutes prompt, Notion Brain Assistant, the names you appear under, a short description of your work, a first check, and then when the weekly review and a daily catch-up run on their own. Stop whenever you like. Say "set up my brain" again to pick up where you left off.
 
 ### 6. What you'll have at the end
 
@@ -196,6 +196,7 @@ Your agent walks you through the rest, one step at a time: your settings, connec
 - **Meetings that feed your brain:** Notion AI writes the minutes, you set the meeting Ready, and the next catch-up turns it into your tasks and notes.
 - **Notion Brain Assistant** in Notion, for its skills (ask it "Run Today") and the buttons that message it.
 - **A first check that passed:** tasks that are really yours, a report on your main project, notes in the right place, and an answer that cites its source.
+- **A schedule, if you keep it:** on a Mac or on Windows, your computer starts your agent (Claude Code or Codex) for the weekly review every Monday at 08:00 and a catch-up every day at 07:30, or at the times you choose. The weekly review is a row in your Notion Inbox: tick what you agree with, set it Ready, and the next catch-up does it.
 
 Why each step is there, every setting, and what to do when something fails: [docs/setup.md](docs/setup.md).
 

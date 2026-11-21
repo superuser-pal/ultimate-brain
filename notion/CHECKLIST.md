@@ -12,7 +12,7 @@ The prompts are generated from [docs/notion-space-design.md](../docs/notion-spac
 
 ### Choose your modules (decision 0048)
 
-The space is a core (Inbox, Meetings, Projects, Areas, People) plus the modules you choose. There is no Review, Decisions or Questions database since 0.16.0: you decide what the brain proposes in your agent session, and a project's decisions and open questions are in its Brief and Decision log (decisions 0096, 0099). You can change this any time by asking your agent ("turn on documents"); each module's steps for later are in [modules/](modules/).
+The space is a core (Inbox, Meetings, Projects, Areas, People) plus the modules you choose. There is no Review, Decisions or Questions database since 0.16.0: you decide what the brain proposes in your agent session (the weekly row's actions and clean-up you tick in that Inbox row, since 0.17.0), and a project's decisions and open questions are in its Brief and Decision log (decisions 0096, 0099). You can change this any time by asking your agent ("turn on documents"); each module's steps for later are in [modules/](modules/).
 
 - [ ] **Domains:** group Areas by the work or life context they belong to, and see each project's, meeting's and document's Domain. The Domains database and the Domain rollups on Projects, Meetings and Documents are built either way (decisions 0065, 0105); this choice is whether the brain uses them and your pages show them. A Domain has no Type: its name and summary say what kind of context it is
 - [x] **Orgs:** client and partner organizations

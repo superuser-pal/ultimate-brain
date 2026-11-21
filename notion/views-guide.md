@@ -39,7 +39,7 @@ It is derived from [docs/notion-space-design.md](../docs/notion-space-design.md)
 **Job:** see in ten seconds what you have to do today, then what the brain needs from you.
 
 Nothing sits above the two columns (#143, decision 0053).
-**Left column:** navigation, then a small heading "Needs you" with one short list (view 2). You decide what the brain proposes in your agent session, not here (decision 0096); the week's review is an Inbox row, Kind Weekly, in the Inbox tab.
+**Left column:** navigation, then a small heading "Needs you" with one short list (view 2). You decide what the brain proposes in your agent session, not here (decision 0096), except the weekly row's actions and clean-up, which you tick in that row (decision 0110); the week's review is an Inbox row, Kind Weekly, in the Inbox tab ([the weekly row](#the-weekly-row)).
 **Right column:** the buttons in a row, then "What's on today?" as a tabs block (views 0, 0b, 3–5, 5b), then "What did the brain take in?" as a second tabs block (views 6–7).
 
 | # | Tab | View name | Database | Layout | Filter | Sort | Show | Use case |
@@ -50,7 +50,7 @@ Nothing sits above the two columns (#143, decision 0053).
 | 3 | Tasks *(Tasks)* | What's due today? | Tasks | List | Status is To Do or Doing · Due is on or before today | Due, ascending | Name, Project, Due | Today's work, overdue first |
 | 4 | Meetings | Which meetings are today? | Meetings | List | Date is today | Date, ascending | Name, Date, Project | Today's meetings, with time and project |
 | 5 | Projects | What's active? | Projects | Gallery (small cards) | Status is Active · Archived is unchecked | Priority (High→Low), then Name | Name, Countdown, *(Orgs)* Client, *(Tasks)* Task Progress | What you're working on, and how far along each is |
-| 5b | Inbox | What's in my inbox? | Inbox | List | Brain Status is New or Ready | Created, ascending | Name, Kind, Brain Status | Rows waiting for the brain, oldest first: set one Ready when it can be taken in. The week's review (Kind Weekly) and a catch-up's summary (Kind Catch-up) show here until they are Done; they are never taken in. A changed version of a document waiting for your check (Kind Changed) shows here too: read it, edit it if you want, then say *go* in your agent session or set it Ready (decision 0098 §4). The last tab; the buttons and the boxes they tick are on each row's page (#146) |
+| 5b | Inbox | What's in my inbox? | Inbox | List | Brain Status is New or Ready | Created, ascending | Name, Kind, Brain Status | Rows waiting for the brain, oldest first: set one Ready when it can be taken in. The week's review (Kind Weekly) and a catch-up's summary (Kind Catch-up) show here until they are Done; they are never taken in. On the week's review, tick what you agree with and set it Ready ([the weekly row](#the-weekly-row)). A changed version of a document waiting for your check (Kind Changed) shows here too: read it, edit it if you want, then say *go* in your agent session or set it Ready (decision 0098 §4). The last tab; the buttons and the boxes they tick are on each row's page (#146) |
 | 6 | Came in | What came in lately? | Inbox | List, 10 rows | Brain Status is Done | Created, descending | Name, Kind, Project | The Brain feed (0043): every document, email and capture the brain took in, newest first (reports are in Documents since 0.9.1) |
 | 7 | Meetings | Which meetings did it take in? | Meetings | List, 10 rows | Brain Status is Done | Ingested At, descending | Name, Date, Project | The meetings the brain ingested, newest first. Together with view 6, everything the brain did |
 
@@ -140,7 +140,23 @@ A space built before 0.16.2 named these Not Reviewed, Reviewed and Ingested; [mi
 
 ## 6. Review (retired in 0.16.0)
 
-There is no Review page or Review database since 0.16.0 (decision 0096): you decide what the brain proposes in your Claude Code or Codex session ("what needs my decision"), and the week's review is an Inbox row, Kind Weekly. A space built before 0.16.0 archives both with [migration 0027](migrations/0027-one-place-to-decide.md). The section number stays, so the references to §9 hold.
+There is no Review page or Review database since 0.16.0 (decision 0096): the week's review is an Inbox row, Kind Weekly. Since 0.17.0 you decide its actions and clean-up items in that row, by ticking them ([below](#the-weekly-row), decision 0110); everything else the brain proposes you decide in your Claude Code or Codex session ("what needs my decision"). A space built before 0.16.0 archives both with [migration 0027](migrations/0027-one-place-to-decide.md). The section number stays, so the references to §9 hold.
+
+### The weekly row
+
+Claude Code or Codex writes the row, when the weekly review runs on its schedule or you say "weekly review", and does its clean-up. Nothing to build: the row is an Inbox row of Kind Weekly, shown in Home's Inbox tab (view 5b) until it is Done. It adds no property, option, view or database (decision 0110 §1). The brain writes its page body in two parts:
+- **Your week:** In short, Highlights, Done this week, **Actions** (at most 5 to-dos, `A1 · <what the brain will do on your tick>`), Focus first, and **Waiting for you** (how many decisions wait in your agent session).
+- **Clean-up:** **Already cleaned** (what the weekly run did on its own, each a to-do `U1 · … · tick to undo`), then **For you to tick** (at most 10 to-dos, `C1 · <the change> · recommended: …`).
+- Under each Action and each item to tick: a toggle **Show the change**, with the before and after, and an empty line **Your note:**.
+
+How you use it:
+1. Read it. If you like, ask Notion Brain Assistant "Run Weekly review" to read it with you: an optional companion that only reads the row, explains each item and decides nothing.
+2. Tick what you agree with. To change an item, write what you want on its **Your note:** line: that item waits for your next session in Claude Code or Codex, where your agent reads your note with you. Tick a `U` item to undo what the run did.
+3. Set the row's Brain Status to **Ready**. The next catch-up, on its schedule or asked for, applies each plain tick after checking that nothing changed since the row was written (an item that changed isn't applied, and the catch-up's report names it). An item you left unticked is declined for now, once nothing else in the row waits; until then you can still tick it. The row turns **Done** once nothing in it waits.
+
+The ticks, your notes and Ready are yours: neither the brain nor Notion Brain Assistant ticks, unticks or writes a note, and every publish of the row keeps them as you left them. Anything else you write on the page is replaced at the next publish. A row you never set Ready hands its open items to next week's row, which says where they went. **Waiting for you** is decided in your agent session: say "what needs my decision".
+
+Example (synthetic): in *Week of 9 Nov 2026*, you tick `A3 · Draft a Document on pricing tiers` and `C1 · Merge "Acme Corp" into "Acme"`, write "only for the 2027 releases" on C4's Your note line, leave C2 unticked and set the row Ready. The 07:30 catch-up drafts the Document and merges the two, and leaves C4 for your next session; C2 stays open meanwhile, so you could still tick it. In that session you answer C4, C2 is declined, and the row turns Done.
 
 ---
 

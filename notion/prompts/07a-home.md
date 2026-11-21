@@ -41,7 +41,7 @@ Rules: only add linked views of the existing databases on "Brain Data"; never cr
 ```
 
 ## Verify
-- [ ] "Needs you" shows one short list, "Which minutes need review?", and a meeting dated tomorrow is not in it. There is no Review list: you decide what the brain proposes in your agent session, and the week's review is an Inbox row, Kind Weekly, in the Inbox tab (decision 0096).
+- [ ] "Needs you" shows one short list, "Which minutes need review?", and a meeting dated tomorrow is not in it. There is no Review list: you decide what the brain proposes in your agent session, and the week's review is an Inbox row, Kind Weekly, in the Inbox tab, whose actions and clean-up you tick there (decisions 0096, 0110).
 - [ ] Quick capture creates an Inbox row with Kind Capture and Brain Status **Ready**; New meeting and New project open a page with the default template.
 - [ ] (Tasks) New task sits right after New project and opens a new Tasks row with Kind Task, the default Status (To Do) and no project or due date (decision 0106 §12).
 - [ ] "What's on today?" has its tabs: Areas, Tasks (Tasks module), Meetings, Projects, Inbox; nothing sits above the two columns (#143).

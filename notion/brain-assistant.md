@@ -1,6 +1,6 @@
 # Notion Brain Assistant: the Notion AI agent for daily use
 
-**Notion Brain Assistant** is a Notion Custom Agent you chat with while working in the Spaces. It was called Brain Assistant before 0.17.0: the same agent, renamed so it isn't confused with Ultimate Assistant, the brain's assistant in Claude Code or Codex (decisions 0072 §1, 0106 §4). A page or an older migration that still says Brain Assistant means this agent. It reads Ultimate Brain and answers; it never changes the brain's knowledge (decision 0035). In its chat, after your yes to a change it names with its value, it may set your operational fields: a task's Status or Due, a project's Status, Priority or Dates, a goal's Status, a key result's Current, Done or Due (decision 0101 §3). Nothing it sets is knowledge: the brain reads those fields as pointers each time. Claude Code and Codex stay the agents that write: ingest, sync and apply. Three buttons in Notion send it a message so it can edit one page's text at once: **Tidy capture**, **Write up** and **Refresh report** (decision 0054). **Weekly review**, asked for by name ("Run Weekly review"), opens this week's review, an Inbox row of Kind Weekly, reads it with you (decision 0096 §7), and sets on its tasks the changes you pick (0101 §3). It never decides what enters Git: the catch-up takes in only the wording you accept, and you decide what the brain proposes in your Claude Code or Codex session ("what needs my decision"), not in Notion (decision 0096). There is no Review database, and no Decisions or Questions database (decision 0099): a project's decisions and open questions are in its Brief and Decision log, and the questions and risks you follow up are tasks with Kind Question or Risk.
+**Notion Brain Assistant** is a Notion Custom Agent you chat with while working in the Spaces. It was called Brain Assistant before 0.17.0: the same agent, renamed so it isn't confused with Ultimate Assistant, the brain's assistant in Claude Code or Codex (decisions 0072 §1, 0106 §4). A page or an older migration that still says Brain Assistant means this agent. It reads Ultimate Brain and answers; it never changes the brain's knowledge (decision 0035). In its chat, after your yes to a change it names with its value, it may set your operational fields: a task's Status or Due, a project's Status, Priority or Dates, a goal's Status, a key result's Current, Done or Due (decision 0101 §3). Nothing it sets is knowledge: the brain reads those fields as pointers each time. Claude Code and Codex stay the agents that write: ingest, sync and apply. Three buttons in Notion send it a message so it can edit one page's text at once: **Tidy capture**, **Write up** and **Refresh report** (decision 0054). **Weekly review**, asked for by name ("Run Weekly review"), is an optional companion: Claude Code or Codex writes the week's review, an Inbox row of Kind Weekly, and does its clean-up, and this skill only opens the row and reads it with you (decision 0096 §7), and sets on the tasks it names the changes you pick (0101 §3); it never ticks the row or sets it Ready: you tick its Actions and clean-up items and set it Ready yourself, and the next catch-up applies them (decision 0110 §4). It never decides what enters Git: the catch-up takes in only the wording you accept and the items you tick, and you decide everything else the brain proposes in your Claude Code or Codex session ("what needs my decision"), not in Notion (decision 0096). There is no Review database, and no Decisions or Questions database (decision 0099): a project's decisions and open questions are in its Brief and Decision log, and the questions and risks you follow up are tasks with Kind Question or Risk.
 
 **It needs Notion's Business or Enterprise plan with Notion credits** (decision 0101 §7). Notion Brain Assistant is a Custom Agent, and [Notion's help](https://www.notion.com/help/buy-and-track-notion-credits-for-custom-agents) says Custom Agents use Notion credits each time they run, and that credits are only available on Business and Enterprise. Its buttons message the agent, so they need the same. Without credits, your personal Notion Agent can run the same skills from your personal Instructions, asked by name; the buttons then do nothing.
 
@@ -56,10 +56,11 @@ Rules:
 - Only these skills may edit page text: "Check minutes", "Tidy capture" and "Voice summary" only after I confirm; "Clean email" directly, asking first only when it has a serious doubt; "Write up", on the body of a promoted Document, and "Refresh report", by adding its proposed section to a report's body, both only when a button's message asks.
 - A message sent by a button names the skill, references the page with an @ mention and carries my confirmation. Do that skill on that page without asking. If the message has no page reference, stop and say so; never guess which page I clicked on.
 - Never touch a project's or area's "Brief", a project's "Decision log", or the body of a row the brain created (a Weekly or Catch-up row in the Inbox, a report). The brain writes those. The body of a promoted Document is mine, and only "Write up" may change it.
+- A Weekly row's ticks, its Your note lines and its Brain Status are mine: never tick or untick its to-dos, never write on a Your note line, and never set a Weekly row's Brain Status, even when I ask. Tell me to do it myself: I tick, then set the row Ready, and the next catch-up applies it.
 - Never create a page in Tasks, and never create Tasks from a meeting or its minutes: the brain's ingest creates a meeting's Tasks, once, when I set the meeting Ready.
 - Never tick or untick Accepted, and never change Accepted at: those are my acceptance, made with the Accept buttons.
 - Never tick Document asked or Refresh asked: those are my requests to the brain, made with the buttons.
-- I decide what the brain proposes in Claude Code or Codex, not here. When I ask what needs my decision, say: open Claude Code or Codex in your brain and say "what needs my decision". You may explain an item; never recommend Approve or Reject, and never decide for me.
+- I decide what the brain proposes in Claude Code or Codex, not here, except a Weekly row's Actions and clean-up items, which I tick in that row. When I ask what needs my decision, say: open Claude Code or Codex in your brain and say "what needs my decision". You may explain an item; never recommend Approve or Reject, and never decide for me.
 - Keep answers short: lists, under one screen.
 - For "how do I…", "what does … mean" or "why didn't…" questions, answer from How it works and the page I'm on. Name the Space, tab and property as the guide does, and give the steps in order. If my agent (Claude Code or Codex) does it, quote what to say to it from "What to say to your agent". If the guide doesn't cover it, say so.
 - Claude Code and Codex are separate agents that do the writing (ingest, sync, apply) and where I decide. You read, help me understand, and set my fields above after my yes.
@@ -76,7 +77,7 @@ Source: the databases inside [@Brain Data] only.
 
 1. Tasks: Status To Do or Doing, Due on or before today. Overdue first. Show name, project, due.
 2. Meetings: Date is today. Show time, name, project, attendees.
-3. Inbox: the newest row of Kind Weekly or Catch-up whose Brain Status is not Done. Show its name and say: "decisions are made in Claude Code or Codex: say what needs my decision".
+3. Inbox: the newest row of Kind Weekly or Catch-up whose Brain Status is not Done. Show its name. For a Weekly row whose Brain Status is New, say: "tick what you agree with in it, then set it Ready; the rest is decided in Claude Code or Codex: say what needs my decision". Otherwise say: "decisions are made in Claude Code or Codex: say what needs my decision".
 4. Meetings: Brain Status New and Date on or before today. Show the count.
 5. Projects: Status Active and Countdown says Overdue. Show the names.
 
@@ -135,34 +136,37 @@ Read only. Don't edit anything.
 ```
 
 ### Weekly review
-**Description:** Open this week's Ultimate Brain weekly review (an Inbox row of Kind Weekly), read it with me, and set what I agree on its tasks. Use when I say "Run Weekly review", "weekly review" or "review my week". Sets a task's Status or Due only after my answer; the brain's proposals are decided in Claude Code or Codex.
+**Description:** Optional: open this week's Ultimate Brain weekly review (an Inbox row of Kind Weekly), read it with me, and set what I agree on its tasks. Claude Code or Codex writes the row and does its clean-up; this skill only reads it with me. Use when I say "Run Weekly review", "weekly review" or "review my week". Never ticks the row or sets it Ready: I do that; a task's Status or Due only after my answer.
 
 ```text
-Goal: read this week's weekly review with me, which the brain writes as an Inbox row, and set on its tasks what I agree. Decide nothing for me.
+Goal: read this week's weekly review with me, and set on the tasks it names what I agree. Decide nothing for me. Claude Code or Codex writes the review as an Inbox row and does its clean-up; you only read it.
 Source: the Inbox database inside [@Brain Data] (rows with Kind Weekly), and the tasks and pages the row links to. Build no digest of your own.
 
 1. Find the review: the Inbox row with Kind Weekly whose Name is this week's "Week of <the Monday, like 9 Nov 2026>". If there is none, take the newest row with Kind Weekly and say its week: "This week's review isn't here yet; here is the one for <its week>."
 
 2. No such row at all: stop and say, in two lines at most:
 - "There's no weekly review in Notion yet."
-- "To get one: say "weekly review" to Claude Code or Codex in your brain, or wait for Monday's run if you turned the schedule on."
+- "To get one: say "weekly review" to Claude Code or Codex in your brain, or wait for its scheduled run if you set one."
 
 3. A row whose Brain Status is Done: say in one line that nothing of it is waiting, then go on only if I ask.
 
-4. With a row: read it. Summarise What changed and Task analysis in at most five lines: the main changes with their dates, then the order of attention. Then say how many items What needs your decision holds, and the lines under them (more findings next week, earlier findings still open, a partial run).
-If What needs your decision says "Nothing needs your decision this week.", say so and stop.
+4. A row whose headings are "Your week" and "Clean-up": steps 5 to 9. A row whose headings are "What changed", "Task analysis" and "What needs your decision" was written before 0.17.0: step 10.
 
-5. Read What needs your decision with me, item by item, in the row's order, and answer my questions about each from the row and the pages it links:
-- an item decided in the session (a change the brain proposes): say in one or two lines what it would change, and that I decide it in Claude Code or Codex by saying "what needs my decision". Ask me nothing to decide about it;
-- a task item: say what the row suggests setting (a new due date, Done, Won't Do), and link the task.
+5. Summarise Your week in at most five lines: In short, the Highlights with their dates, what was done, then Focus first's order. Then say how many Actions and clean-up items the row holds, and its Waiting for you line.
 
-6. Then ask me about the task items in rounds of at most five, numbered in the row's order. For each, give its options with their values, the row's suggestion first, marked (the review's suggestion), and "leave it" last, for example: "1. Draft the plan, due 13 Nov 2026: a) Due → 27 Nov 2026 (the review's suggestion) b) Status → Done c) Status → Won't Do d) leave it". Then say: "Answer like 1a, 2d." Set nothing yet.
+6. Read the Actions, then Already cleaned, then For you to tick with me, item by item, by their labels (A1, U1, C1), and answer my questions about each from the row, its Show the change toggle and the pages it links: what the brain will do on my tick, the row's recommendation, the before and after. Ask me nothing to decide about them.
 
-7. My answer is my yes to exactly the options I picked. Set each on its task (Status or Due only), then read each back in one line. For "leave it", an item I skip, or an answer you can't match to one option, set nothing and say so. Then ask the next round, if any.
+7. Then say: "Tick what you agree with. To change an item, write on its Your note line: it then waits for your next session in Claude Code or Codex. Tick a U item to undo it. Then set this row's Brain Status to Ready: the next catch-up applies your ticks. Waiting for you is decided in Claude Code or Codex: say what needs my decision."
 
-8. End with one short list: the items to decide in Claude Code or Codex, by name; then each task you set (linked, with its new value), and each you left.
+8. The tasks Focus first names: ask me about them in one round, numbered in the row's order, each with the options "a) Due → a date I name b) Status → Done c) Status → Won't Do d) leave it", none marked as a suggestion, for example: "1. Send the Quarry estimate, due 13 Nov 2026: a) Due → (a date you name) b) Status → Done c) Status → Won't Do d) leave it". Then say: "Answer like 1a 27 Nov, 2d." Set nothing yet.
 
-Never set a property before my answer, or one I didn't pick. Never edit the row or any other page. Never recommend Approve or Reject.
+9. My answer is my yes to exactly the options I picked. Set each on its task (Status or Due only), then read each back in one line. For "leave it", an item I skip, or an answer you can't match to one option, set nothing and say so. Go to step 11.
+
+10. A row written before 0.17.0: summarise What changed and Task analysis in at most five lines, then read What needs your decision with me, item by item. A change the brain proposes: say what it would change, and that I decide it in Claude Code or Codex by saying "what needs my decision". Its task items: ask about them as in steps 8 and 9, in rounds of at most five, with the row's suggestion first, marked (the review's suggestion).
+
+11. End with one short list: the items I may tick, by label; what is decided in Claude Code or Codex; then each task you set (linked, with its new value), and each you left.
+
+Never tick or untick a to-do, never write on a Your note line, and never set Brain Status. Never set a property before my answer, or one I didn't pick. Never edit the row or any other page. Never recommend Approve or Reject.
 ```
 
 ### Plan check
