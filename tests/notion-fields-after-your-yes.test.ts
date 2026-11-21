@@ -104,14 +104,15 @@ test("migration 0030 is 0.17.0's one migration: part A by hand with read-backs, 
   assert.match(a5, /Brain Status still reads New/);
   assert.match(a5, /move the four test rows to the trash/);
   for (const [part, task] of [["B", "CC-352"], ["C", "CC-329"], ["D", "CC-372"]]) {
-    assert.match(migration, new RegExp(`## Part ${part} · [^\\n]*${task}\\)\\n\\n\\*Added to this migration by ${task} before the release`));
+    // Each part names its task; a part not yet filled says who adds it (CC-329 filled part C).
+    assert.match(migration, new RegExp(`## Part ${part} · [^\\n]*${task}\\)\\n`));
   }
   assert.match(migration, /change it to `Template version: 0030`/);
   assert.match(migration, /- \[ \] \*\(API\)\* The System callout reads `Template version: 0030`\./);
   assert.ok(migration.indexOf("## Part A") < migration.indexOf("## Part B") && migration.indexOf("## Part D") < migration.indexOf("## The last steps"));
 
   const readme = await read("notion/migrations/README.md");
-  assert.match(readme, /\[0030\][^\n]*0\.17\.0's one migration[^\n]*CC-325 \(release 0\.17\.0\) \|$/m);
+  assert.match(readme, /\[0030\][^\n]*0\.17\.0's one migration[^\n]*CC-325[^\n]*\(release 0\.17\.0\) \|$/m);
   const template = await read("notion/TEMPLATE.md");
   assert.match(template, /\| \*\*Template version\*\* \| `0030` \|/);
 });
