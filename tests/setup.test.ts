@@ -384,7 +384,7 @@ test("from 0.17.0 the credits and meetings answers decide steps 4a and 4b: 7, 8 
   // Notion AI meeting notes without credits: the minutes prompt only (8).
   await expect("2026-12-10T09:12:00Z", ["credits=no", "meetings=notion-ai,files"], 8, "minutes-prompt", "paste the minutes prompt");
   // Credits without Notion AI meeting notes: Brain Assistant only (8).
-  await expect("2026-12-10T09:13:00Z", ["credits=yes", "meetings=paste"], 8, "brain-assistant", "set up Brain Assistant");
+  await expect("2026-12-10T09:13:00Z", ["credits=yes", "meetings=paste"], 8, "brain-assistant", "set up Notion Brain Assistant");
   // Both (9).
   await expect("2026-12-10T09:14:00Z", ["credits=yes", "meetings=notion-ai"], 9, "minutes-prompt", "paste the minutes prompt");
   // A step newly left out stays recorded but no longer counts.
