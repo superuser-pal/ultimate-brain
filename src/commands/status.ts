@@ -14,6 +14,7 @@ import { databaseId, modulesOf } from "../lib/modules.ts";
 import { expandPath, linkedRepos, workTreeTop } from "../lib/repos.ts";
 import { unattendedRuns, weeklyRun } from "../lib/runs.ts";
 import { ATTEMPT_PATH, readState, weeklySettings, weeklySnapshotPath } from "../lib/weekly-state.ts";
+import { scheduleStatus } from "../lib/schedule.ts";
 import { setupLine, setupStatus } from "../lib/setup.ts";
 import { effectiveStyle, type Style } from "../lib/style.ts";
 import { contextFor, indexNotes, loadSuppressions, restrictionOf } from "../lib/suppressions.ts";
@@ -96,6 +97,8 @@ export const statusCommand: Command = {
       tasks_status_note: taskNote,
       modules: modulesOf(brain!.config),
       settings,
+      // The schedule kept in the brain and this computer's entries, offline (§5.2, §5.21; 0110 §7).
+      schedule: await scheduleStatus(brain!.root, brain!.config, environment.env ?? process.env, environment.homeDirectory ?? homedir()),
       unattended: { ...(await unattendedRuns(brain!.root)), weekly: await weeklyOf(brain!.root, now) },
       repos,
       index_stale: currentIndex !== index || issues.some((issue) => issue.rule === "index-stale" && issue.path === "AGENTS.md"),

@@ -1,6 +1,6 @@
-import { assertNoProblems, readJsonInput } from "../lib/input.ts";
+import { assertNoProblems, isRecord, readJsonInput, type InputProblem } from "../lib/input.ts";
 import { applyPlan, buildPlan, parsePlan, parseSnapshot, record, render, renderQuestionTask, renderTasks, unpublishDrafts } from "../lib/sync.ts";
-import type { RenderItem } from "../lib/sync.ts";
+import type { RenderItem, RowStates } from "../lib/sync.ts";
 import type { Command } from "../lib/command.ts";
 import { Workspace } from "../lib/workspace.ts";
 import { commitJournaled } from "../lib/journal.ts";
@@ -92,13 +92,32 @@ export const syncApplyCommand: Command = {
     const warnings = lintWarnings(workspace.warnings()); const dryRun = args.options["dry-run"] === true; let op: string | undefined; if (!dryRun) { if (writesReview(data) && workspace.changedPaths.length > 0) op = await commitJournaled(brain!.root, workspace, data.log as [], now, "sync apply: review decisions"); else await workspace.commit(data.log as [], now); } const { log: _log, ...output } = data; const failed = Number((data.summary as Record<string, unknown>).failed ?? 0); return { data: { dry_run: dryRun, ...(op === undefined ? {} : { op }), ...output }, warnings, exitCode: failed > 0 ? 1 : 0, human: `${failed} failed items\n` }; },
 };
 
+/** `--row-state` (cli §5.34): one row's to-dos `{ page, items: [{ label, ticked, note }] }` as `cleanup ticks` takes them, or a list of such rows. */
+function parseRowStates(value: unknown): RowStates {
+  const rows = Array.isArray(value) ? value : [value];
+  const problems: InputProblem[] = [];
+  const out = new Map<string, Map<string, { ticked: boolean; note: string }>>();
+  rows.forEach((row, index) => {
+    const at = Array.isArray(value) ? `/${index}` : "";
+    if (!isRecord(row) || typeof row.page !== "string" || row.page === "" || !Array.isArray(row.items)) { problems.push({ pointer: at, message: "must be { page, items: [{ label, ticked, note }] }" }); return; }
+    const items = new Map<string, { ticked: boolean; note: string }>();
+    row.items.forEach((item, itemIndex) => {
+      if (!isRecord(item) || typeof item.label !== "string" || !/^[ACU][1-9]\d*$/.test(item.label) || typeof item.ticked !== "boolean" || (item.note !== undefined && typeof item.note !== "string")) problems.push({ pointer: `${at}/items/${itemIndex}`, message: "must be { label (A1, C2, U3…), ticked, note }" });
+      else items.set(item.label, { ticked: item.ticked, note: typeof item.note === "string" ? item.note.trim() : "" });
+    });
+    out.set(row.page, items);
+  });
+  assertNoProblems(problems);
+  return out;
+}
+
 export const syncRenderCommand: Command = {
-  name: "sync render", usage: "brain sync render (--changed | --ids <id>[,<id>…]) [--plan <plan.json> [--skip-conflicted]] | --unpublish-drafts [--json]", summary: "Render Notion payloads without writing.", options: { changed: "boolean", ids: "string", plan: "string", "skip-conflicted": "boolean", "unpublish-drafts": "boolean" }, maxPositionals: 0, needsBrain: true,
+  name: "sync render", usage: "brain sync render (--changed | --ids <id>[,<id>…]) [--plan <plan.json> [--skip-conflicted]] [--row-state <file>] | --unpublish-drafts [--json]", summary: "Render Notion payloads without writing.", options: { changed: "boolean", ids: "string", plan: "string", "skip-conflicted": "boolean", "unpublish-drafts": "boolean", "row-state": "string" }, maxPositionals: 0, needsBrain: true,
   async run({ args, brain, now }) {
     const changed = args.options.changed === true; const idsText = args.options.ids as string | undefined;
     // The Draft pages from before 0.9.1, moved to the trash after a yes (cli §5.14.4, migration 0020).
     if (args.options["unpublish-drafts"] === true) {
-      if (changed || idsText !== undefined || args.options.plan !== undefined || args.options["skip-conflicted"] === true) throw new BrainError("USAGE", "--unpublish-drafts runs alone");
+      if (changed || idsText !== undefined || args.options.plan !== undefined || args.options["skip-conflicted"] === true || args.options["row-state"] !== undefined) throw new BrainError("USAGE", "--unpublish-drafts runs alone");
       const items = unpublishDrafts(await Workspace.open(brain!), now);
       return { data: { items, errors: [], skipped: [] }, human: `${items.length} Draft pages to move to the trash\n` };
     }
@@ -109,7 +128,9 @@ export const syncRenderCommand: Command = {
     if (skipConflicted && planPath === undefined) throw new BrainError("USAGE", "--skip-conflicted needs --plan");
     const plan = planPath === undefined ? undefined : parsePlan(await readJsonInput(planPath, "sync render"));
     if (plan !== undefined) for (const item of plan.conflicts) if (item.code === "BOTH_CHANGED" && typeof item.brain_id === "string" && typeof item.property === "string") { const set = held.get(item.brain_id) ?? new Set<string>(); set.add(item.property); held.set(item.brain_id, set); }
-    const data = render(workspace, now, ids, held);
+    const rowStatePath = args.options["row-state"] as string | undefined;
+    const rowStates = rowStatePath === undefined ? undefined : parseRowStates(await readJsonInput(rowStatePath, "sync render"));
+    const data = render(workspace, now, ids, held, rowStates);
     // --skip-conflicted (cli §5.14.4, 0051): a conflicted row, and a report with a What to fix nobody has read, are held back whole.
     const withheld = new Map<string, string>(); const conflictedPages = new Set<string>();
     if (skipConflicted && plan !== undefined) {

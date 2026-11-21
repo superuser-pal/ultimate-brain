@@ -17,8 +17,9 @@
       ],
       "input_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
       "counts": {
-        "decisions": 6,
-        "new_items": 1,
+        "actions": 6,
+        "doubtful": 0,
+        "cleaned": 0,
         "targets": 2,
         "queued": 0
       },

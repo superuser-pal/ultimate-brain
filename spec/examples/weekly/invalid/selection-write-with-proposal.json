@@ -4,32 +4,35 @@
   "items": [
     {
       "n": 1,
-      "key": "task_overdue:notion:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e",
+      "part": "A",
+      "key": "project_stalled:prj-9x4t1b7e",
       "stream": "work",
-      "kind": "Overdue",
-      "category": "overdue",
-      "subject": "\"Send the logo proposals\"",
-      "decide": "new date, Done or Won't Do",
-      "lives": "task",
-      "write": false,
+      "kind": "Stalled",
+      "category": "stalled",
+      "subject": "Quarry website",
+      "decide": "set Status to On Hold?",
+      "write": true,
       "proposal": "prp-7d2k9m4q",
-      "url": "https://www.notion.so/2b8c4d6e1f3a4b5c8d7e9f0a1b2c3d4e",
       "targets": [
-        "notion:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e"
+        "prj-9x4t1b7e"
       ],
-      "new_items": 0,
       "because": "new",
       "evidence_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      "days_late": 8,
-      "recommendation": null,
+      "days_idle": 40,
+      "recommendation": {
+        "action": "set_project_status",
+        "value": "On Hold",
+        "label": "set Status to On Hold"
+      },
       "finding": null
     }
   ],
   "queued": [],
   "counts": {
-    "decisions": 2,
-    "new_items": 1,
-    "targets": 2,
+    "actions": 1,
+    "doubtful": 0,
+    "cleaned": 0,
+    "targets": 0,
     "queued": 0
   },
   "earlier_open": 1,

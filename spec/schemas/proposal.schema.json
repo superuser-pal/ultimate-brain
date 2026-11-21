@@ -50,7 +50,10 @@
         "set_field",
         "replace_line",
         "notion_correction",
-        "tracked_task"
+        "tracked_task",
+        "archive_draft",
+        "fix_structure",
+        "new_task"
       ]
     },
     "target": {
@@ -62,12 +65,12 @@
       "pattern": "^(facts\\.)?[a-z][a-z0-9_]*$"
     },
     "before": {
-      "description": "A fact value; on notion_correction also a note id or a list of per- ids (spec/schema.md §11).",
-      "anyOf": [{ "$ref": "note.schema.json#/$defs/factValue" }, { "$ref": "#/$defs/correctionList" }]
+      "description": "A fact value; on notion_correction also a note id or a list of per- ids (spec/schema.md §11); on a fix_structure (0.17.0) the field's whole value, a list included.",
+      "anyOf": [{ "$ref": "note.schema.json#/$defs/factValue" }, { "$ref": "#/$defs/correctionList" }, { "type": "array" }]
     },
     "after": {
-      "description": "A fact value; on notion_correction also a note id, a list of per- ids, or null to remove an optional reference.",
-      "anyOf": [{ "$ref": "note.schema.json#/$defs/factValue" }, { "$ref": "#/$defs/correctionList" }, { "type": "null" }]
+      "description": "A fact value; on notion_correction also a note id, a list of per- ids, or null to remove an optional reference; on a fix_structure (0.17.0) the field's whole value, a list included.",
+      "anyOf": [{ "$ref": "note.schema.json#/$defs/factValue" }, { "$ref": "#/$defs/correctionList" }, { "type": "null" }, { "type": "array" }]
     },
     "content": {
       "type": "string",
@@ -367,9 +370,12 @@
           "$ref": "note.schema.json#/$defs/timestamp"
         },
         "decided_by": {
+          "description": "chat from 0.16.0; tick and cleanup from 0.17.0, written only by brain cleanup (a tick in a Ready Weekly row, or an item left unticked there and declined; a mechanical item the weekly run applied alone, spec/weekly-review.md §15); notion is history.",
           "enum": [
             "notion",
-            "chat"
+            "chat",
+            "tick",
+            "cleanup"
           ]
         }
       },
@@ -458,7 +464,8 @@
       "description": "stale: the target changed before apply, or the proposal is withheld. withdrawn (0.16.0): a notion_correction or tracked_task sync no longer reads in Notion, closed with no decision (spec/cli.md §5.14.2).",
       "enum": [
         "stale",
-        "withdrawn"
+        "withdrawn",
+        "undone"
       ]
     },
     "notion_published": {
@@ -648,6 +655,10 @@
     "fingerprint": { "description": "The reflection finding the proposal records (spec/schema.md §11.4, decisions 0052 and 0076): <finding kind>:<ids or term>[:<field or source>].", "$ref": "#/$defs/fingerprint" },
     "line_before": { "description": "replace_line (spec/weekly-review.md §8.3): the exact body line replaced.", "type": "string", "pattern": "^[^\\n]+$" },
     "line_after": { "description": "replace_line: the line that replaces it.", "type": "string", "pattern": "^[^\\n]+$" },
+    "tidy": { "description": "0.17.0 (spec/weekly-review.md §15.2): the weekly clean-up's mechanical kind. fix_structure: pair_half, moved_link or repeated_value; archive_draft: stale_draft; a merge the clean-up wrote: exact_duplicate.", "enum": ["pair_half", "moved_link", "repeated_value", "exact_duplicate", "stale_draft"] },
+    "task_title": { "description": "new_task (0.17.0): the task's words, one line, written by the brain from the project's own notes and inputs, which why cites (spec/weekly-review.md §6.1).", "type": "string", "pattern": "^[^\\n]+$", "minLength": 1 },
+    "weekly": { "description": "0.17.0: the week of the Weekly row that offers this proposal (an Action or a doubtful clean-up item, spec/weekly-review.md §15.6); decided by its tick there, not asked in the session.", "type": "string", "pattern": "^\\d{4}-W(0[1-9]|[1-4]\\d|5[0-3])$" },
+    "undone_at": { "description": "0.17.0: when brain cleanup undo restored a mechanical item (closed_reason undone, cli.md §5.38).", "$ref": "note.schema.json#/$defs/timestamp" },
     "correction": { "description": "A correction group's review_notes (spec/weekly-review.md §8.4): the claim key it corrects, <target>:<field>, <decision id> or <target>:rule:<proposal id>.", "type": "string", "pattern": "^[a-z]{2,4}-[0-9abcdefghjkmnpqrstvwxyz]{8}(:[a-z][a-z0-9_]*|:rule:prp-[0-9abcdefghjkmnpqrstvwxyz]{8})?$" },
     "needs_clarification": { "description": "A correction group's uncertain matches, named and not drafted (spec/weekly-review.md §8.4).", "type": "array", "items": { "type": "object", "required": ["note", "line"], "additionalProperties": false, "properties": { "note": { "$ref": "note.schema.json#/$defs/id" }, "line": { "anyOf": [{ "type": "string", "pattern": "^[^\\n]+$" }, { "type": "null" }] } } } },
     "evidence": { "description": "Reflection: the meetings and sources the finding rested on when the user answered it, sorted and unique (spec/schema.md §11.4); may be empty (a duplicate rests on names).", "type": "array", "items": { "type": "string", "pattern": "^(mtg|src)-[0-9abcdefghjkmnpqrstvwxyz]{8}$" }, "uniqueItems": true }
@@ -655,7 +666,16 @@
   "additionalProperties": false,
   "allOf": [
     {"description": "replace_line (0.15.0): one exact line of the target's body, with its body hash.", "if": {"properties": {"kind": {"const": "replace_line"}}, "required": ["kind"]}, "then": {"required": ["target", "line_before", "line_after", "before_hash"], "not": {"anyOf": [{"required": ["field"]}, {"required": ["before"]}, {"required": ["after"]}, {"required": ["content"]}, {"required": ["note"]}, {"required": ["links"]}, {"required": ["notes"]}, {"required": ["changes"]}, {"required": ["supersedes"]}, {"required": ["merge_into"]}, {"required": ["answer"]}, {"required": ["from"]}]}}},
-    {"description": "line_before and line_after belong to replace_line.", "if": {"anyOf": [{"required": ["line_before"]}, {"required": ["line_after"]}]}, "then": {"properties": {"kind": {"const": "replace_line"}}}},
+    {"description": "line_before and line_after belong to replace_line, and from 0.17.0 to a moved_link fix_structure.", "if": {"anyOf": [{"required": ["line_before"]}, {"required": ["line_after"]}]}, "then": {"anyOf": [{"properties": {"kind": {"const": "replace_line"}}}, {"required": ["tidy"], "properties": {"kind": {"const": "fix_structure"}, "tidy": {"const": "moved_link"}}}]}},
+    {"description": "archive_draft (0.17.0): a never-reviewed draft archived by the clean-up's stale_draft.", "if": {"properties": {"kind": {"const": "archive_draft"}}, "required": ["kind"]}, "then": {"required": ["target", "tidy"], "properties": {"tidy": {"const": "stale_draft"}}, "not": {"anyOf": [{"required": ["field"]}, {"required": ["before"]}, {"required": ["after"]}, {"required": ["content"]}, {"required": ["note"]}, {"required": ["merge_into"]}]}}},
+    {"description": "fix_structure (0.17.0): one structural fix; pair_half and repeated_value change field from before to after, moved_link replaces line_before with line_after.", "if": {"properties": {"kind": {"const": "fix_structure"}}, "required": ["kind"]}, "then": {"required": ["target", "tidy"], "properties": {"tidy": {"enum": ["pair_half", "moved_link", "repeated_value"]}}, "if": {"properties": {"tidy": {"const": "moved_link"}}}, "then": {"required": ["line_before", "line_after", "before_hash"], "not": {"anyOf": [{"required": ["field"]}, {"required": ["before"]}, {"required": ["after"]}]}}, "else": {"required": ["field", "after"]}}},
+    {"description": "new_task (0.17.0): a next-step task for its project, created in Notion on the user's tick; no passages.", "if": {"properties": {"kind": {"const": "new_task"}}, "required": ["kind"]}, "then": {"required": ["target", "task_title"], "properties": {"target": {"pattern": "^prj-"}}, "not": {"anyOf": [{"required": ["passages"]}, {"required": ["field"]}, {"required": ["before"]}, {"required": ["after"]}, {"required": ["content"]}, {"required": ["note"]}]}}},
+    {"description": "tidy belongs to fix_structure, archive_draft and a merge (exact_duplicate).", "if": {"required": ["tidy"]}, "then": {"anyOf": [{"properties": {"kind": {"enum": ["fix_structure", "archive_draft"]}}}, {"properties": {"kind": {"const": "merge"}, "tidy": {"const": "exact_duplicate"}}}]}},
+    {"description": "task_title belongs to new_task.", "if": {"required": ["task_title"]}, "then": {"properties": {"kind": {"const": "new_task"}}}},
+    {"description": "tidy:stale_draft:… is an archive_draft; tidy:pair_half, moved_link and repeated_value are fix_structure.", "if": {"properties": {"fingerprint": {"pattern": "^tidy:stale_draft:"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"const": "archive_draft"}}}},
+    {"if": {"properties": {"fingerprint": {"pattern": "^tidy:(pair_half|moved_link|repeated_value):"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"const": "fix_structure"}}}},
+    {"description": "undone (0.17.0): a mechanical item applied alone (decided_by cleanup), then undone; undone_at says when.", "if": {"properties": {"closed_reason": {"const": "undone"}}, "required": ["closed_reason"]}, "then": {"required": ["decision", "undone_at"], "properties": {"decision": {"properties": {"action": {"const": "approve"}, "decided_by": {"const": "cleanup"}}}}}},
+    {"if": {"required": ["undone_at"]}, "then": {"required": ["closed_reason"], "properties": {"closed_reason": {"const": "undone"}}}},
     {"description": "correction and needs_clarification belong to a correction group's review_notes.", "if": {"anyOf": [{"required": ["correction"]}, {"required": ["needs_clarification"]}]}, "then": {"required": ["correction"], "properties": {"kind": {"const": "review_notes"}}}},
     {"description": "A reflection proposal (0052, 0076) carries its fingerprint and its evidence together, and is never an Ultimate Assistant one.", "if": {"anyOf": [{"required": ["fingerprint"]}, {"required": ["evidence"]}]}, "then": {"required": ["fingerprint", "evidence"], "not": {"required": ["finding"]}}},
     {"description": "contradiction:<target>:<field> is a contradiction on that target and field.", "if": {"properties": {"fingerprint": {"pattern": "^contradiction:"}}, "required": ["fingerprint"]}, "then": {"properties": {"kind": {"const": "contradiction"}}}},
@@ -673,7 +693,7 @@
     {"description": "notion_change: its databases and properties (spec/assistant.md §6).", "if": {"properties": {"kind": {"const": "notion_change"}}, "required": ["kind"]}, "then": {"properties": {"database": {"enum": ["tasks", "projects", "areas"]}, "property": {"enum": ["status", "due", "project", "area", "archived"]}}}},
     {"description": "notion_correction (0.16.0, 0101 §4): an edit to a brain-owned value found in Notion, written only by sync apply; no passages.", "if": {"properties": {"kind": {"const": "notion_correction"}}, "required": ["kind"]}, "then": {"required": ["target", "field", "after", "database", "page", "property", "notion_value", "observed_at"], "properties": {"database": {"enum": ["domains", "areas", "goals", "projects", "people", "orgs", "documents"]}, "field": {"pattern": "^(facts\\.[a-z][a-z0-9_]*|title|summary|why|area|goal|client|org|domain|people)$"}}, "not": {"anyOf": [{"required": ["content"]}, {"required": ["note"]}, {"required": ["links"]}, {"required": ["notes"]}, {"required": ["changes"]}, {"required": ["supersedes"]}, {"required": ["merge_into"]}, {"required": ["answer"]}, {"required": ["answer_note"]}, {"required": ["passages"]}, {"required": ["from"]}, {"required": ["items"]}]}}},
     {"description": "notion_value and observed_at belong to notion_correction.", "if": {"anyOf": [{"required": ["notion_value"]}, {"required": ["observed_at"]}]}, "then": {"properties": {"kind": {"const": "notion_correction"}}}},
-    {"description": "A field of the facts.<key> form, a null after and a list value belong to notion_correction.", "if": {"anyOf": [{"properties": {"field": {"pattern": "^facts\\."}}, "required": ["field"]}, {"properties": {"after": {"not": {"$ref": "note.schema.json#/$defs/factValue"}}}, "required": ["after"]}, {"properties": {"before": {"not": {"$ref": "note.schema.json#/$defs/factValue"}}}, "required": ["before"]}]}, "then": {"properties": {"kind": {"const": "notion_correction"}}}},
+    {"description": "A field of the facts.<key> form, a null after and a list value belong to notion_correction.", "if": {"anyOf": [{"properties": {"field": {"pattern": "^facts\\."}}, "required": ["field"]}, {"properties": {"after": {"not": {"$ref": "note.schema.json#/$defs/factValue"}}}, "required": ["after"]}, {"properties": {"before": {"not": {"$ref": "note.schema.json#/$defs/factValue"}}}, "required": ["before"]}]}, "then": {"properties": {"kind": {"enum": ["notion_correction", "fix_structure"]}}}},
     {"description": "tracked_task (0.16.0, 0101 §6): a tracked question's task finished, in the trash or unreadable; written only by sync apply; no passages.", "if": {"properties": {"kind": {"const": "tracked_task"}}, "required": ["kind"]}, "then": {"required": ["target", "page", "page_title", "task_state", "task_status", "task_edited"], "properties": {"target": {"pattern": "^que-"}}, "not": {"anyOf": [{"required": ["field"]}, {"required": ["before"]}, {"required": ["after"]}, {"required": ["content"]}, {"required": ["note"]}, {"required": ["links"]}, {"required": ["notes"]}, {"required": ["changes"]}, {"required": ["supersedes"]}, {"required": ["merge_into"]}, {"required": ["answer"]}, {"required": ["answer_note"]}, {"required": ["passages"]}, {"required": ["from"]}, {"required": ["items"]}]}}},
     {"description": "A tracked_task's state: a status on done or dropped; null on gone and unreadable; no last edit on unreadable.", "if": {"properties": {"task_state": {"enum": ["done", "dropped"]}}, "required": ["task_state"]}, "then": {"properties": {"task_status": {"type": "string"}, "task_edited": {"type": "string"}}}, "else": {"properties": {"task_status": {"type": "null"}}}},
     {"if": {"properties": {"task_state": {"const": "unreadable"}}, "required": ["task_state"]}, "then": {"properties": {"task_edited": {"type": "null"}}}},
@@ -1131,7 +1151,10 @@
             ],
             "properties": {
               "closed_reason": {
-                "const": "stale"
+                "enum": [
+                  "stale",
+                  "undone"
+                ]
               },
               "decision": {
                 "properties": {
@@ -1609,7 +1632,7 @@
       "then": {
         "properties": {
           "kind": {
-            "enum": ["update_body", "replace_line"]
+            "enum": ["update_body", "replace_line", "fix_structure"]
           }
         }
       }
@@ -1675,7 +1698,7 @@
     "correctionList": {"description": "notion_correction: a note id (a reference field) or a list of per- ids (people).", "anyOf": [{"$ref": "note.schema.json#/$defs/id"}, {"type": "array", "items": {"type": "string", "pattern": "^per-[0-9abcdefghjkmnpqrstvwxyz]{8}$"}, "uniqueItems": true}]},
     "normalizedValue": {"description": "A Notion value in spec/cli.md §5.14.1's normalized form: text, number, checkbox, a {start, end} date, a sorted list of page ids, or null.", "anyOf": [{"type": "string"}, {"type": "number"}, {"type": "boolean"}, {"type": "null"}, {"$ref": "#/$defs/pageIds"}, {"type": "object", "required": ["start"], "properties": {"start": {"type": "string"}, "end": {"type": ["string", "null"]}}, "additionalProperties": false}]},
     "notionValue": {"anyOf": [{"type": "string", "minLength": 1}, {"type": "null"}, {"type": "boolean"}, {"$ref": "#/$defs/pageIds"}]},
-    "fingerprint": {"type": "string", "pattern": "^(contradiction|stale):(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}:[a-z][a-z0-9_]*$|^merge:(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}\\+(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^promotion:(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}:(mtg|src)-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^theme:[a-z0-9]+(-[a-z0-9]+){1,2}$"},
+    "fingerprint": {"type": "string", "pattern": "^(contradiction|stale):(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}:[a-z][a-z0-9_]*$|^merge:(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}\\+(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^promotion:(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}:(mtg|src)-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^theme:[a-z0-9]+(-[a-z0-9]+){1,2}$|^tidy:(pair_half|repeated_value):(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}:[a-z][a-z0-9_]*$|^tidy:moved_link:(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}:[0-9a-f]{8}$|^tidy:stale_draft:(area|dom|gol|prj|per|org|mtg|dec|que|con|ref)-[0-9abcdefghjkmnpqrstvwxyz]{8}$"},
     "findingKey": {"type": "string", "pattern": "^(task_overdue|task_stalled|task_no_project):notion:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$|^(project_stalled|project_no_next_step|project_done_but_open|project_misplaced):prj-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^project_duplicate:prj-[0-9abcdefghjkmnpqrstvwxyz]{8}\\+prj-[0-9abcdefghjkmnpqrstvwxyz]{8}$|^(area_no_domain|area_empty):area-[0-9abcdefghjkmnpqrstvwxyz]{8}$"},
     "change": {
       "type": "object",

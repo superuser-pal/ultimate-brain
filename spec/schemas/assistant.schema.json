@@ -213,6 +213,36 @@
             }
           }
         },
+        "weekly_rows": {
+          "description": "The brain's Weekly rows in the Inbox with their Brain Status (0.17.0, spec/weekly-review.md §15.6): read by brain weekly plan for the carry-over; the assistant doesn't use it.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "page",
+              "week",
+              "brain_status"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "page": {
+                "type": "string",
+                "minLength": 1
+              },
+              "week": {
+                "type": "string",
+                "pattern": "^\\d{4}-W(0[1-9]|[1-4]\\d|5[0-3])$"
+              },
+              "brain_status": {
+                "enum": [
+                  "New",
+                  "Ready",
+                  "Done"
+                ]
+              }
+            }
+          }
+        },
         "repos": {
           "type": "array",
           "items": {

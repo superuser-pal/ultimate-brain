@@ -43,5 +43,10 @@
     "max_judged": 30
   },
   "input_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-  "quiet": true
+  "quiet": true,
+  "source": "agent:brain-weekly-review/20261109T070412Z",
+  "cleanup": [],
+  "cleanup_auto": true,
+  "done": [],
+  "carry": []
 }
