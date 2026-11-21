@@ -252,7 +252,8 @@
   "pending": [
     {
       "key": "project_stalled:prj-4k8m2q7t",
-      "proposal": "prp-7d2k9m4q"
+      "proposal": "prp-7d2k9m4q",
+      "weekly": null
     }
   ],
   "week_state": {
@@ -270,5 +271,65 @@
     "max_judged": 30
   },
   "input_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-  "quiet": false
+  "quiet": false,
+  "source": "agent:brain-weekly-review/20261109T070412Z",
+  "cleanup": [
+    {
+      "tidy": "pair_half",
+      "title": "Add Launch Harbor app in March to the decisions of Harbor sync",
+      "why": "Launch Harbor app in March names Harbor sync in decided_in, and Harbor sync's decisions lacks it.",
+      "fingerprint": "tidy:pair_half:mtg-8c4n2p7w:decisions",
+      "targets": [
+        "mtg-8c4n2p7w"
+      ],
+      "paths": [
+        "knowledge/meetings/2026-11-05-harbor-sync.md"
+      ],
+      "proposal_input": {
+        "kind": "fix_structure",
+        "tidy": "pair_half",
+        "fix": "pair_half",
+        "title": "Add Launch Harbor app in March to the decisions of Harbor sync",
+        "why": "Launch Harbor app in March names Harbor sync in decided_in, and Harbor sync's decisions lacks it.",
+        "target": "mtg-8c4n2p7w",
+        "field": "decisions",
+        "after": [
+          "dec-2p9f6h1r"
+        ],
+        "source": "agent:brain-weekly-review/20261109T070412Z",
+        "passages": [
+          "agent:brain-weekly-review/20261109T070412Z"
+        ],
+        "fingerprint": "tidy:pair_half:mtg-8c4n2p7w:decisions",
+        "evidence": []
+      }
+    }
+  ],
+  "cleanup_auto": true,
+  "done": [
+    {
+      "kind": "task",
+      "title": "Send the logo proposals",
+      "project": "Harbor app",
+      "date": "2026-11-06",
+      "url": "https://www.notion.so/2b8c4d6e1f3a4b5c8d7e9f0a1b2c3d4e"
+    }
+  ],
+  "carry": [
+    {
+      "week": "2026-W45",
+      "label": "C1",
+      "part": "C",
+      "proposal": "prp-6w2k8m4q",
+      "key": "area_empty:area-6h3k9p2w",
+      "category": "structure",
+      "stream": "work",
+      "kind": "Clean-up",
+      "subject": "Garden: Archived → yes",
+      "decide": "Garden: Archived → yes?",
+      "targets": [
+        "area-6h3k9p2w"
+      ]
+    }
+  ]
 }

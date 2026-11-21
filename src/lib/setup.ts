@@ -8,7 +8,7 @@ import { isRecord } from "./input.ts";
 import { databaseId, MODULES, missingFor, modulesOf } from "./modules.ts";
 import type { Note } from "./notes.ts";
 import { slugify } from "./paths.ts";
-import { scheduleEntryOf } from "./schedule-entry.ts";
+import { scheduledBrains } from "./schedule.ts";
 import { expandPath, workTreeTop } from "./repos.ts";
 import { logLinesOf } from "./runs.ts";
 
@@ -36,8 +36,6 @@ const ORDER: ReadonlyArray<readonly [item: string, what: string]> = [
 ];
 /** First value's four checks, in a `first-value` line's keys (spec/setup.md §4.1, §10). */
 const FIRST_VALUE_CHECKS = ["tasks", "report", "organised", "answer"] as const;
-/** Left out of the count and of `next` without Notion AI (spec/setup.md §13). */
-const NEEDS_NOTION_AI = new Set(["minutes-prompt", "brain-assistant"]);
 
 export interface SetupChecks {
   git_identity: boolean;
@@ -107,13 +105,15 @@ export async function setupStatus(root: string, config: Record<string, unknown>,
     if (line === undefined) return [step, null];
     // First value counts only when its latest line passes, never an attempt (setup.md §5, §10).
     if (step === "first-value") return [step, line.pairs.result === "done" && firstValuePasses(firstValue!, tasksOff) ? line.timestamp : null];
+    // A schedule declined only because Windows had none before 0.17.0 is offered again (setup.md §7, cli.md §5.2).
+    if (step === "schedule" && line.pairs.reason === "schedule-unsupported") return [step, null];
     return [step, line.pairs.result === "done" || line.pairs.result === "declined" ? line.timestamp : null];
   })) as SetupStatus["recorded"];
-  const notionAi = latest.get("prerequisites")?.pairs.notion_ai !== "no";
+  const taken = stepsTaken(latest.get("prerequisites")?.pairs);
 
   const doneOf = (item: string): boolean => item in checks ? checks[item as keyof SetupChecks] : recorded[item as keyof SetupStatus["recorded"]] !== null;
-  const items = ORDER.map(([item]) => item).filter((item) => notionAi || !NEEDS_NOTION_AI.has(item));
-  const required = [...Object.keys(checks), "notion-mcp", ...(notionAi ? ["minutes-prompt", "brain-assistant"] : [])];
+  const items = ORDER.map(([item]) => item).filter((item) => taken[item as keyof typeof taken] !== false);
+  const required = [...Object.keys(checks), "notion-mcp", ...(["minutes-prompt", "brain-assistant"] as const).filter((step) => taken[step])];
 
   const notion = isRecord(config.notion) ? config.notion : {};
   return {
@@ -127,6 +127,19 @@ export async function setupStatus(root: string, config: Record<string, unknown>,
     finished: lines.some((line) => line.pairs.step === "finished") || (lines.length === 0 && checks.databases && checks.owner_person),
     drop_folder: await dropFolderProposal(root, home ?? homedir(), env),
   };
+}
+
+/**
+ * Which of steps 4a and 4b the latest `prerequisites` line takes (spec/setup.md §13, cli.md §5.2). From 0.17.0 its `credits` and `meetings`
+ * keys decide: the minutes prompt with `notion-ai` among the meetings, Notion Brain Assistant with `credits=yes`. A line without `credits` (before
+ * 0.17.0) takes both unless it has `notion_ai=no`; with no line, both are taken.
+ */
+export function stepsTaken(pairs: Readonly<Record<string, string>> | undefined): { "minutes-prompt": boolean; "brain-assistant": boolean } {
+  if (pairs?.credits === undefined) {
+    const notionAi = pairs?.notion_ai !== "no";
+    return { "minutes-prompt": notionAi, "brain-assistant": notionAi };
+  }
+  return { "minutes-prompt": (pairs.meetings ?? "").split(",").map((entry) => entry.trim()).includes("notion-ai"), "brain-assistant": pairs.credits === "yes" };
 }
 
 /** The first human line, shown only while setup is unfinished (cli.md §5.2); null once it is finished. */
@@ -254,7 +267,7 @@ async function dropFolderProposal(root: string, home: string, env: NodeJS.Proces
 /** The other brains the machine knows, with a drop folder: the default brain and each scheduled brain (cli.md §5.2). */
 async function otherBrains(root: string, home: string, env: NodeJS.ProcessEnv): Promise<OtherBrain[]> {
   const self = await canonical(root);
-  const candidates = [await defaultBrain(home), ...await scheduledBrains(home, env)].filter((brain): brain is string => brain !== null);
+  const candidates = [await defaultBrain(home), ...await scheduledBrains(env, home)].filter((brain): brain is string => brain !== null);
   const found = new Map<string, OtherBrain>();
   for (const candidate of candidates) {
     const brain = await canonical(candidate);
@@ -278,23 +291,3 @@ async function defaultBrain(home: string): Promise<string | null> {
   }
 }
 
-/** The `brain` of each scheduled job's plist (cli.md §5.21); none when the folder or a file can't be read. */
-async function scheduledBrains(home: string, env: NodeJS.ProcessEnv): Promise<string[]> {
-  const agents = env.UB_LAUNCH_AGENTS_DIR ?? join(home, "Library", "LaunchAgents");
-  let names: string[];
-  try {
-    names = (await readdir(agents)).filter((name) => name.startsWith("eu.ultimate-brain.") && name.endsWith(".plist")).sort();
-  } catch {
-    return [];
-  }
-  const brains: string[] = [];
-  for (const name of names) {
-    try {
-      const entry = scheduleEntryOf(await readFile(join(agents, name), "utf8"));
-      if (isRecord(entry) && typeof entry.brain === "string" && entry.brain !== "") brains.push(entry.brain);
-    } catch {
-      // An unreadable or invalid plist adds nothing.
-    }
-  }
-  return brains;
-}

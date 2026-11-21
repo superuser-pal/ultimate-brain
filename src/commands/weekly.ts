@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname } from "node:path";
@@ -19,7 +20,9 @@ import { appendLog } from "../lib/log.ts";
 import { reflectionNotes } from "../lib/reflect.ts";
 import { computeClaims, nextCursor, titleChanges, type Claim } from "../lib/weekly-corrections.ts";
 import { computePlan, correctionCursor, titlesSince, windowOf, type PlanData } from "../lib/weekly-plan.ts";
-import { MAX_WORDS, nextState, recordProblems, renderBody, weeklyTitle, type RecordInput } from "../lib/weekly-record.ts";
+import { buildRow, MAX_WORDS, movedBody, nextState, recordProblems, renderBody, weeklyTitle, type RecordInput } from "../lib/weekly-record.ts";
+import { waitingProposals } from "../lib/proposals.ts";
+import { findTidyItems } from "../lib/tidy.ts";
 import { computeSelection, selectProblems, type SelectInput, type Selection } from "../lib/weekly-select.ts";
 import { emptyState, handoffPaths, isoWeek, localDate, mondayOf, readState, serializeState, STATE_PATH } from "../lib/weekly-state.ts";
 import { Workspace } from "../lib/workspace.ts";
@@ -73,7 +76,10 @@ export const weeklyPlanCommand: Command = {
     const scanned = await scanNotes(brain!.root);
     // Titles keep no history in their notes: the renames since the correction cursor are read from Git (weekly-review.md §8.1).
     const titles = await titleChanges(brain!.root, titlesSince(state, now), scanned.notes);
-    const data = computePlan({ snapshot, notes: scanned.notes, loaded: requireSuppressions(brain!.root), config, dismissals: store.entries, state, now, titles });
+    const loaded = requireSuppressions(brain!.root);
+    // The mechanical items (weekly-review.md §15.2), as `brain cleanup plan` finds them now, with this week's own row items kept for a rerun.
+    const cleanup = await findTidyItems(brain!.root, scanned.notes, loaded, now, localDate(now), isoWeek(localDate(now)));
+    const data = computePlan({ snapshot, notes: scanned.notes, loaded, config, dismissals: store.entries, state, now, titles, cleanup });
     const shown = data.findings.filter((finding) => finding.repetition.show).length;
     const files = handoffPaths(brain!.root, environment.homeDirectory ?? homedir());
     if (!data.quiet) {
@@ -87,6 +93,7 @@ export const weeklyPlanCommand: Command = {
       counts: {
         changes: data.changes.length, findings: data.findings.length, findings_shown: shown, clusters: data.clusters.length,
         clusters_left: data.clusters_left.length, corrections: data.corrections.length, pending: data.pending.length, earlier_open: data.earlier_open,
+        cleanup: data.cleanup.length, done: data.done.length, carry: data.carry.length,
       },
     };
     return {
@@ -103,7 +110,7 @@ export const weeklyPlanCommand: Command = {
 export const weeklySelectCommand: Command = {
   name: "weekly select",
   usage: "brain weekly select --input <file|-> [--json]",
-  summary: "Choose the week's decision items within the shared limits (five decisions, five new proposal items, five targets) and queue the rest. Writes nothing.",
+  summary: "Choose the week's row items within the limits (five Actions, ten doubtful items, five targets of session items) and queue the rest. Writes nothing.",
   options: { input: "string" },
   maxPositionals: 0,
   needsBrain: true,
@@ -117,7 +124,8 @@ export const weeklySelectCommand: Command = {
     assertNoProblems(selectProblems(input, byId));
     const data = computeSelection(input, byId, readState(brain!.root));
     await saveHandoff(files.selection, data);
-    return { data, human: `${data.items.length} decision items, ${data.queued.length} queued, coverage ${data.coverage}.\n` };
+    const part = (letter: string) => data.items.filter((item) => item.part === letter).length;
+    return { data, human: `${part("A")} actions, ${part("C")} doubtful items, ${part("T")} session items, ${data.queued.length} queued, coverage ${data.coverage}.\n` };
   },
 };
 
@@ -148,9 +156,26 @@ export const weeklyRecordCommand: Command = {
     assertNoProblems(recordProblems(input, now, current, byId, settings.publish === "auto"));
 
     const proposals = new Map(input.proposals.map((entry) => [entry.key, entry.proposal]));
-    const rendered = renderBody(input, (key) => proposals.get(key)!, byId, byPath);
+    const get = (id: string) => workspace.get(id);
+    const previous = current?.weeks[input.plan.week]?.row ?? {};
+    const row = buildRow(input, previous, (item) => item.proposal ?? proposals.get(item.key)!, get, workspace.notes);
+    // The row's items leave the session's questions (§15.6): `weekly` names this week on each; a carried item queued, or an item of this
+    // week's earlier row no longer offered, goes back to the session.
+    const setWeekly = (id: string, value: string | null) => {
+      const note = workspace.get(id);
+      if (note === undefined || note.attributes.status !== "pending") return;
+      const document = workspace.edit(note);
+      if (value === null) delete document.attributes.weekly; else document.attributes.weekly = value;
+      workspace.save(note.path, document);
+    };
+    for (const line of [...row.A, ...row.C]) setWeekly(line.proposal, input.plan.week);
+    for (const id of [...row.queuedCarried, ...row.dropped]) setWeekly(id, null);
+    // The base of each Action and doubtful item (§9.5): the hash of each Git file its change would write, read now.
+    for (const line of [...row.A, ...row.C]) row.slots[line.label]!.base = baseOf(workspace, line.proposal);
+    const waiting = waitingProposals(workspace, undefined).counts.waiting;
+    const rendered = renderBody(input, row, waiting, byPath);
     assertNoProblems(rendered.problems);
-    if (rendered.words > MAX_WORDS) throw new BrainError("WEEKLY_TOO_LONG", `The review is ${rendered.words} words, over ${MAX_WORDS} (the header and link targets not counted): shorten What changed and Task analysis`);
+    if (rendered.words > MAX_WORDS) throw new BrainError("WEEKLY_TOO_LONG", `Your week is ${rendered.words} words, over ${MAX_WORDS} (the header, the to-dos and link targets not counted): shorten In short, Highlights and Focus first`);
 
     const plan: PlanData = input.plan;
     const monday = mondayOf(plan.local_date);
@@ -163,8 +188,9 @@ export const weeklyRecordCommand: Command = {
     const coverage = input.selection.coverage;
     const omitted = { clusters: input.selection.omitted.clusters.length, correction_targets: input.selection.omitted.correction_targets };
     const date = formatDate(now);
+    const counts = { ...input.selection.counts, cleaned: row.U.length };
     const fields = {
-      week: plan.week, window: { from: plan.window.from, to: plan.window.to }, coverage, omitted, counts: input.selection.counts,
+      week: plan.week, window: { from: plan.window.from, to: plan.window.to }, coverage, omitted, counts,
       generated_from: linked, generated_at: formatTimestamp(now),
     };
     let id: string;
@@ -183,15 +209,31 @@ export const weeklyRecordCommand: Command = {
       if (workspace.exists(path)) assertNoProblems([{ pointer: "/plan/report", message: `${path} exists but the state doesn't name it: plan again, or run brain lint` }]);
       workspace.write(path, serializeNewFile({ id, type: "view", title: weeklyTitle(monday), view_kind: "weekly_review", ...fields, created: date, updated: date }, rendered.body));
     }
-    const state = nextState(current ?? emptyState(), input, { id, path });
+    // An earlier row whose items moved here (§15.6) says where they went, once; its row is then Done.
+    const moved: Array<{ id: string; path: string; week: string }> = [];
+    for (const [earlier, entries] of row.moved) {
+      const reportId = current?.weeks[earlier]?.report;
+      const earlierReport = reportId === undefined ? undefined : workspace.get(reportId);
+      if (earlierReport === undefined) continue;
+      const document = workspace.edit(earlierReport);
+      document.body = movedBody(document.body, new Set(entries.map((entry) => entry.label)), plan.week, entries.filter((entry) => entry.part === "A").length, entries.filter((entry) => entry.part === "C").length);
+      document.attributes.updated = date;
+      workspace.save(earlierReport.path, document);
+      moved.push({ id: earlierReport.id, path: earlierReport.path, week: earlier });
+      // The earlier row turns Done (§15.6): an item of it that didn't move (a dismissed finding's) goes back to the session.
+      const movedIds = new Set(entries.map((entry) => entry.proposal));
+      for (const [label, slot] of Object.entries(current?.weeks[earlier]?.row ?? {})) {
+        if (!label.startsWith("U") && !movedIds.has(slot.proposal) && workspace.get(slot.proposal)?.attributes.weekly === earlier) setWeekly(slot.proposal, null);
+      }
+    }
+    const state = nextState(current ?? emptyState(), input, { id, path }, row);
     workspace.writeText(STATE_PATH, serializeState(state));
     const errors = workspace.newErrors();
     if (errors.length > 0) assertNoProblems(errors.map((issue) => ({ pointer: "", message: `${issue.path}: ${issue.rule}: ${issue.message}` })));
 
-    const counts = input.selection.counts;
     const failures = input.failures.length > 0 ? [["failures", input.failures.join("; ")] as const] : [];
     const pairs = [
-      ["mode", input.mode], ["week", plan.week], ["coverage", coverage], ["decisions", counts.decisions], ["new_items", counts.new_items],
+      ["mode", input.mode], ["week", plan.week], ["coverage", coverage], ["actions", counts.actions], ["doubtful", counts.doubtful], ["cleaned", input.cleaned.length],
       ["targets", counts.targets], ["queued", counts.queued], ["changes", plan.changes.length], ["failed", input.failures.length], ...failures,
       ["published", input.publish ? "yes" : "no"], ["notes_read", input.notes_read], ["seconds", input.seconds],
     ] as const;
@@ -200,11 +242,21 @@ export const weeklyRecordCommand: Command = {
     await rm(files.plan, { force: true });
     await rm(files.selection, { force: true });
     return {
-      data: { id, path, week: plan.week, coverage, counts, changed: [...result.created, ...result.changed].sort(compareCodePoints) },
-      human: `${existing === undefined ? "wrote" : "rewrote"} ${path}: ${counts.decisions} decisions, coverage ${coverage}.\n`,
+      data: { id, path, week: plan.week, coverage, counts, changed: [...result.created, ...result.changed].sort(compareCodePoints), moved },
+      human: `${existing === undefined ? "wrote" : "rewrote"} ${path}: ${counts.actions} actions, ${counts.doubtful} doubtful, ${row.U.length} cleaned, coverage ${coverage}.\n`,
     };
   },
 };
+
+/** The base of a row item (weekly-review.md §9.5): `{ path, hash }` of each Git file its change would write; none for a Notion write or a new note. */
+function baseOf(workspace: Workspace, proposal: string): Array<{ path: string; hash: string }> {
+  const a = workspace.get(proposal)?.attributes ?? {};
+  const ids = ["notion_change", "new_task", "new_item", "review_notes"].includes(String(a.kind)) ? [] : [a.target, a.merge_into, a.supersedes].filter((id): id is string => typeof id === "string");
+  return [...new Set(ids)].flatMap((id) => {
+    const note = workspace.get(id);
+    return note === undefined ? [] : [{ path: note.path, hash: `sha256:${createHash("sha256").update(note.raw, "utf8").digest("hex")}` }];
+  });
+}
 
 /** The queued claims as `plan` would list them now (weekly-review.md §8.1, §8.2), without a snapshot or any weekly limit. */
 async function queuedClaims(root: string, now: Date): Promise<{ claims: Claim[]; state: ReturnType<typeof readState> }> {

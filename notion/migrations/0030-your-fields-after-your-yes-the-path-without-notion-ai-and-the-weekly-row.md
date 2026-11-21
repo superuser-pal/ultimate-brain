@@ -37,10 +37,15 @@ Open **Agents → Notion Brain Assistant → Instructions**. [../brain-assistant
 
 ### A3 · The Weekly review skill (by hand)
 
-Open **Skills** (on System; "Brain Assistant Skills" in a space built before 0.14.0) and the page **Weekly review**. [../brain-assistant.md](../brain-assistant.md) has the new texts, under "Weekly review".
-1. **Already done?** Its body has a step 8 starting "8. End with one short list". Then change nothing.
-2. **Otherwise,** replace its **Description** and its whole **body** with the new ones, and nothing else on the page. Re-link *[@Brain Data]* with a real @mention of Brain Data under your top page. Keep **Use automatically** on. Steps 1 to 4 are as before; step 5 no longer says "I set it myself", and steps 6 to 8 ask about the task items in numbered options, set what you pick after your answer, and list what was set.
-3. The other skills don't change: Today, Prep and Plan check stay read only.
+Open **Skills** (on System; "Brain Assistant Skills" in a space built before 0.14.0) and the page **Weekly review**. [../brain-assistant.md](../brain-assistant.md) has the new texts, under "Weekly review": its **Description:** line and its text block (the code block, from "Goal:" to "Never recommend Approve or Reject."). First see where the page keeps the skill's text, and replace it there:
+- **The text is in the Description property and the page body is empty** (the template's layout, and every space duplicated from it): the agent runs what Description holds. Replace **Description's whole text** with the new text block, word for word, and leave the body empty. The short **Description:** line isn't copied into this layout.
+- **The text is in the page body** (a Skills database built by hand from Prompt 9): replace the whole **body** with the new text block, and Description with the new **Description:** line.
+
+Change nothing else on the page.
+1. **Already done?** The skill's text (in Description, or in the body) has a step 8 starting "8. End with one short list". Then change nothing.
+2. **Otherwise,** make the replacement above. Re-link *[@Brain Data]* with a real @mention of Brain Data under your top page. Keep **Use automatically** on. Steps 1 to 4 are as before; step 5 no longer says "I set it myself", and steps 6 to 8 ask about the task items in numbered options, set what you pick after your answer, and list what was set.
+3. **Check it took:** open Description and the body again. The old text ("6. End with one short list", "I set it myself") is in neither; if it is still in Description, the agent still runs the old skill.
+4. The other skills don't change: Today, Prep and Plan check stay read only.
 
 ### A4 · First things first, item 3 (the agent, or by hand)
 
@@ -55,7 +60,7 @@ Use made-up rows only, and delete them before any catch-up. In **Brain Data**:
 - In **Projects**, a project `Fields check project: delete me`, Status **Active**, with a Key Facts line `Budget: 10k`.
 - In **Tasks**, a task `Fields check: delete me`, Status **To Do**, Due a week ago, Project `Fields check project: delete me`.
 - In **Meetings**, a meeting `Fields check meeting: delete me`, Brain Status **New**.
-- In **Inbox**, a row `Week of <this Monday, like 23 Nov 2026>`, Kind **Weekly**, Brain Status **New**, whose body is the three headings `What changed`, `Task analysis` and `What needs your decision`, the first two with the line `- Nothing new this week.`, and under the third the line `1. Overdue · "Fields check: delete me" · new date, Done or Won't Do → ` followed by an @mention of the test task.
+- In **Inbox**, a row `Week of <this week's Monday, like 16 Nov 2026>`, Kind **Weekly**, Brain Status **New**, whose body is the three headings `What changed`, `Task analysis` and `What needs your decision`, the first two with the line `- Nothing new this week.`, and under the third the line `1. Overdue · "Fields check: delete me" · new date, Done or Won't Do → ` followed by an @mention of the test task.
 
 In Notion Brain Assistant's chat:
 1. **Weekly review sets a task after your answer, not before:** ask **Run Weekly review**. It finds the test row and asks about item 1 with lettered options, a new Due date among them. Before you answer, open the test task: its Due hasn't changed. Answer `1a` (or the letter of the new date). It sets the task's Due to that date and reads it back; the task's Status and every other property are unchanged.
@@ -139,8 +144,8 @@ These come in two kinds. **Read back through the API** (the agent): the items ma
 Part A, Notion Brain Assistant sets your fields after your yes (decision 0101 §3):
 - [ ] *(you)* Notion Brain Assistant's Tools and access give **Can edit** on Tasks, Projects, Goals and Key Results (those your space has), as well as on Meetings, Inbox and Documents; everything else in Brain Data is view only.
 - [ ] *(you)* Its Instructions have the lines "- Never edit a page or a property, except as the rules below allow.", "- My fields, after my yes. …", "- Asked to change anything else, refuse in one line …" and "- Only these skills may edit page text: …", and end "… set my fields above after my yes."; "Never edit any property or page." is nowhere in them.
-- [ ] *(you)* The Weekly review page in Skills has the new Description ("… and set what I agree on its tasks.") and a body with steps 1 to 8; "I set it myself" is nowhere on it.
-- [ ] *(API)* Where Skills is shared with the integration: the Weekly review page reads back with a step 8 starting "8. End with one short list", and without "I set it myself".
+- [ ] *(you)* The Weekly review page in Skills holds the new text with steps 1 to 8 where the page keeps its text (in Description, the template's layout, or in the body with the new Description line); "I set it myself" and "6. End with one short list" are nowhere on the page, Description included.
+- [ ] *(API)* Where Skills is shared with the integration: the Weekly review page's Description property and its body, read together, hold a step 8 starting "8. End with one short list", and neither holds "I set it myself".
 - [ ] *(API)* First things first's item **Give it access** names Tasks, Projects, Goals and Key Results.
 - [ ] *(you)* A5's checks: Weekly review set the test task's Due after `1a` and not before; "leave it" changed nothing; the project's Status changed only after your yes; Key Facts and the meeting's Brain Status were refused and are unchanged; *(API)* the values read back as each step says; the four test rows are in the trash.
 

@@ -1671,16 +1671,32 @@
           "properties": { "clusters": { "type": "integer", "minimum": 0 }, "correction_targets": { "type": "integer", "minimum": 0 } }
         },
         "counts": {
-          "description": "weekly_review: this week's decisions, new Review items, targets and queued findings (spec/weekly-review.md §5).",
-          "type": "object",
-          "required": ["decisions", "new_items", "targets", "queued"],
-          "additionalProperties": false,
-          "properties": {
-            "decisions": { "type": "integer", "minimum": 0, "maximum": 5 },
-            "new_items": { "type": "integer", "minimum": 0, "maximum": 5 },
-            "targets": { "type": "integer", "minimum": 0, "maximum": 5 },
-            "queued": { "type": "integer", "minimum": 0 }
-          }
+          "description": "weekly_review: this week's counts (spec/weekly-review.md §5): from 0.17.0 its Actions, doubtful items, cleaned items, targets and queued findings; a report written before has decisions, new Review items, targets and queued findings, and stays valid.",
+          "anyOf": [
+            {
+              "type": "object",
+              "required": ["actions", "doubtful", "cleaned", "targets", "queued"],
+              "additionalProperties": false,
+              "properties": {
+                "actions": { "type": "integer", "minimum": 0, "maximum": 5 },
+                "doubtful": { "type": "integer", "minimum": 0, "maximum": 10 },
+                "cleaned": { "type": "integer", "minimum": 0 },
+                "targets": { "type": "integer", "minimum": 0, "maximum": 5 },
+                "queued": { "type": "integer", "minimum": 0 }
+              }
+            },
+            {
+              "type": "object",
+              "required": ["decisions", "new_items", "targets", "queued"],
+              "additionalProperties": false,
+              "properties": {
+                "decisions": { "type": "integer", "minimum": 0, "maximum": 5 },
+                "new_items": { "type": "integer", "minimum": 0, "maximum": 5 },
+                "targets": { "type": "integer", "minimum": 0, "maximum": 5 },
+                "queued": { "type": "integer", "minimum": 0 }
+              }
+            }
+          ]
         },
         "project": {
           "$ref": "#/$defs/projectId"

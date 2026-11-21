@@ -5,7 +5,7 @@ import { contentLines, sectionLine, withSectionLines } from "./from-the-brain.ts
 import { assertNoProblems, isRecord, unknownKeys, type InputProblem } from "./input.ts";
 import type { NoteInput } from "./note-new.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
-import { areaGroup, fixValueProblem, notionWrite, projectsProblem, type NotionWrite } from "./notion-change.ts";
+import { areaGroup, createTaskWrite, fixValueProblem, notionWrite, projectsProblem, type NotionWrite } from "./notion-change.ts";
 import { bodyHash, bodyOf, reviewTitle, sourceTitle, stageNewItem, subjectLabel, writeProposal } from "./proposals.ts";
 import { brainFieldValue, settlePublished } from "./notion-corrections.ts";
 import { acceptCleanupItem, cleanupItemView, CLEANUP_KINDS, CleanupSkip, reconcile } from "./cleanup-row.ts";
@@ -14,6 +14,7 @@ import { lineageOf, restrictedSources } from "./eligibility.ts";
 import { citedPassages, linkRefs, proposalWithheld, proposedText } from "./passages.ts";
 import { citesPassage, contextFor, requireSuppressions, withheldSupport } from "./suppressions.ts";
 import { formatDate, normalizeTimestamp } from "./time.ts";
+import { generateItemId } from "./ids.ts";
 import type { Workspace } from "./workspace.ts";
 import type { LogEntry } from "./log.ts";
 import type { FrontmatterDocument } from "./frontmatter.ts";
@@ -29,7 +30,8 @@ export interface Decision {
   /** review_notes with items: the items the user turned down, rejected at once (0.16.0, 0098; spec/schema.md §11.3). */
   reject?: Array<Record<string, unknown>>;
   decided_at: string;
-  decided_by: "notion" | "chat";
+  /** tick and cleanup (0.17.0) come only through brain cleanup (cli.md §5.38): a tick in a Ready Weekly row, a mechanical item applied alone. */
+  decided_by: "notion" | "chat" | "tick" | "cleanup";
 }
 
 export interface DecisionInput extends Decision {
@@ -123,7 +125,7 @@ export function parseApplyInput(input: unknown): ApplyInput {
     if (item.exclude !== undefined && (!Array.isArray(item.exclude) || item.exclude.some((entry) => !isRecord(entry) || !(isNoteExclude(entry) || isChangeExclude(entry) || (typeof entry.field === "string" && Object.hasOwn(entry, "value") && Object.keys(entry).every((key) => ["target", "field", "value"].includes(key))))))) problems.push({ pointer: `${pointer}/exclude`, message: "must be a list of {field, value}, {target, field, value}, {note} or {change} entries" });
     if (item.reject !== undefined && (!Array.isArray(item.reject) || item.reject.length === 0 || item.reject.some((entry) => !isRecord(entry) || !(isNoteExclude(entry) || isChangeExclude(entry) || isItemEntry(entry) || (typeof entry.target === "string" && typeof entry.field === "string" && Object.hasOwn(entry, "value") && Object.keys(entry).length === 3))))) problems.push({ pointer: `${pointer}/reject`, message: "must be a non-empty list of {note}, {target, field, value}, {change} or {item} entries" });
     if (!isTimestamp(item.decided_at)) problems.push({ pointer: `${pointer}/decided_at`, message: "must be an ISO 8601 UTC timestamp" });
-    if (item.decided_by !== "notion" && item.decided_by !== "chat") problems.push({ pointer: `${pointer}/decided_by`, message: "must be notion or chat" });
+    if (item.decided_by !== "notion" && item.decided_by !== "chat") problems.push({ pointer: `${pointer}/decided_by`, message: item.decided_by === "tick" || item.decided_by === "cleanup" ? `${String(item.decided_by)} is written only by brain cleanup (spec/cli.md §5.38): must be notion or chat` : "must be notion or chat" });
   });
   assertNoProblems(problems);
   return {
@@ -250,6 +252,28 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
   const fixed = decision.action === "fix" && !cleanup ? corrected(workspace, p, decision.fixes ?? [], [...exclude, ...rejected]) : { q: p, noteFixes: new Map<string, Array<Record<string, unknown>>>() };
   const action = decision.action === incoming.action ? undefined : decision.action;
 
+  // A new_task (0.17.0) is written by the skill too: apply records the decision and hands back the Tasks row to create (spec/schema.md §11.2).
+  if (p.kind === "new_task" && decision.action !== "reject") {
+    const project = workspace.get(String(p.target));
+    const page = project?.attributes.notion;
+    const archived = project === undefined || project.attributes.lifecycle === "archived" || project.path.startsWith("archive/") || (isRecord(project.attributes.notion_fields) && project.attributes.notion_fields.archived === true);
+    if (recordOnly) {
+      p.decision = decision; p.status = decision.action === "approve" ? "approved" : "edited"; p.updated = today;
+      workspace.save(proposal.path, document);
+      return { result: "recorded", action };
+    }
+    if (archived || typeof page !== "string") {
+      p.decision = decision; p.status = "closed"; p.closed_reason = "stale"; p.updated = today;
+      workspace.save(proposal.path, document);
+      return { result: "closed", reason: "STALE_PROPOSAL", message: archived ? `${String(p.target)} is no longer a live project` : `${String(p.target)} has no Notion page`, action };
+    }
+    const title = decision.action === "fix" && typeof fixed.value === "string" ? fixed.value : String(p.task_title);
+    if (!(recorded !== undefined && decision === recorded && (p.status === "approved" || p.status === "edited"))) {
+      p.decision = decision; p.status = decision.action === "approve" ? "approved" : "edited"; p.updated = today;
+      workspace.save(proposal.path, document);
+    }
+    return { result: "awaiting_notion", action, write: createTaskWrite(workspace, proposal.id, title, page) };
+  }
   // A notion_change is written by the skill, not here: apply records the decision and hands back the write (spec/cli.md §5.7).
   if (p.kind === "notion_change" && decision.action !== "reject") {
     const write = recordOnly ? undefined : notionWrite(workspace, proposal.id, p, decision.action === "fix" ? fixed.value : p.value_after);
@@ -647,6 +671,13 @@ function corrected(workspace: Workspace, p: Record<string, unknown>, fixes: Arra
     if (kind === "set_field") q.after = value;
     return { q, value, noteFixes };
   }
+  // A new_task's fix is the task's words (0.17.0); a clean-up item takes no fix: approve it or turn it down.
+  if (kind === "new_task") {
+    const { value } = single();
+    if (!isOneLine(value)) shape("a fix on a new_task is the task's words, one non-empty line");
+    return { q, value, noteFixes };
+  }
+  if (kind === "archive_draft" || kind === "fix_structure") shape(`a ${kind} takes no fix: approve it or turn it down`);
   throw new ItemFailure("INVALID_RESULT", `Unknown proposal kind ${kind}`);
 }
 
@@ -790,7 +821,20 @@ function rejectFromNotion(workspace: Workspace, p: Record<string, unknown>, toda
 export function applyKind(workspace: Workspace, p: Record<string, unknown>, proposalPath: string, V: unknown, D: string, today: string, exclude: Array<{ field: string; value: unknown }> = [], correctedBy?: string, sourceExcluded = false): string | null {
   const kind = String(p.kind);
   if (kind === "new_item") {
-    // Approving the row is the review: the note is written reviewed, so it gets its Notion page (0071).
+    // A theme's Document ticked in a Weekly row (0.17.0, weekly-review.md §6.1): written draft, with its own pending review_notes, which
+    // the session asks as any new note (0076 §4). Otherwise approving the row is the review: the note is written reviewed (0071).
+    if (typeof p.fingerprint === "string" && p.fingerprint.startsWith("theme:") && record(p.decision).decided_by === "tick") {
+      const staged = stageNewItem(workspace, p.note as NoteInput, proposalPath, new Date(`${today}T00:00:00Z`), "draft");
+      const evidence = list(p.evidence).map(String);
+      const newest = [...evidence].sort((a, b) => compareCodePoints(dateOfInput(workspace, b), dateOfInput(workspace, a)) || compareCodePoints(b, a))[0];
+      const passages = list(p.passages).length > 0 ? list(p.passages) : undefined;
+      writeProposal(workspace, {
+        kind: "review_notes", title: `Review the Document "${String(staged.note.title ?? (p.note as NoteInput).frontmatter.title)}"`.slice(0, 120), notes: [staged.note.id], links: [],
+        items: [{ item_id: generateItemId(new Set()), kind: "note", ref: staged.note.id, ...(passages === undefined ? {} : { passages }) }],
+        why: String(p.why), source: newest ?? String(p.source), fingerprint: p.fingerprint, evidence,
+      }, today);
+      return null;
+    }
     stageNewItem(workspace, p.note as NoteInput, proposalPath, new Date(`${today}T00:00:00Z`), "reviewed");
     return null;
   }
@@ -813,6 +857,19 @@ export function applyKind(workspace: Workspace, p: Record<string, unknown>, prop
     const count = target.body.split("\n").filter((line) => line === p.line_before).length;
     if (count !== 1) return `${target.id}'s body holds the line to replace ${count} times, not once`;
     if (V !== undefined && !isOneLine(V)) throw new ItemFailure("INVALID_RESULT", "a replace_line value is one non-empty line");
+  }
+  // The weekly clean-up's kinds (0.17.0, spec/schema.md §11.2): each stale when what it rests on changed.
+  if (kind === "archive_draft") {
+    if (a.lifecycle !== "draft") return `${target.id} is ${String(a.lifecycle)}, no longer a draft`;
+    const linked = workspace.notes.find((note) => note.id !== target.id && note.type !== "view" && (note.type === "proposal" ? ["pending", "approved", "edited"].includes(String(note.attributes.status)) && note.id !== p.id && JSON.stringify(note.attributes).includes(target.id) : JSON.stringify(note.attributes).includes(target.id) || bodyLinks(note, target.path)));
+    if (linked !== undefined) return `${linked.id} now ${linked.type === "proposal" ? "names" : "links"} ${target.id}`;
+  }
+  if (kind === "fix_structure") {
+    if (p.tidy === "moved_link") {
+      if (bodyHash(target.body) !== p.before_hash) return `${target.id}'s body changed after the proposal was written`;
+      const count = target.body.split("\n").filter((line) => line === p.line_before).length;
+      if (count !== 1) return `${target.id}'s body holds the line to fix ${count} times, not once`;
+    } else if (!isDeepStrictEqual(a[field], p.before)) return `${field} is ${a[field] === undefined ? "absent" : JSON.stringify(a[field])}, proposal expected ${p.before === undefined ? "absent" : JSON.stringify(p.before)}`;
   }
   if (kind === "set_field" && a[field] !== p.before) return `${field} is ${a[field] === undefined ? "absent" : JSON.stringify(a[field])}, proposal expected ${p.before === undefined ? "absent" : JSON.stringify(p.before)}`;
   if (kind === "set_field" && field === "area") { const problem = projectsProblem(workspace, target); if (problem !== undefined) return problem; }
@@ -885,6 +942,17 @@ export function applyKind(workspace: Workspace, p: Record<string, unknown>, prop
           workspace.save(member.path, other);
         }
       }
+      break;
+    case "archive_draft":
+      // Archived, with no successor; nothing is deleted (spec/schema.md §11.2).
+      a.lifecycle = "archived";
+      break;
+    case "fix_structure":
+      if (p.tidy === "moved_link") {
+        const lines = document.body.split("\n");
+        lines[lines.indexOf(String(p.line_before))] = String(p.line_after);
+        document.body = lines.join("\n");
+      } else a[field] = structuredClone(p.after);
       break;
     case "answer":
       // edit: your Note is the answer, as text; otherwise the note that holds it, else the sentence.
@@ -1258,3 +1326,21 @@ function record(value: unknown): Record<string, unknown> {
 }
 
 function isTimestamp(value: unknown): value is string { return normalizeTimestamp(value) !== undefined; }
+
+/** Whether a note's body links this file (a relative Markdown link resolving to it), outside fenced code. */
+function bodyLinks(note: Note, path: string): boolean {
+  const dir = posix.dirname(note.path);
+  return note.body.split("\n").some((line) => [...line.matchAll(/\]\(\s*<?([^)\s>]+)>?/g)].some((match) => {
+    const target = match[1]!;
+    if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) return false;
+    let decoded = target.split(/[?#]/)[0]!;
+    try { decoded = decodeURIComponent(decoded); } catch { /* keep */ }
+    return posix.normalize(posix.join(dir, decoded)) === path;
+  }));
+}
+
+/** The date of a meeting or source, for picking a theme's newest input. */
+function dateOfInput(workspace: Workspace, id: string): string {
+  const note = workspace.get(id);
+  return String(note?.attributes.date ?? note?.attributes.captured ?? "");
+}

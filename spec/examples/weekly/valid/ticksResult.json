@@ -1,0 +1,40 @@
+{
+  "week": "2026-W46",
+  "results": [
+    {
+      "label": "A1",
+      "proposal": "prp-4k8m2q7t",
+      "result": "applied"
+    },
+    {
+      "label": "C1",
+      "proposal": "prp-7d2k9m4q",
+      "result": "waiting",
+      "note": "Keep it for spring"
+    },
+    {
+      "label": "C2",
+      "proposal": "prp-2c6v8m3q",
+      "result": "stale",
+      "reason": "STALE_PROPOSAL"
+    },
+    {
+      "label": "C3",
+      "proposal": "prp-5w9h2k7d",
+      "result": "open"
+    },
+    {
+      "label": "U1",
+      "proposal": "prp-3c8v5n2x",
+      "result": "undone"
+    },
+    {
+      "label": "C9",
+      "proposal": null,
+      "result": "skipped",
+      "reason": "UNKNOWN_LABEL"
+    }
+  ],
+  "notion_writes": [],
+  "done": false
+}

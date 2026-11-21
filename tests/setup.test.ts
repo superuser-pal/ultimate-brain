@@ -362,6 +362,43 @@ test("without Notion AI, status counts 7 required items and leaves the minutes p
   assert.equal(data.setup.next, "seeding");
 });
 
+test("from 0.17.0 the credits and meetings answers decide steps 4a and 4b: 7, 8 or 9 required items (setup.md §13, CC-327)", async (context) => {
+  const { home, target } = await freshBrain(context);
+  await git(target, ["init", "-q"]);
+  await git(target, ["config", "user.name", "Test Owner"]);
+  await git(target, ["config", "user.email", "owner@example.test"]);
+  await git(target, ["remote", "add", "origin", "git@example.test:owner/brain.git"]);
+  await mkdir(join(home, "drop"));
+  await appendRules(target, `Drop folder: ${join(home, "drop")}\nLanguage: English`);
+  await connectDatabases(target);
+  await logSetup(target, "2026-12-10T09:10:00Z", ["step=notion-mcp", "result=done"]);
+  const expect = async (now: string, answers: string[], total: number, next: string, line: string) => {
+    await logSetup(target, now, ["step=prerequisites", "result=done", ...answers]);
+    const { data, human } = await status(target, home, true);
+    assert.deepEqual(data.setup.required, { done: 6, total }, answers.join(" "));
+    assert.equal(data.setup.next, next, answers.join(" "));
+    assert.equal(human.split("\n")[0], `Setup: 6 of ${total} done · next: ${line} · ${SET_UP}`);
+  };
+  // No credits and no Notion AI meeting notes: neither step is taken (7).
+  await expect("2026-12-10T09:11:00Z", ["credits=no", "meetings=tool,paste"], 7, "owner_person", "set your identities");
+  // Notion AI meeting notes without credits: the minutes prompt only (8).
+  await expect("2026-12-10T09:12:00Z", ["credits=no", "meetings=notion-ai,files"], 8, "minutes-prompt", "paste the minutes prompt");
+  // Credits without Notion AI meeting notes: Brain Assistant only (8).
+  await expect("2026-12-10T09:13:00Z", ["credits=yes", "meetings=paste"], 8, "brain-assistant", "set up Brain Assistant");
+  // Both (9).
+  await expect("2026-12-10T09:14:00Z", ["credits=yes", "meetings=notion-ai"], 9, "minutes-prompt", "paste the minutes prompt");
+  // A step newly left out stays recorded but no longer counts.
+  await logSetup(target, "2026-12-10T09:20:00Z", ["step=brain-assistant", "result=done"]);
+  assert.deepEqual((await status(target, home)).data.setup.required, { done: 7, total: 9 });
+  await logSetup(target, "2026-12-10T09:21:00Z", ["step=prerequisites", "result=done", "credits=no", "meetings=paste"]);
+  const { data } = await status(target, home);
+  assert.deepEqual(data.setup.required, { done: 6, total: 7 });
+  assert.equal(data.setup.recorded["brain-assistant"], "2026-12-10T09:20:00Z");
+  // A pre-0.17.0 line (no credits key) is read as before: notion_ai=no leaves both out, anything else takes both.
+  await logSetup(target, "2026-12-10T09:22:00Z", ["step=prerequisites", "result=done", "notion_ai=yes", "custom_agents=no"]);
+  assert.deepEqual((await status(target, home)).data.setup.required, { done: 7, total: 9 });
+});
+
 test("the drop folder and language are read only after the rules block's end and outside HTML comments; the first Drop folder line counts (setup.md §5)", async (context) => {
   const { home, target } = await freshBrain(context);
   await mkdir(join(home, "first"));
@@ -464,6 +501,27 @@ test("an unreadable default brain, an invalid config or plist, and a brain witho
   await scheduleBrain(home, "quiet-22222222", quiet);
   const result = await status(target, home);
   assert.deepEqual(result.data.setup.drop_folder, { proposed: "~/Documents/brain-dropbox/", exists: false, default_read_by: null, others: [] });
+});
+
+test("a brain scheduled on Windows counts too: the Description of each task's local copy (CC-369, cli.md §5.2)", async (context) => {
+  const { home, target: first } = await freshBrain(context);
+  await appendRules(first, "Drop folder: ~/Documents/brain-dropbox/");
+  // A task copy as `brain schedule install` keeps it on Windows, reduced to the Description `status` reads (cli.md §5.21).
+  const tasks = join(home, "AppData", "Local", "ultimate-brain", "tasks");
+  await mkdir(tasks, { recursive: true });
+  const entry = JSON.stringify({ brain: first, job: "catch-up", times: ["07:30"], days: null, agent: "codex", model: "gpt-5.2-codex", prompt: "catch up unattended" }).replaceAll("&", "&amp;").replaceAll('"', "&quot;");
+  await writeFile(join(tasks, "eu.ultimate-brain.brain-1a2b3c4d.catch-up.xml"), `<?xml version="1.0" encoding="UTF-16"?>\n<Task>\n  <RegistrationInfo>\n    <Description>ultimate-brain:${entry}</Description>\n  </RegistrationInfo>\n</Task>\n`);
+  const second = await secondBrain(home, "client");
+  const result = (await status(second, home)).data.setup.drop_folder;
+  assert.deepEqual([result.proposed, result.default_read_by, result.others], ["~/Documents/client-dropbox/", first, [{ brain: first, folder: join(home, "Documents", "brain-dropbox") }]]);
+});
+
+test("a schedule declined because Windows had none before 0.17.0 is not recorded, so setup offers it again (CC-369, cli.md §5.2)", async (context) => {
+  const { home, target } = await freshBrain(context);
+  await logSetup(target, "2026-12-10T09:55:00Z", ["step=schedule", "result=declined", "reason=schedule-unsupported"]);
+  assert.equal((await status(target, home)).data.setup.recorded.schedule, null);
+  await logSetup(target, "2026-12-10T10:05:00Z", ["step=schedule", "result=done"]);
+  assert.equal((await status(target, home)).data.setup.recorded.schedule, "2026-12-10T10:05:00Z");
 });
 
 test("remote passes only for the brain's own repository with an origin URL, not a parent folder's (setup.md §5)", async (context) => {
