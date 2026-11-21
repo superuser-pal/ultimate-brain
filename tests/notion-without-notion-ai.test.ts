@@ -9,7 +9,7 @@ const root = join(import.meta.dirname, "..");
 const read = (path: string) => readFile(join(root, path), "utf8");
 const MIGRATION = "notion/migrations/0030-your-fields-after-your-yes-the-path-without-notion-ai-and-the-weekly-row.md";
 const ITEM_1 =
-  'Brain Assistant and its buttons need Notion\'s Business or Enterprise plan with Notion credits. Without credits, skip items 2 to 6 and 8 (the buttons won\'t work on your plan): do item 7, then ask Claude Code or Codex for a skill by its name instead, such as "prep my 3pm" or "tidy that capture".';
+  'Notion Brain Assistant and its buttons need Notion\'s Business or Enterprise plan with Notion credits. Without credits, skip items 2 to 6 and 8 (the buttons won\'t work on your plan): do item 7, then ask Claude Code or Codex for a skill by its name instead, such as "prep my 3pm" or "tidy that capture".';
 const ROWS = [
   "| Business or Enterprise, with Notion credits | Notion AI meeting notes and the minutes prompt, or any other tool | Yes |",
   "| Business or Enterprise, without credits | Notion AI meeting notes and the minutes prompt, or any other tool | No: ask Claude Code or Codex for the same skills |",

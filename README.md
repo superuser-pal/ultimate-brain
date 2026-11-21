@@ -33,13 +33,13 @@ You need: **Node 22.6 or later**, **Git**, **the GitHub CLI (`gh`)**, **Python w
 
 **What works on your Notion plan** (checked 2026-11-20 against Notion's [AI Meeting Notes](https://www.notion.com/help/ai-meeting-notes), [Notion AI](https://www.notion.com/help/notion-ai-faqs), [Custom Agents](https://www.notion.com/help/custom-agents) and [Notion credits](https://www.notion.com/help/buy-and-track-notion-credits-for-custom-agents) pages):
 
-| Your Notion | Meetings | Brain Assistant and its buttons |
+| Your Notion | Meetings | Notion Brain Assistant and its buttons |
 |---|---|---|
 | Business or Enterprise, with Notion credits | Notion AI meeting notes and the minutes prompt, or any other tool | Yes |
 | Business or Enterprise, without credits | Notion AI meeting notes and the minutes prompt, or any other tool | No: ask Claude Code or Codex for the same skills |
 | Free or Plus | Any other tool, pasting, or transcript files: your agent writes the minutes | No: ask Claude Code or Codex for the same skills |
 
-Brain Assistant is a Notion Custom Agent, and Custom Agents run on Notion credits, which only Business and Enterprise can buy. Meetings from another notetaker or pasted: [docs/meetings-from-other-tools.md](docs/meetings-from-other-tools.md).
+Notion Brain Assistant is a Custom Agent, and Custom Agents run on Notion credits, which only Business and Enterprise can buy. Meetings from another notetaker or pasted: [docs/meetings-from-other-tools.md](docs/meetings-from-other-tools.md).
 
 #### On a Mac
 

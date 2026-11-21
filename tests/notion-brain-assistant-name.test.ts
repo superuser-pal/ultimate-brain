@@ -16,7 +16,7 @@ const MIGRATION = "notion/migrations/0030-your-fields-after-your-yes-the-path-wi
 // 0.17.0's skills release is vendored.
 const SHIPPED_DIRS = ["notion", "templates", "src"];
 const SHIPPED_FILES = [
-  "docs/notion-space-design.md", "docs/setup.md", "docs/guide.md", "README.md", "PRIVACY.md",
+  "docs/notion-space-design.md", "docs/setup.md", "docs/meetings-from-other-tools.md", "docs/chatgpt.md", "docs/guide.md", "README.md", "PRIVACY.md",
   "spec/setup.md", "spec/assistant.md", "spec/weekly-review.md", "spec/cli.md", "spec/capture-and-review.md",
 ];
 const OLDER_MIGRATION = /^notion\/migrations\/(00[0-2]\d)-/;
@@ -124,5 +124,5 @@ test("migration 0030's part B renames the agent by hand and replaces its name, e
   assert.ok(design.includes(item2) && partB.includes(item2), "B4 pastes First things first's new sentence");
 
   const readme = await read("notion/migrations/README.md");
-  assert.match(readme, /\[0030\][^\n]*Notion Brain Assistant \(by hand, read back\)[^\n]*CC-352 \(release 0\.17\.0\) \|$/m);
+  assert.match(readme, /\[0030\][^\n]*Notion Brain Assistant \(by hand, read back\)[^\n]*CC-352 \(release 0\.17\.0\)[^\n]*\|$/m);
 });

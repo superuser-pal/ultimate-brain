@@ -1,6 +1,6 @@
 # ChatGPT with your brain (optional)
 
-Claude Code or Codex runs your brain. ChatGPT is optional (decision [0101](../decisions/0101-where-notion-ai-and-the-brain-each-write.md) §8.5): through Notion's MCP it can read your Notion space and run the same Brain Assistant skills, "prep my 3pm", "what's due today", "tidy that capture", from their one text, [notion/brain-assistant.md](../notion/brain-assistant.md). You don't need it, and nothing in your brain depends on it.
+Claude Code or Codex runs your brain. ChatGPT is optional (decision [0101](../decisions/0101-where-notion-ai-and-the-brain-each-write.md) §8.5): through Notion's MCP it can read your Notion space and run the same Notion Brain Assistant skills, "prep my 3pm", "what's due today", "tidy that capture", from their one text, [notion/brain-assistant.md](../notion/brain-assistant.md). You don't need it, and nothing in your brain depends on it.
 
 **What ChatGPT can and can't do here:**
 - It sees **your Notion space**, not your brain folder: it answers from what the brain has published to Notion, which can lag your brain until the next publish.
@@ -28,7 +28,7 @@ ChatGPT asks you to confirm each write by default. Keep it that way: approve a w
 
 A project keeps the rules in every chat, so you set them up once.
 
-1. Download Brain Assistant's text for your version: open `https://github.com/superuser-pal/ultimate-brain/blob/v<version>/notion/brain-assistant.md`, with `<version>` what `brain --version` prints (for example `v0.17.0`), and choose **Download raw file**.
+1. Download Notion Brain Assistant's text for your version: open `https://github.com/superuser-pal/ultimate-brain/blob/v<version>/notion/brain-assistant.md`, with `<version>` what `brain --version` prints (for example `v0.17.0`), and choose **Download raw file**.
 2. In ChatGPT, create a project named **Ultimate Brain**, and add that file to it ([Projects in ChatGPT](https://help.openai.com/en/articles/10169521)).
 3. In the project's settings (••• → Project settings), paste these instructions, with your own link in place of `<link to Brain Data>` (open Brain Data from your space's top page, ••• → Copy link):
 

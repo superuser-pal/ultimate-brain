@@ -120,9 +120,9 @@ Two texts in your space say what works on your Notion plan: First things first's
 
 ### C1 · First things first, item 1 (the agent, or by hand)
 
-The page **First things first** (under your top page; migration 0028) starts with the item **Check your plan.** Its text after the bold words, "Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits. Without credits, skip items 2, 3 and 6 (the buttons won't work on your plan): put the Instructions of item 4 and the skills in your personal Notion Agent instead, and ask for a skill by its name.", becomes (docs/notion-space-design.md §10.1, the exact text):
+The page **First things first** (under your top page; migration 0028) starts with the item **Check your plan.** Its text after the bold words, which before 0.17.0 ends "put the Instructions of item 4 and the skills in your personal Notion Agent instead, and ask for a skill by its name." (part B gave it the agent's new name), becomes (docs/notion-space-design.md §10.1, the exact text):
 
-`Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits. Without credits, skip items 2 to 6 and 8 (the buttons won't work on your plan): do item 7, then ask Claude Code or Codex for a skill by its name instead, such as "prep my 3pm" or "tidy that capture".`
+`Notion Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits. Without credits, skip items 2 to 6 and 8 (the buttons won't work on your plan): do item 7, then ask Claude Code or Codex for a skill by its name instead, such as "prep my 3pm" or "tidy that capture".`
 
 1. **Already done?** The item says "ask Claude Code or Codex for a skill by its name". Then change nothing.
 2. **Otherwise,** the agent, with your yes, replaces the item's text after **Check your plan.** with the text above, in the same to-do block. It keeps the bold words, the link on "Notion credits" (https://www.notion.com/help/buy-and-track-notion-credits-for-custom-agents) and the tick as they are, then reads the block back: the new text once, "personal Notion Agent" nowhere on the page. Or edit the text by hand.
@@ -130,9 +130,9 @@ The page **First things first** (under your top page; migration 0028) starts wit
 
 ### C2 · The plan table in Start here (by hand, or the agent)
 
-Inside the **Start here** callout, right below its line "Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits.", add a simple table with a header row, three columns and three rows (docs/notion-space-design.md §10, the exact text):
+Inside the **Start here** callout, right below its line "Notion Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits.", add a simple table with a header row, three columns and three rows (docs/notion-space-design.md §10, the exact text):
 
-| Your Notion | Meetings | Brain Assistant and its buttons |
+| Your Notion | Meetings | Notion Brain Assistant and its buttons |
 |---|---|---|
 | Business or Enterprise, with Notion credits | Notion AI meeting notes and the minutes prompt, or any other tool | Yes |
 | Business or Enterprise, without credits | Notion AI meeting notes and the minutes prompt, or any other tool | No: ask Claude Code or Codex for the same skills |
