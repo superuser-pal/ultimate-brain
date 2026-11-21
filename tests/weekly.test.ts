@@ -106,7 +106,7 @@ test("busy: one row with Your week and Clean-up, the caps held in priority order
   assert.deepEqual(actionLines.map((line) => line.split(" · ")[0]), ["- [ ] A1", "- [ ] A2", "- [ ] A3", "- [ ] A4", "- [ ] A5"]);
   assert.match(yours, /\*\*Focus first\*\*\n1\. Send the logo proposals: due 30 Oct, 10 days late\./);
   assert.match(yours, /\*\*Waiting for you:\*\* 1 decision waits in the session: say \*what needs my decision\* in Claude Code or Codex\./);
-  assert.match(section(body, "Clean-up"), /^\*\*For you to tick\*\*\n- \[ \] C1 · Set archived of Garden to true · recommended: yes · \[Show the change\]\(\.\.\/_proposals\/[^)]+\.md\)$/m);
+  assert.match(section(body, "Clean-up"), /^\*\*For you to tick\*\*\n- \[ \] C1 · Archive Garden · recommended: yes · \[Show the change\]\(\.\.\/_proposals\/[^)]+\.md\)$/m);
   assert.equal(body.includes("Already cleaned"), false, "nothing was applied alone");
   const words = yours.split("\n").filter((line) => !line.startsWith("- [ ]")).join(" ").replace(/\]\([^)]*\)/g, "]").split(/\s+/).filter(Boolean).length;
   assert.ok(words <= 450, `${words} words`);
@@ -400,8 +400,8 @@ test("publishing: a busy week is one Inbox row, Kind Weekly, with Documents and 
     "Brain ID": { type: "rich_text", value: id },
   });
   // The row (§3.3, §15.5): an Action takes a Your note line; a doubtful item the Show the change toggle and Your note; the session's items are counted.
-  assert.match(first.body, /^- \[ \] A1 · Set status of Pinecrest signage to "On Hold" \(.+\)\n\tYour note:$/m);
-  assert.match(first.body, /^- \[ \] C1 · Set archived of Garden to true · recommended: yes\n\t<details>\n\t<summary>Show the change<\/summary>\n\t\tarchived: false → true\n\t<\/details>\n\tYour note:$/m);
+  assert.match(first.body, /^- \[ \] A1 · Set Pinecrest signage On Hold \(.+\)\n\tYour note:$/m);
+  assert.match(first.body, /^- \[ \] C1 · Archive Garden · recommended: yes\n\t<details>\n\t<summary>Show the change<\/summary>\n\t\tArchived: no → yes\n\t<\/details>\n\tYour note:$/m);
   assert.match(first.body, /^\*\*Waiting for you:\*\* 1 decision waits in the session: say \*what needs my decision\* in Claude Code or Codex\.$/m);
   assert.equal(/_proposals\/|Review/.test(first.body), false, "no brain path and no Review row in Notion");
   assert.match(await readText(root, REPORT), /^- \[ \] C1 · .+ · \[Show the change\]\(\.\.\/_proposals\/[^)]+\)$/m, "in Git, the item links its proposal file");

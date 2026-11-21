@@ -158,7 +158,7 @@ export const weeklyRecordCommand: Command = {
     const proposals = new Map(input.proposals.map((entry) => [entry.key, entry.proposal]));
     const get = (id: string) => workspace.get(id);
     const previous = current?.weeks[input.plan.week]?.row ?? {};
-    const row = buildRow(input, previous, (item) => item.proposal ?? proposals.get(item.key)!, get);
+    const row = buildRow(input, previous, (item) => item.proposal ?? proposals.get(item.key)!, get, workspace.notes);
     // The row's items leave the session's questions (§15.6): `weekly` names this week on each; a carried item queued, or an item of this
     // week's earlier row no longer offered, goes back to the session.
     const setWeekly = (id: string, value: string | null) => {

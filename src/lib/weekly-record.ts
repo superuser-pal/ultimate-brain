@@ -109,12 +109,50 @@ const clip = (text: string, room: number): string => (text.length <= room ? text
 const titleOf = (get: (id: string) => Note | undefined, id: unknown): string => String(get(String(id))?.attributes.title ?? id);
 const quote = (text: string) => `"${text}"`;
 
-/** What the change does, in words (§3.3, §15.5): the whole change, from the proposal. */
-export function changeText(a: Record<string, unknown>, get: (id: string) => Note | undefined): string {
+/** A notion_change's property by its Notion name (§15.5). */
+export const NOTION_PROPERTY: Readonly<Record<string, string>> = { status: "Status", due: "Due", project: "Project", area: "Area", archived: "Archived" };
+
+/**
+ * A notion_change value in words (§3.3 A Notion change in words, §15.5): a related page by the title of the note whose `notion` is that page
+ * (cli.md §5.14.1), never its id; a date as `D Mon YYYY`; `yes` or `no`; `none` when empty.
+ */
+export function notionValueWords(property: string, value: unknown, notes: readonly Note[]): string {
+  if (value === null || value === undefined || (Array.isArray(value) && value.length === 0)) return "none";
+  if (typeof value === "boolean") return value ? "yes" : "no";
+  if (Array.isArray(value)) {
+    const titles: string[] = [];
+    let unknown = 0;
+    for (const page of value) {
+      const title = notes.find((note) => note.attributes.notion === page)?.attributes.title;
+      if (typeof title === "string" && title !== "") titles.push(title); else unknown += 1;
+    }
+    if (unknown > 0) titles.push(unknown === 1 ? "a page not in the brain" : `${unknown} pages not in the brain`);
+    return titles.join(", ");
+  }
+  if (property === "due" && typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return dayMonthYear(value);
+  return String(value);
+}
+
+/** A notion_change as the row says it (§3.3 A Notion change in words), `page` being the row's Name. */
+function notionChangeText(a: Record<string, unknown>, notes: readonly Note[]): string {
+  const page = String(a.page_title ?? "the page");
+  const property = String(a.property);
+  const after = a.value_after;
+  const empty = after === null || (Array.isArray(after) && after.length === 0);
+  switch (property) {
+    case "status": return `Set ${page} ${String(after)}`;
+    case "archived": return `${after === true ? "Archive" : "Unarchive"} ${page}`;
+    case "due": return empty ? `Clear the due date of ${page}` : `Set the due date of ${page} to ${notionValueWords(property, after, notes)}`;
+    default: return empty ? `Clear the ${property} of ${page}` : `Set the ${property} of ${page} to ${notionValueWords(property, after, notes)}`;
+  }
+}
+
+/** What the change does, in words (§3.3, §15.5): the whole change, from the proposal. `notes` name a notion_change's related pages. */
+export function changeText(a: Record<string, unknown>, get: (id: string) => Note | undefined, notes: readonly Note[] = []): string {
   const target = titleOf(get, a.target);
   switch (a.kind) {
     case "new_task": return `Add the next step ${quote(String(a.task_title))} to ${target}`;
-    case "notion_change": return a.property === "Status" ? `Set ${String(a.page_title ?? "the page")} ${String(a.value_after)}` : `Set ${String(a.property)} of ${String(a.page_title ?? "the page")} to ${JSON.stringify(a.value_after)}`;
+    case "notion_change": return notionChangeText(a, notes);
     case "new_item": return `Draft a Document on ${String(isRecord(a.note) ? a.note.title : a.title)}`;
     case "merge": return `Merge ${quote(target)} into ${quote(titleOf(get, a.merge_into))}`;
     case "set_field": {
@@ -137,7 +175,7 @@ function cleanedReason(tidy: string): string {
  * after the highest, with each line's text; which earlier rows lose items to it (§15.6); and the proposals of this week's earlier row no longer
  * offered, which leave it.
  */
-export function buildRow(input: RecordInput, previous: Record<string, RowSlot>, proposalOf: (item: Item) => string, get: (id: string) => Note | undefined): Row {
+export function buildRow(input: RecordInput, previous: Record<string, RowSlot>, proposalOf: (item: Item) => string, get: (id: string) => Note | undefined, notes: readonly Note[]): Row {
   const { selection, plan } = input;
   const reports = (id: string) => posix.relative("reports", get(id)?.path ?? "");
   const highest: Record<string, number> = { A: 0, C: 0, U: 0 };
@@ -154,7 +192,7 @@ export function buildRow(input: RecordInput, previous: Record<string, RowSlot>, 
     const proposal = proposalOf(item);
     const a = get(proposal)!.attributes;
     const label = labelOf(item.part, proposal);
-    const what = changeText(a, get);
+    const what = changeText(a, get, notes);
     if (item.part === "A") {
       const why = String(a.why ?? item.because).split("\n")[0]!.replace(/\.$/, "");
       const room = LINE_CHARS - `- [ ] ${label} · `.length;
