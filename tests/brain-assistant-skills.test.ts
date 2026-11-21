@@ -89,10 +89,10 @@ test("Write minutes' body equals the minutes prompt, which has one source: minut
 test("Brain Assistant doesn't run Write minutes: its Description points to the Notion AI chat, and the Instructions don't let it edit", async () => {
   const assistant = await read("notion/brain-assistant.md");
   const entry = skillEntries(assistant).find((e) => e.name === "Write minutes");
-  assert.match(entry!.description!, /Brain Assistant doesn't run it/);
+  assert.match(entry!.description!, /Notion Brain Assistant doesn't run it/);
   assert.match(entry!.description!, /Notion AI chat on the meeting page/);
   assert.match(entry!.description!, /Write the minutes on this page, below the transcript, and nothing else\./);
-  assert.match(entry!.description!, /Asked to write minutes, Brain Assistant gives you these steps and doesn't edit the page/);
+  assert.match(entry!.description!, /Asked to write minutes, Notion Brain Assistant gives you these steps and doesn't edit the page/);
   assert.doesNotMatch(entry!.description!, /\.md\b/, "the Description names no repo file a Notion user can't open");
   const instructions = textBlocks(assistant.slice(assistant.indexOf("## Instructions")))[0];
   const editRule = instructions.split("\n").find((line) => line.includes("Only these skills may edit page text"));

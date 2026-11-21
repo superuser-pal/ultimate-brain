@@ -15,7 +15,7 @@ Create a top-level page named "Ultimate Brain". Inside it create these pages, in
 "Brain Data"
 "System"
 Inside "System" create two pages: "Archive" and "How it works".
-At the top of "Ultimate Brain", above these pages, add a callout with Notion's default icon and four lines. Line 1, in bold: "Start here." Line 2: "This is the Notion half of Ultimate Brain. Next: install Ultimate Brain, and in your brain folder tell your agent "set up my brain". Get started shows every step." Line 3: "Then open First things first: create your own Brain Assistant and select it in its buttons." Line 4: "Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits."
+At the top of "Ultimate Brain", above these pages, add a callout with Notion's default icon and four lines. Line 1, in bold: "Start here." Line 2: "This is the Notion half of Ultimate Brain. Next: install Ultimate Brain, and in your brain folder tell your agent "set up my brain". Get started shows every step." Line 3: "Then open First things first: create your own Notion Brain Assistant and select it in its buttons." Line 4: "Notion Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits."
 Leave the pages empty for now. Do not add any databases yet.
 ```
 
