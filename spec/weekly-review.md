@@ -119,6 +119,14 @@ Rendered by `brain weekly record` from `plan`'s and `select`'s data, never by th
 - **For you to tick:** at most **10** doubtful items (§5, §6.1), each `- [ ] C<n> · <the change> · recommended: <yes|no, with its reason> · [Show the change](<the proposal file>)`. Each is a pending proposal in `_proposals/` (0110 §2). In Git the link is the proposal file; in Notion `sync render` writes, under the to-do, a toggle **Show the change** holding the before and after (§15.5) and a line **Your note:**, empty.
 - With neither part, `- Nothing to clean up this week.`
 
+**A Notion change in words** (a `notion_change`, CC-373). An Action's `<what>` and a doubtful item's `<the change>` say it by its property (cli.md §5.6), `<page>` being the proposal's `page_title`:
+- `status`: `Set <page> <status>` (`Set Pinecrest signage On Hold`);
+- `due`: `Set the due date of <page> to <D Mon YYYY>`, or `Clear the due date of <page>`;
+- `project`, `area`: `Set the project of <page> to <pages>` (`the area of`), or `Clear the project of <page>` for an empty list;
+- `archived`: `Archive <page>`, or `Unarchive <page>`.
+
+A related page is named by its title: the title of the note whose `notion` is that page, the way the CLI maps relations (cli.md §5.14.1); several are joined with `, `. A page no note has is `a page not in the brain` (`<n> pages not in the brain` for several), never its id. Show the change (§15.5) names values the same way.
+
 **Labels.** `A<n>`, `C<n>` and `U<n>` number each part from 1 in this week's row and are how a catch-up maps a tick to its item (§15.4): the CLI keeps each label's proposal in `_weekly/state.json` (§9.5). A rerun in the same week keeps the label of an item still offered and numbers new items after the highest label used this week, so a tick never moves to another item. Actions have a **Your note:** line too, so the words of a new task can be changed before the tick is applied (§15.4).
 
 **Shape check** (`record`, `INPUT_INVALID`): the header has two lines; there are exactly the two `##` sections, in order, with their parts in order; the caps hold (6 Highlights, 6 Done lines, 5 Actions, 3 Focus lines, 10 doubtful items); every label is unique; every link resolves (a relative link to a note or a proposal file, or a Notion page URL for a task); and **Your week** is at most 450 words, counting neither the header, the to-dos' text nor link targets. Over 450 words, `record` refuses (`WEEKLY_TOO_LONG`), and the skill shortens its own prose (In short, Highlights, Focus first), never an item. Clean-up has no word cap: each of its lines is at most 200 characters, link targets not counted.
@@ -482,7 +490,8 @@ Under each doubtful item, the Notion row holds a toggle **Show the change** with
 - `update_fact`: `<field>: <before> → <after>`, and the input it rests on with its date;
 - `add_to_note`: the whole text it adds, and where;
 - `merge`: `<duplicate> will be merged into <survivor>`, the facts and aliases it brings, and the number of notes whose links move;
-- `set_field`, `notion_change`: `<property>: <before> → <after>`;
+- `set_field`: `<field>: <before> → <after>`;
+- `notion_change`: `<Property>: <before> → <after>`, the property by its Notion name (`Status`, `Due`, `Project`, `Area`, `Archived`) and each value in words (§3.3): a page by its title, a date as `D Mon YYYY`, `yes` or `no`, and `none` for an empty value (`Project: none → Half marathon training`);
 - `archive_draft`: the draft's title, its age and that nothing links to it;
 - `fix_structure`: the field or line before and after.
 
