@@ -79,7 +79,7 @@ export async function logLinesOf(root: string, op: string): Promise<ParsedLogLin
 }
 
 export interface UnattendedWeekly {
-  last: string | null; week: string | null; coverage: string | null; decisions: number; failed: number; failures: string[]; report: string | null;
+  last: string | null; week: string | null; coverage: string | null; decisions: number; actions: number; doubtful: number; cleaned: number; failed: number; failures: string[]; report: string | null;
   unfinished: { week: string; started: string; mode: string } | null;
 }
 
@@ -96,7 +96,11 @@ export async function weeklyRun(root: string, now: Date, reportOf: (week: string
     last: latest?.timestamp ?? null,
     week,
     coverage: latest?.pairs.coverage ?? null,
-    decisions: latest === undefined ? 0 : count(latest, "decisions"),
+    // From 0.17.0 the line has actions, doubtful and cleaned, and decisions is their sum; an earlier line has decisions (cli.md §5.34).
+    decisions: latest === undefined ? 0 : latest.pairs.actions !== undefined ? count(latest, "actions") + count(latest, "doubtful") + count(latest, "cleaned") : count(latest, "decisions"),
+    actions: latest === undefined ? 0 : count(latest, "actions"),
+    doubtful: latest === undefined ? 0 : count(latest, "doubtful"),
+    cleaned: latest === undefined ? 0 : count(latest, "cleaned"),
     failed: latest === undefined ? 0 : count(latest, "failed"),
     failures: (latest?.pairs.failures ?? "").split("; ").map((part) => part.trim()).filter(Boolean),
     report: week === null || latest?.pairs.coverage === "none" ? null : reportOf(week),

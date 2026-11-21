@@ -21,6 +21,9 @@
     "clusters_left": 0,
     "corrections": 0,
     "pending": 1,
-    "earlier_open": 1
+    "earlier_open": 1,
+    "cleanup": 0,
+    "done": 0,
+    "carry": 0
   }
 }

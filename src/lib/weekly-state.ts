@@ -17,8 +17,16 @@ export const KEEP_SHOWN_WEEKS = 26;
 export const LIMIT = 5;
 const DAY_MS = 86_400_000;
 
-export interface Counts { decisions: number; new_items: number; targets: number; queued: number }
-export interface WeekEntry { report: string; path: string; window_from: string; window_skip: string[]; input_hash: string; counts: Counts; items: string[]; corrections_from?: WeeklyState["corrections"] }
+export interface Counts { actions: number; doubtful: number; cleaned: number; targets: number; queued: number }
+/** Counts as a week entry written before 0.17.0 holds them (§9.5): still valid, read as they are. */
+export interface OldCounts { decisions: number; new_items: number; targets: number; queued: number }
+export interface RowSlot { proposal: string; base: Array<{ path: string; hash: string }> }
+export interface WeekEntry {
+  report: string; path: string; window_from: string; window_skip: string[]; input_hash: string; counts: Counts | OldCounts; items: string[];
+  /** 0.17.0: the row's labels (A, C, U) → proposal and base (weekly-review.md §9.5), and the week its items moved to (§15.6). */
+  row?: Record<string, RowSlot>; carried_to?: string | null;
+  corrections_from?: WeeklyState["corrections"];
+}
 export interface ShownEntry { key: string; week: string; category: string; evidence_hash: string; days_late?: number; days_idle?: number }
 export interface WeeklyState {
   version: 1;
@@ -30,7 +38,7 @@ export interface WeeklyState {
   corrections: { checked_on: string | null; done_on_date: string[]; open: Array<{ claim: string; targets: string[]; old: Array<string | number>; new: string | number; date: string; source: string }> };
 }
 
-export const ZERO: Counts = { decisions: 0, new_items: 0, targets: 0, queued: 0 };
+export const ZERO: Counts = { actions: 0, doubtful: 0, cleaned: 0, targets: 0, queued: 0 };
 
 export function emptyState(): WeeklyState {
   return { version: 1, last_success: null, weeks: {}, shown: [], queued: [], carry: { clusters: [] }, corrections: { checked_on: null, done_on_date: [], open: [] } };

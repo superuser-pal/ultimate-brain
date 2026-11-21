@@ -30,7 +30,8 @@ import { chainOf, FOLLOW_UP } from "./extract.ts";
 import { wholeDocumentMarkdown } from "./whole-links.ts";
 import { FROM_THE_BRAIN_MARKER } from "./from-the-brain.ts";
 import { planTaskDocument, type TaskDocumentRequest } from "./task-documents.ts";
-import { dayMonthYear } from "./weekly-record.ts";
+import { changeText, dayMonthYear } from "./weekly-record.ts";
+import { readState, type RowSlot } from "./weekly-state.ts";
 
 export const DATABASES = ["domains", "areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "documents", "review", "inbox", "tasks"] as const;
 const CREATABLE = new Set(["domains", "areas", "goals", "projects", "people", "orgs"]);
@@ -834,7 +835,10 @@ export function unpublishDrafts(workspace: Workspace, now: Date): RenderItem[] {
   return items.sort((a, b) => DATABASES.indexOf(a.database as never) - DATABASES.indexOf(b.database as never) || compareCodePoints(a.id, b.id));
 }
 
-export function render(workspace: Workspace, now: Date, ids?: readonly string[], held?: ReadonlyMap<string, Set<string>>): { items: RenderItem[]; errors: Array<Record<string, unknown>>; warnings: Array<{ code: string; message: string; id?: string }>; skipped: Array<{ id: string; reason: string }> } {
+/** A Weekly row's to-dos as the skill read them through the MCP just before a publish (cli §5.34 `--row-state`): label → tick and note. */
+export type RowStates = ReadonlyMap<string, ReadonlyMap<string, { ticked: boolean; note: string }>>;
+
+export function render(workspace: Workspace, now: Date, ids?: readonly string[], held?: ReadonlyMap<string, Set<string>>, rowStates?: RowStates): { items: RenderItem[]; errors: Array<Record<string, unknown>>; warnings: Array<{ code: string; message: string; id?: string }>; skipped: Array<{ id: string; reason: string }> } {
   const selected = ids === undefined
     ? workspace.notes.filter((note) => (PUBLISHED_TYPES.has(note.type) && !(note.type === "source" && note.attributes.kind === undefined)) || isReport(note) || isWeekly(note))
     : ids.map((id) => workspace.get(id)!).filter(Boolean);
@@ -895,6 +899,13 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
     }
     // A weekly review's body goes out when it changed: a rerun, or a note it links got a page since (weekly-review.md §3.4).
     if (isWeekly(note) && !isCreate && !contentChanged) content.body = null;
+    // The ticks and notes of a Weekly row are yours (weekly-review.md §15.7): its body is sent only with the row's to-dos as read just before,
+    // each item still offered keeping its tick and note; without them the row waits, so no publish clears a tick.
+    if (isWeekly(note) && content.body !== null && weeklyRow(note, workspace) !== null) {
+      const state = typeof note.attributes.notion === "string" ? rowStates?.get(note.attributes.notion) : undefined;
+      if (!isCreate && state === undefined) { skipped.push({ id: note.id, reason: "ROW_STATE_REQUIRED" }); continue; }
+      content.body = weeklyMarkdown(note, workspace, state);
+    }
     // Full text (0043) is retired (0049): nothing is sent, and `@full_text` in S stays as it is.
     if (!isCreate && Object.keys(properties).length === 0 && !contentChanged && !reportDue) {
       // A page whose only news is a relation to a note this render creates: nothing to write, but the skill renders again after publishing it (0071).
@@ -931,7 +942,14 @@ function renderedBrainValues(note: Note, workspace: Workspace): Record<string, u
     return values;
   };
   // A weekly review is the week's Inbox row (weekly-review.md §2, cli §5.34): Name, Kind Weekly, Brain Status and Brain ID, nothing else.
-  if (isWeekly(note)) { Object.assign(values, { Name: weeklyRowName(note), Kind: "Weekly", "Brain Status": weeklyDecided(note, workspace) ? "Done" : "New", "Brain ID": note.id }); return values; }
+  // Brain Status (§15.4): Done once nothing in the row waits; New when created, or when a rerun gives a Done row items again; else what S holds,
+  // so a publish never sets New back over your Ready.
+  if (isWeekly(note)) {
+    const sent = isRecord(a.notion_published) ? a.notion_published["Brain Status"] : undefined;
+    const status = weeklyDecided(note, workspace) ? "Done" : a.notion === undefined || sent === undefined || sent === "Done" || sent === "Processed" ? "New" : sent;
+    Object.assign(values, { Name: weeklyRowName(note), Kind: "Weekly", "Brain Status": status, "Brain ID": note.id });
+    return values;
+  }
   // A report is a Documents row since 0.9.1 (0071); its Ask rows stay on the Inbox and link back through Asked in.
   if (isReport(note)) { Object.assign(values, { Name: a.title, Origin: ORIGIN_LABEL.report, Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), "Asked in": typeof a.asked_in === "string" ? [a.asked_in] : Array.isArray(a.asked_in) ? a.asked_in : [], "Brain ID": note.id }); return values; }
   if (note.type === "meeting") { Object.assign(values, { Attendees: relationPages(a.attendees, workspace), Project: relationPages(a.projects, workspace), Area: relationPages(a.area === undefined ? [] : [a.area], workspace), "Brain Status": "Done", "Ingested At": dateOutput(a.created), "Brain ID": note.id }); return values; }
@@ -1079,27 +1097,101 @@ function weeklyRowName(note: Note): string {
 }
 /** The proposals the report's decision items name: its What needs your decision section's links to proposal files (weekly-review.md §3.4). */
 function weeklyProposals(note: Note, workspace: Workspace): Note[] {
-  const section = note.body.split(/^## What needs your decision$/m)[1] ?? "";
+  const section = note.body.split(/^## (?:What needs your decision|Clean-up)$/m)[1] ?? "";
   return [...section.matchAll(/\]\(([^)\s]+)\)/g)].map((match) => workspace.notes.find((candidate) => candidate.path === normalizeRelative("reports", match[1]!))).filter((target): target is Note => target?.type === "proposal");
 }
-/** Done once none of its decisions waits (weekly-review.md §2): every proposal it names is applied or closed; task items don't hold it open. */
+/** A 0.17.0 Weekly row's labels (weekly-review.md §9.5), from `_weekly/state.json`; null for a report written before, or a week the state no longer holds. */
+function weeklyRow(note: Note, workspace: Workspace): { week: string; slots: Record<string, RowSlot> } | null {
+  if (!/^## Clean-up$/m.test(note.body)) return null;
+  let state: ReturnType<typeof readState>;
+  try { state = readState(workspace.root); } catch { return null; }
+  const week = String(note.attributes.week ?? "");
+  const entry = state?.weeks[week];
+  return entry?.row === undefined || entry.report !== note.id ? null : { week, slots: entry.row };
+}
+/**
+ * Done once nothing in the row waits (weekly-review.md §15.4): from 0.17.0 every proposal its A and C labels name is applied, rejected or closed,
+ * or has left the row (moved to a later week, or back to the queue); before, every proposal its decision items named was applied or closed.
+ */
 function weeklyDecided(note: Note, workspace: Workspace): boolean {
-  return weeklyProposals(note, workspace).every((proposal) => proposal.attributes.status === "applied" || proposal.attributes.status === "closed");
+  const row = weeklyRow(note, workspace);
+  if (row !== null) {
+    return Object.entries(row.slots).filter(([label]) => !label.startsWith("U")).every(([, slot]) => {
+      const a = workspace.get(slot.proposal)?.attributes;
+      return a === undefined || ["applied", "rejected", "closed"].includes(String(a.status)) || a.weekly !== row.week;
+    });
+  }
+  return weeklyProposals(note, workspace).every((proposal) => ["applied", "closed", ...(/^## Clean-up$/m.test(note.body) ? ["rejected"] : [])].includes(String(proposal.attributes.status)));
 }
 /** The decision line's words in Notion for a proposal, decided in the session (weekly-review.md §3.4, 0096 §7). */
 const WEEKLY_DECIDE_IN_SESSION = "decide in Claude Code or Codex: *what needs my decision*";
 /**
- * A weekly review in Notion (weekly-review.md §3.4): a link to a proposal becomes the plain text that points to the session; a task's page URL
- * stays; a link to a note with a page becomes that page; anything else keeps its text.
+ * A weekly review in Notion (weekly-review.md §3, §15.5): a link to a proposal becomes the plain text that points to the session (before 0.17.0) or
+ * goes (a doubtful item's Show the change link, whose toggle replaces it); a task's page URL stays; a link to a note with a page becomes that
+ * page; anything else keeps its text. From 0.17.0 each to-do keeps the tick of `state` and, under an Action or a doubtful item, gets the toggle
+ * Show the change and the line Your note: with the note of `state`.
  */
-function weeklyMarkdown(note: Note, workspace: Workspace): string {
-  return note.body.replace(/^\n+/, "").replace(/\[([^\]]+)\]\(([^)]+)\)/g, (all, title: string, link: string) => {
+function weeklyMarkdown(note: Note, workspace: Workspace, state?: ReadonlyMap<string, { ticked: boolean; note: string }>): string {
+  const links = (text: string) => text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (all, title: string, link: string) => {
     if (/^https:\/\//.test(link)) return all;
     const target = workspace.notes.find((candidate) => candidate.path === normalizeRelative("reports", link));
     if (target?.type === "proposal") return WEEKLY_DECIDE_IN_SESSION;
     const page = typeof target?.attributes.notion === "string" ? target.attributes.notion : undefined;
     return page === undefined ? title : `[${title}](https://www.notion.so/${page.replaceAll("-", "")})`;
   });
+  const body = note.body.replace(/^\n+/, "");
+  const row = weeklyRow(note, workspace);
+  if (row === null) return links(body);
+  return body.split("\n").flatMap((line) => {
+    const todo = /^- \[ \] ([ACU]\d+) · (.*)$/.exec(line);
+    if (todo === null) return [links(line)];
+    const [, label, rest] = todo as unknown as [string, string, string];
+    const read = state?.get(label);
+    const text = rest.replace(/ · \[Show the change\]\([^)]*\)$/, "");
+    const head = `- [${read?.ticked === true ? "x" : " "}] ${label} · ${links(text)}`;
+    if (label.startsWith("U")) return [head];
+    const yourNote = `\tYour note: ${read?.note ?? ""}`.trimEnd();
+    // An Action shows its whole change in its line, so it takes only Your note; a doubtful item holds the toggle too (weekly-review §3.3, §15.5).
+    if (label.startsWith("A")) return [head, yourNote];
+    const proposal = row.slots[label] === undefined ? undefined : workspace.get(row.slots[label]!.proposal);
+    const change = proposal === undefined ? [] : showTheChange(proposal, workspace);
+    return [head, "\t<details>", "\t<summary>Show the change</summary>", ...change.map((entry) => `\t\t${entry}`), "\t</details>", yourNote];
+  }).join("\n");
+}
+/** Show the change (weekly-review.md §15.5): the before and after of a row item's proposal, one paragraph per line. */
+export function showTheChange(proposal: Note, workspace: Workspace): string[] {
+  const a = proposal.attributes;
+  const get = (id: string) => workspace.get(id);
+  const title = (id: unknown) => String(workspace.get(String(id))?.attributes.title ?? id);
+  const shown = (value: unknown) => (typeof value === "string" && workspace.get(value) !== undefined ? title(value) : value === undefined ? "(none)" : typeof value === "string" ? value : JSON.stringify(value));
+  switch (a.kind) {
+    case "update_fact": {
+      const input = typeof a.source === "string" ? workspace.get(a.source) : undefined;
+      const date = input === undefined ? "" : String(input.attributes.date ?? input.attributes.captured ?? input.attributes.created ?? "").slice(0, 10);
+      return [`${String(a.field).replace(/^facts\./, "")}: ${shown(a.before)} → ${shown(a.after)}`, ...(input === undefined ? [] : [`From ${String(input.attributes.title ?? input.id)}${date === "" ? "" : `, ${date}`}.`])];
+    }
+    case "add_to_note": return [`Adds to ${title(a.target)}${typeof a.section === "string" ? ` (${a.section})` : ""}:`, ...String(a.content ?? "").split("\n").filter((line) => line.trim() !== "")];
+    case "merge": {
+      const x = get(String(a.target));
+      const y = get(String(a.merge_into));
+      const facts = Object.keys(isRecord(x?.attributes.facts) ? x!.attributes.facts : {}).filter((key) => !(isRecord(y?.attributes.facts) && Object.hasOwn(y!.attributes.facts, key)));
+      const aliases = [x?.attributes.title, ...(Array.isArray(x?.attributes.aliases) ? x!.attributes.aliases : [])].filter((alias) => typeof alias === "string") as string[];
+      const moving = workspace.notes.filter((other) => other.id !== x?.id && other.id !== y?.id && other.type !== "proposal" && other.type !== "view" && other.type !== "source" && referencedIds(other.attributes).includes(String(a.target))).length;
+      return [`${title(a.target)} will be merged into ${title(a.merge_into)}.`, `It brings the aliases ${aliases.join(", ")}${facts.length > 0 ? ` and the facts ${facts.join(", ")}` : ""}.`, `${moving} note${moving === 1 ? "" : "s"} link${moving === 1 ? "s" : ""} to it; ${moving === 1 ? "that link moves" : "those links move"}.`];
+    }
+    case "set_field": return [`${String(a.field)}: ${shown(a.before)} → ${shown(a.after)}`];
+    case "notion_change": return [`${String(a.property)}: ${shown(a.value_before)} → ${shown(a.value_after)}`];
+    case "new_task": return [`New task "${String(a.task_title)}" in ${title(a.target)}.`];
+    case "new_item": return [`A draft Document "${String(isRecord(a.note) ? a.note.title : a.title)}"${isRecord(a.note) && typeof a.note.summary === "string" ? `: ${a.note.summary}` : "."}`];
+    case "archive_draft": {
+      const target = get(String(a.target));
+      const created = String(target?.attributes.created ?? "").slice(0, 10);
+      const days = created === "" ? null : Math.floor((Date.parse(String(proposal.attributes.created ?? created)) - Date.parse(created)) / 86_400_000);
+      return [`${title(a.target)}: a draft never reviewed${days === null ? "" : `, ${days} days old`}, and nothing links to it. Archived, not deleted.`];
+    }
+    case "fix_structure": return typeof a.line_before === "string" ? [`Before: ${a.line_before}`, `After: ${String(a.line_after)}`] : [`${String(a.field)}: ${shown(a.before)} → ${shown(a.after)}`];
+    default: return [changeText(a, get)];
+  }
 }
 
 /** A CommonMark code span, so Notion never links a name like notes.md (cli §5.14.4, CC-263). */

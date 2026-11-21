@@ -206,7 +206,8 @@
     "pending": [
       {
         "key": "project_stalled:prj-4k8m2q7t",
-        "proposal": "prp-7d2k9m4q"
+        "proposal": "prp-7d2k9m4q",
+        "weekly": null
       }
     ],
     "week_state": {
@@ -224,7 +225,12 @@
       "max_judged": 30
     },
     "input_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-    "quiet": false
+    "quiet": false,
+    "source": "agent:brain-weekly-review/20261109T070412Z",
+    "cleanup": [],
+    "cleanup_auto": true,
+    "done": [],
+    "carry": []
   },
   "selection": {
     "week": "2026-W46",
@@ -232,42 +238,42 @@
     "items": [
       {
         "n": 1,
-        "key": "task_overdue:notion:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e",
+        "part": "A",
+        "key": "project_stalled:prj-9x4t1b7e",
         "stream": "work",
-        "kind": "Overdue",
-        "category": "overdue",
-        "subject": "\"Send the logo proposals\"",
-        "decide": "new date, Done or Won't Do",
-        "lives": "task",
-        "write": false,
+        "kind": "Stalled",
+        "category": "stalled",
+        "subject": "Quarry website",
+        "decide": "set Status to On Hold?",
+        "write": true,
         "proposal": null,
-        "url": "https://www.notion.so/2b8c4d6e1f3a4b5c8d7e9f0a1b2c3d4e",
         "targets": [
-          "notion:2b8c4d6e-1f3a-4b5c-8d7e-9f0a1b2c3d4e"
+          "prj-9x4t1b7e"
         ],
-        "new_items": 0,
         "because": "new",
         "evidence_hash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        "days_late": 8,
-        "recommendation": null,
+        "days_idle": 40,
+        "recommendation": {
+          "action": "set_project_status",
+          "value": "On Hold",
+          "label": "set Status to On Hold"
+        },
         "finding": null
       },
       {
         "n": 2,
+        "part": "A",
         "key": "theme:pricing-tiers",
         "stream": "knowledge",
         "kind": "Theme",
         "category": "theme",
         "subject": "Pricing tiers",
         "decide": "keep the draft Document?",
-        "lives": "session",
         "write": true,
         "proposal": null,
-        "url": null,
         "targets": [
           "ref-5n2q8w4c"
         ],
-        "new_items": 1,
         "because": "new",
         "evidence_hash": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
         "recommendation": null,
@@ -289,9 +295,10 @@
     ],
     "queued": [],
     "counts": {
-      "decisions": 2,
-      "new_items": 1,
-      "targets": 2,
+      "actions": 2,
+      "doubtful": 0,
+      "cleaned": 0,
+      "targets": 0,
       "queued": 0
     },
     "earlier_open": 1,
@@ -307,16 +314,15 @@
       "proposal": "prp-3c8v5n2x"
     }
   ],
-  "what_changed": [
+  "in_short": "Harbor's launch moved to March and Quarry's budget grew to 18k.",
+  "highlights": [
     "- **Decided:** launch the Harbor app in March, not January ([Launch Harbor app in March](../knowledge/decisions/2026-11-04-launch-harbor-app-in-march.md), 4 Nov).",
     "- **Changed:** Quarry website's budget is 18k, was 12k ([Quarry website](../projects/quarry-website/project.md), 5 Nov) *(not reviewed)*."
   ],
-  "task_analysis": [
-    "- **Overdue:** \"Send the logo proposals\", 8 days late.",
-    "",
-    "Order of attention:",
-    "1. Send the logo proposals: the client meeting on Thursday depends on them."
+  "focus_first": [
+    "1. Send the Quarry estimate: the client meeting on Thursday depends on it."
   ],
+  "cleaned": [],
   "mode": "unattended",
   "publish": true,
   "failures": [],

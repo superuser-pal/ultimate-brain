@@ -6,10 +6,10 @@ import { test } from "node:test";
 import { Ajv2020 } from "ajv/dist/2020.js";
 
 // spec/examples/weekly/ against spec/schemas/weekly.schema.json (spec/weekly-review.md, cli.md §5.34, CC-253).
-// An example's name starts with the `$defs` entry it is an instance of: `plan-`, `selectInput-`, `selection-`, `recordInput-`, `state-` or `attempt-`.
+// An example's name starts with the `$defs` entry it is an instance of: `plan-`, `selectInput-`, `selection-`, `recordInput-`, `state-`, `attempt-`, or since 0.17.0 (CC-370) `cleanupPlan-`, `rowState-`, `ticksInput-` or `ticksResult-`.
 const SPEC = join(import.meta.dirname, "..", "spec");
 const EXAMPLES = join(SPEC, "examples", "weekly");
-const DEFS = ["plan", "planSummary", "selectInput", "selection", "recordInput", "state", "attempt", "correctionsList", "correctionsDone"] as const;
+const DEFS = ["plan", "planSummary", "selectInput", "selection", "recordInput", "state", "attempt", "correctionsList", "correctionsDone", "cleanupPlan", "rowState", "ticksInput", "ticksResult"] as const;
 
 const readJson = async (path: string) => JSON.parse(await readFile(path, "utf8"));
 const defOf = (file: string) => {

@@ -1,0 +1,35 @@
+{
+  "items": [
+    {
+      "tidy": "rename_note",
+      "title": "Add Launch Harbor app in March to the decisions of Harbor sync",
+      "why": "Launch Harbor app in March names Harbor sync in decided_in, and Harbor sync's decisions lacks it.",
+      "fingerprint": "tidy:pair_half:mtg-8c4n2p7w:decisions",
+      "targets": [
+        "mtg-8c4n2p7w"
+      ],
+      "paths": [
+        "knowledge/meetings/2026-11-05-harbor-sync.md"
+      ],
+      "proposal_input": {
+        "kind": "fix_structure",
+        "tidy": "pair_half",
+        "fix": "pair_half",
+        "title": "Add Launch Harbor app in March to the decisions of Harbor sync",
+        "why": "Launch Harbor app in March names Harbor sync in decided_in, and Harbor sync's decisions lacks it.",
+        "target": "mtg-8c4n2p7w",
+        "field": "decisions",
+        "after": [
+          "dec-2p9f6h1r"
+        ],
+        "source": "agent:brain-weekly-review/20261109T070412Z",
+        "passages": [
+          "agent:brain-weekly-review/20261109T070412Z"
+        ],
+        "fingerprint": "tidy:pair_half:mtg-8c4n2p7w:decisions",
+        "evidence": []
+      }
+    }
+  ],
+  "held": 0
+}

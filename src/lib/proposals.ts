@@ -18,11 +18,15 @@ import { contextFor, publishableNote, publishedTitle, requireSuppressions, withh
 import { formatDate } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 
-export const PROPOSAL_KINDS = ["update_fact", "add_to_note", "update_body", "add_link", "supersede", "contradiction", "merge", "new_item", "review_notes", "answer", "notion_change", "set_field", "replace_line"] as const;
+export const PROPOSAL_KINDS = ["update_fact", "add_to_note", "update_body", "add_link", "supersede", "contradiction", "merge", "new_item", "review_notes", "answer", "notion_change", "set_field", "replace_line", "archive_draft", "fix_structure", "new_task"] as const;
+/** The weekly clean-up's mechanical kinds (spec/weekly-review.md §15.2; schema §11 `tidy`, 0.17.0). */
+export const TIDY_KINDS = ["pair_half", "moved_link", "repeated_value", "exact_duplicate", "stale_draft"] as const;
+/** Kinds that change Notion, not the brain: they take no passages and are written by the skill through the MCP (cli §5.6, §5.7). */
+const NOTION_KINDS = new Set(["notion_change", "new_task"]);
 export const PROPOSAL_STATUSES = ["pending", "approved", "rejected", "edited", "applied", "closed"] as const;
 
 /** Input keys of `proposal new`: the schema §11 fields the CLI does not set (spec/cli.md §5.6). */
-const INPUT_KEYS = ["title", "kind", "target", "field", "notes", "answer", "answer_note", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source", "database", "page", "page_title", "property", "value_before", "value_after", "area", "finding", "fingerprint", "evidence", "passages", "note_passages", "note_flags", "unsure", "repeat", "line_before", "line_after", "correction", "needs_clarification", "subject", "section"];
+const INPUT_KEYS = ["title", "kind", "target", "field", "notes", "answer", "answer_note", "before", "after", "from", "content", "note", "supersedes", "merge_into", "why", "source", "database", "page", "page_title", "property", "value_before", "value_after", "area", "finding", "fingerprint", "evidence", "passages", "note_passages", "note_flags", "unsure", "repeat", "line_before", "line_after", "correction", "needs_clarification", "subject", "section", "tidy", "task_title"];
 const ID = /^[a-z]{2,4}-[0-9a-hjkmnp-tv-z]{8}$/;
 const KNOWLEDGE_TYPES = new Set(["domain", "area", "goal", "project", "person", "org", "meeting", "decision", "question", "concept", "reference", "memory"]);
 const ADD_LINK_FIELDS = new Set(["aliases", "tags", "projects", "people", "attendees", "deciders"]);
@@ -115,13 +119,20 @@ export function stageProposals(
       if (item.kind === "review_notes") return;
       // A change any of whose passages is not live, even beside a live one, is not written (eligibility.md §4.2, §9.2): it could never be applied.
       const text = [item.content, item.answer, item.line_after, isRecord(item.note) ? item.note.body : undefined].find((value): value is string => typeof value === "string") ?? null;
-      if (item.kind !== "notion_change" && withheldSupport({ source: item.source, passages: item.passages, text }, excluded)) { skipped.push({ input_index: index, reason: "SOURCE_EXCLUDED" }); return; }
+      if (!NOTION_KINDS.has(String(item.kind)) && withheldSupport({ source: item.source, passages: item.passages, text }, excluded)) { skipped.push({ input_index: index, reason: "SOURCE_EXCLUDED" }); return; }
       const fields = resolveFields(workspace, item, pointer, today);
       // A reflection answer: checked against its item, deduped on its fingerprint, never folded into a review_notes (§5.6).
       if (typeof item.fingerprint === "string") {
         checkFingerprint(workspace, item, pointer);
         const held = fingerprintDuplicate(workspace, item.fingerprint);
         if (held !== undefined) { skipped.push({ input_index: index, reason: "DUPLICATE_PENDING", existing: held.id }); return; }
+        createProposal(workspace, fields, [index], today, pointer, pointers, created);
+        return;
+      }
+      // A weekly Action's next step (0.17.0, weekly-review.md §6.1): one waiting new_task per project and words.
+      if (item.kind === "new_task") {
+        const duplicate = workspace.notes.find((note) => note.type === "proposal" && ["pending", "approved", "edited"].includes(String(note.attributes.status)) && note.attributes.kind === "new_task" && note.attributes.target === fields.target && note.attributes.task_title === fields.task_title);
+        if (duplicate !== undefined) { skipped.push({ input_index: index, reason: "DUPLICATE_PENDING", existing: duplicate.id }); return; }
         createProposal(workspace, fields, [index], today, pointer, pointers, created);
         return;
       }
@@ -413,7 +424,7 @@ function checkReviewNotes(workspace: Workspace, item: Record<string, unknown>, p
 
 /** A reflection item's fingerprint matches it, and its evidence names meetings and sources that exist (spec/cli.md §5.6, schema §11.4). */
 function checkFingerprint(workspace: Workspace, item: Record<string, unknown>, pointer: string): void {
-  const allowed = ["contradiction", "update_fact", "merge", "add_to_note", "review_notes", "new_item"];
+  const allowed = ["contradiction", "update_fact", "merge", "add_to_note", "review_notes", "new_item", "fix_structure", "archive_draft"];
   if (!allowed.includes(String(item.kind))) assertNoProblems([{ pointer: `${pointer}/fingerprint`, message: `a fingerprint goes on ${allowed.join(", ")}` }]);
   for (const [index, id] of (item.evidence as string[]).entries()) {
     if (workspace.get(id) === undefined) throw new BrainError("UNKNOWN_ID", `${pointer}/evidence/${index}: no note with id ${id}`, [{ pointer: `${pointer}/evidence/${index}`, message: "does not exist" }]);
@@ -527,8 +538,8 @@ function checkPassages(workspace: Workspace, item: Record<string, unknown>, poin
     problems.push(...found.problems);
     unknown.push(...found.unknown.map((id) => ({ pointer: at, id })));
   };
-  if (item.kind === "notion_change") {
-    if (item.passages !== undefined) problems.push({ pointer: `${pointer}/passages`, message: "a notion_change changes Notion, not the brain: it takes no passages" });
+  if (NOTION_KINDS.has(String(item.kind))) {
+    if (item.passages !== undefined) problems.push({ pointer: `${pointer}/passages`, message: `a ${String(item.kind)} changes Notion, not the brain: it takes no passages` });
   } else if (item.kind === "review_notes") {
     if (item.passages !== undefined) problems.push({ pointer: `${pointer}/passages`, message: "a review_notes names its notes' passages in note_passages" });
     const notes = Array.isArray(item.notes) ? item.notes.map(String) : [];
@@ -599,12 +610,20 @@ function checkShape(item: unknown, pointer: string): InputProblem[] {
   }
   if (item.kind === "answer" && (typeof item.answer !== "string" || item.answer.trim() === "")) at("answer", "must be a non-empty string");
   if (item.kind === "update_body" && (typeof item.content !== "string" || item.content.trim() === "")) at("content", "must be the whole new body");
-  if (item.kind === "replace_line") {
+  const lineFix = item.kind === "fix_structure" && item.tidy === "moved_link";
+  if (item.kind === "replace_line" || lineFix) {
     for (const key of ["line_before", "line_after"]) if (!oneLine(item[key])) at(key, "must be one non-empty line");
     if (oneLine(item.line_before) && item.line_before === item.line_after) at("line_after", "must differ from line_before");
   } else {
-    for (const key of ["line_before", "line_after"]) if (item[key] !== undefined) at(key, "is only allowed on replace_line");
+    for (const key of ["line_before", "line_after"]) if (item[key] !== undefined) at(key, "is only allowed on replace_line and a moved_link fix_structure");
   }
+  // The weekly clean-up's kinds (0.17.0, weekly-review.md §15.2; schema §11 `tidy`).
+  const tidyKinds: Record<string, readonly string[]> = { fix_structure: ["pair_half", "moved_link", "repeated_value"], archive_draft: ["stale_draft"], merge: ["exact_duplicate"] };
+  if (item.tidy !== undefined && !(tidyKinds[String(item.kind)] ?? []).includes(String(item.tidy))) at("tidy", tidyKinds[String(item.kind)] === undefined ? "is only allowed on fix_structure, archive_draft and merge" : `must be ${tidyKinds[String(item.kind)]!.join(" or ")} on a ${String(item.kind)}`);
+  if ((item.kind === "fix_structure" || item.kind === "archive_draft") && item.tidy === undefined) at("tidy", `is required on a ${String(item.kind)}`);
+  if (item.kind === "fix_structure" && item.tidy !== "moved_link" && (typeof item.field !== "string" || !Object.hasOwn(item, "after"))) at("after", "a pair_half or repeated_value fix gives field and after");
+  if (item.kind === "new_task" && !oneLine(item.task_title)) at("task_title", "must be one non-empty line: the task's words");
+  if (item.kind !== "new_task" && item.task_title !== undefined) at("task_title", "is only allowed on new_task");
   if (item.correction !== undefined) {
     if (typeof item.correction !== "string" || !CLAIM_KEY.test(item.correction)) at("correction", "must be a claim key: <target>:<field>, <decision id> or <target>:rule:<proposal id>");
     else if (!["review_notes", "update_fact", "replace_line"].includes(String(item.kind))) at("correction", "goes on a correction group's review_notes and its update_fact and replace_line items");
@@ -621,6 +640,8 @@ function checkShape(item: unknown, pointer: string): InputProblem[] {
     problems.push(...checkNoteInput(item.note, `${pointer}/note`, false));
   } else if (item.kind === "notion_change") {
     // Checked against the brain in checkNotionChange: a task has no target, a project or an Area does.
+  } else if (item.kind === "new_task" && typeof item.target !== "string") {
+    at("target", "must be the project's id");
   } else if (typeof item.target !== "string") {
     at("target", "must be the id of an existing note");
   }
@@ -670,6 +691,26 @@ function resolveFields(workspace: Workspace, item: Record<string, unknown>, poin
     }
   }
 
+  if (kind === "new_task") {
+    if (target.type !== "project") invalid("target", `is a ${target.type}; a new_task's target is its project`);
+    return fields;
+  }
+  if (kind === "archive_draft" && target.attributes.lifecycle !== "draft") invalid("target", `is ${String(target.attributes.lifecycle)}; archive_draft archives a draft`);
+  if (kind === "fix_structure") {
+    if (item.tidy === "moved_link") {
+      const count = target.body.split("\n").filter((line) => line === item.line_before).length;
+      if (count !== 1) invalid("line_before", count === 0 ? `is not a line of ${target.id}'s body` : `is ${count} lines of ${target.id}'s body; it must be exactly one`);
+      fields.before_hash = bodyHash(target.body);
+    } else {
+      const current = target.attributes[String(item.field)];
+      if (item.before !== undefined && !isDeepStrictEqual(item.before, current)) {
+        throw new BrainError("BEFORE_MISMATCH", `${pointer}/before differs from ${target.id}'s ${String(item.field)}`, [{ pointer: `${pointer}/before`, message: "differs from the note's current value" }]);
+      }
+      if (current === undefined) delete fields.before;
+      else fields.before = current;
+      if (isDeepStrictEqual(current, item.after)) invalid("after", `is ${target.id}'s ${String(item.field)} already`);
+    }
+  }
   if (kind === "update_fact" || kind === "contradiction") {
     if (typeof item.field !== "string") invalid("field", "is required for this kind");
     const facts = isRecord(target.attributes.facts) ? target.attributes.facts : {};
@@ -814,7 +855,7 @@ export function listProposals(workspace: Workspace, statuses: readonly string[],
 export function waitingGroup(a: Record<string, unknown>): 1 | 2 | 3 | 4 {
   const kind = String(a.kind);
   if (kind === "review_notes") return typeof a.correction === "string" ? 1 : isRecord(a.cleanup) ? 2 : 3;
-  if ((kind === "update_fact" && a.before !== undefined) || ["contradiction", "supersede", "replace_line", "update_body", "set_field", "notion_change", "notion_correction"].includes(kind)) return 1;
+  if ((kind === "update_fact" && a.before !== undefined) || ["contradiction", "supersede", "replace_line", "update_body", "set_field", "notion_change", "notion_correction", "fix_structure", "archive_draft", "new_task"].includes(kind)) return 1;
   if (["merge", "answer", "new_item", "tracked_task"].includes(kind)) return 2;
   return 4;
 }
@@ -824,8 +865,11 @@ export function waitingGroup(a: Record<string, unknown>): 1 | 2 | 3 | 4 {
  * session's questions, and the withheld ones apart, with their reason. In group 3 a source's parts (its review_notes without a fingerprint)
  * are listed together, in the place of the first of them: they are one question.
  */
-export function waitingProposals(workspace: Workspace, target: string | undefined): { waiting: Array<Record<string, unknown>>; held: Array<Record<string, unknown>>; counts: { waiting: number; held: number } } {
-  const pending = selectProposals(workspace, ["pending"], target);
+export function waitingProposals(workspace: Workspace, target: string | undefined): { waiting: Array<Record<string, unknown>>; held: Array<Record<string, unknown>>; counts: { waiting: number; held: number; in_weekly_row: number } } {
+  const selected = selectProposals(workspace, ["pending"], target);
+  // An item a Weekly row offers is decided by its tick there, never asked in the session (0.17.0, weekly-review.md §15.6, cli §5.6).
+  const pending = selected.filter((note) => typeof note.attributes.weekly !== "string");
+  const inWeeklyRow = selected.length - pending.length;
   const context = pending.length === 0 ? undefined : contextFor(workspace.notes, requireSuppressions(workspace.root));
   // Every correction from Notion comes first, together: the session asks them as one question (cli §5.6, 0101 §4).
   const correction = (item: Record<string, unknown>) => item.kind === "notion_correction" ? 0 : 1;
@@ -842,7 +886,7 @@ export function waitingProposals(workspace: Workspace, target: string | undefine
   }
   waiting.sort(order);
   held.sort(order);
-  return { waiting: sourcesTogether(waiting), held, counts: { waiting: waiting.length, held: held.length } };
+  return { waiting: sourcesTogether(waiting), held, counts: { waiting: waiting.length, held: held.length, in_weekly_row: inWeeklyRow } };
 }
 
 /** A proposal with no passages (schema §11.5): on a review_notes, one none of whose items carries them. */

@@ -206,7 +206,8 @@
     "pending": [
       {
         "key": "project_stalled:prj-4k8m2q7t",
-        "proposal": "prp-7d2k9m4q"
+        "proposal": "prp-7d2k9m4q",
+        "weekly": null
       }
     ],
     "week_state": {
@@ -224,7 +225,12 @@
       "max_judged": 30
     },
     "input_hash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-    "quiet": false
+    "quiet": false,
+    "source": "agent:brain-weekly-review/20261109T070412Z",
+    "cleanup": [],
+    "cleanup_auto": true,
+    "done": [],
+    "carry": []
   },
   "judged": {
     "clusters": [
