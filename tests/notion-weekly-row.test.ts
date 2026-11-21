@@ -73,6 +73,9 @@ test("Weekly review reads the two parts, decides nothing in the row, and ends wi
   assert.match(weekly, /Never tick or untick a to-do, never write on a Your note line, and never set Brain Status\./);
   assert.match(weekly, /or wait for its scheduled run if you set one/);
 
+  const s13 = section(await read("spec/weekly-review.md"), "## 13. Weekly review in Notion", "\n## ");
+  assert.match(s13, /\*\*The tasks Focus first names\*\* \(the author's answer of 2026-11-20\)[^\n]*none marked as the review's suggestion/, "the contract defines the Focus first offer");
+
   const instructions = section(assistant, "## Instructions", "## Skills");
   assert.match(instructions, /- A Weekly row's ticks, its Your note lines and its Brain Status are mine: never tick or untick its to-dos, never write on a Your note line, and never set a Weekly row's Brain Status, even when I ask\./);
   assert.match(instructions, /except a Weekly row's Actions and clean-up items, which I tick in that row\./);
