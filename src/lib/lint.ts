@@ -476,6 +476,11 @@ function proposalStatusProblem(a: Record<string, unknown>): string | null {
     if (a.kind !== "notion_correction" && a.kind !== "tracked_task") return "closed_reason withdrawn is only allowed on a notion_correction or a tracked_task";
     return action === undefined ? null : `a withdrawn proposal has no decision, found ${String(action)}`;
   }
+  // A mechanical clean-up item applied alone, then undone (spec/schema.md §11, cli.md §5.38, 0110 §4).
+  if (a.closed_reason === "undone") {
+    const by = record(a.decision).decided_by;
+    return action === "approve" && by === "cleanup" ? null : `an undone proposal needs decision approve by cleanup, found ${action === undefined ? "none" : String(action)} by ${String(by)}`;
+  }
   const expected: Record<string, unknown[]> = {
     pending: [undefined],
     approved: ["approve"],

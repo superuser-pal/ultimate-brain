@@ -1,0 +1,32 @@
+## brain.json settings.schedule
+{
+  "runner": "system",
+  "agent": "claude",
+  "model": "claude-sonnet-5-5",
+  "catch_up": {
+    "at": [
+      "06:45"
+    ]
+  },
+  "weekly_review": {
+    "at": [
+      "08:00"
+    ],
+    "days": [
+      "mon"
+    ]
+  }
+}
+
+## setup log lines
+- 2026-11-21T09:54:52Z setup - "" step=schedule result=done
+
+## commits
+schedule: catch-up 06:45 · weekly Mon 08:00
+setup: up to the first value
+settings: publish auto
+notes of 2026-11-19
+
+## scheduler files
+eu.ultimate-brain.brain-2c4cc930.catch-up.plist
+eu.ultimate-brain.brain-2c4cc930.weekly-review.plist

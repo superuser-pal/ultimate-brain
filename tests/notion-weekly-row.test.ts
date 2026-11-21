@@ -95,7 +95,7 @@ test("the views guide, the design and the template describe the weekly row witho
 
   const design = await read("docs/notion-space-design.md");
   assert.match(design, /\*\*Notion steps for the weekly row \(CC-368, CC-372\):\*\* none to the schema/);
-  assert.match(await read("notion/TEMPLATE.md"), /0\.17\.0's weekly row changes only Brain Assistant's texts, in migration 0030's part D, and adds no Example row/);
+  assert.match(await read("notion/TEMPLATE.md"), /0\.17\.0's weekly row changes only Notion Brain Assistant's texts, in migration 0030's part D, and adds no Example row/);
 });
 
 test("the principles and the parity epic say scheduling is delivered in 0.17.0, with the Mac's powered-off gap deferred", async () => {

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>eu.ultimate-brain.brain-2c4cc930.weekly-review</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>~/.local/bin/claude</string>
+    <string>-p</string>
+    <string>weekly review unattended</string>
+    <string>--model</string>
+    <string>claude-sonnet-5-5</string>
+    <string>--max-budget-usd</string>
+    <string>3</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string><scratch>/sbx-s-mac/brain</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>~/.local/bin:/opt/homebrew/Cellar/node/26.5.0/bin:<scratch>/inst/prefix/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict>
+      <key>Hour</key>
+      <integer>8</integer>
+      <key>Minute</key>
+      <integer>0</integer>
+      <key>Weekday</key>
+      <integer>1</integer>
+    </dict>
+  </array>
+  <key>StandardOutPath</key>
+  <string><scratch>/inst/home/Library/Logs/ultimate-brain/eu.ultimate-brain.brain-2c4cc930.weekly-review.log</string>
+  <key>StandardErrorPath</key>
+  <string><scratch>/inst/home/Library/Logs/ultimate-brain/eu.ultimate-brain.brain-2c4cc930.weekly-review.log</string>
+  <key>RunAtLoad</key>
+  <false/>
+  <key>ultimate-brain</key>
+  <string>{&quot;brain&quot;:&quot;<scratch>/sbx-s-mac/brain&quot;,&quot;job&quot;:&quot;weekly-review&quot;,&quot;times&quot;:[&quot;08:00&quot;],&quot;days&quot;:[&quot;mon&quot;],&quot;agent&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;claude-sonnet-5-5&quot;,&quot;prompt&quot;:&quot;weekly review unattended&quot;}</string>
+</dict>
+</plist>

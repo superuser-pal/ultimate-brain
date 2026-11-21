@@ -1,8 +1,8 @@
-# Prompt 9 — Brain Assistant's skills and the How it works page
+# Prompt 9 — Notion Brain Assistant's skills and the How it works page
 
 Before: [Prompt 7](07-spaces-views.md) (or the optional [Prompt 8](08-navigation.md)). Afterwards: "After building" in [../CHECKLIST.md](../CHECKLIST.md).
 
-This puts on System what Brain Assistant reads: the database **Skills** (Brain Assistant's skills) with its eleven skills, and the user guide on **How it works** (docs/notion-space-design.md §5, §10). The published template carries both. Brain Assistant itself (the Custom Agent, or personal Instructions) belongs to a workspace, not to a space, and no duplicate or build carries it: set it up afterwards, as "Setup" in [../brain-assistant.md](../brain-assistant.md) says and the page **First things first** lists (Prompt 1; docs/notion-space-design.md §10.1), selecting it in the three buttons that message it.
+This puts on System what Notion Brain Assistant reads: the database **Skills** (Notion Brain Assistant's skills) with its eleven skills, and the user guide on **How it works** (docs/notion-space-design.md §5, §10). The published template carries both. Notion Brain Assistant itself (the Custom Agent, or personal Instructions) belongs to a workspace, not to a space, and no duplicate or build carries it: set it up afterwards, as "Setup" in [../brain-assistant.md](../brain-assistant.md) says and the page **First things first** lists (Prompt 1; docs/notion-space-design.md §10.1), selecting it in the three buttons that message it.
 
 ## 1 · The database (Notion AI)
 
@@ -14,7 +14,7 @@ On the page "System", create one full-page database named "Skills" with exactly 
 
 ## 2 · The skills (your agent, or by hand)
 
-Ask your agent: "publish Brain Assistant's skills to Notion". With your yes, it creates one page in the Skills database per skill under "Skills" in [../brain-assistant.md](../brain-assistant.md), through the Notion MCP: the skill's name is the title, its **Description** line goes in Description, and its text block is the page body. Write minutes has no text block there: its body is the text block of [../minutes-format.md](../minutes-format.md), the minutes prompt, word for word, so the prompt has one source. Or create the eleven pages by hand from the same files.
+Ask your agent: "publish Notion Brain Assistant's skills to Notion". With your yes, it creates one page in the Skills database per skill under "Skills" in [../brain-assistant.md](../brain-assistant.md), through the Notion MCP: the skill's name is the title, its **Description** line goes in Description, and its text block is the page body. Write minutes has no text block there: its body is the text block of [../minutes-format.md](../minutes-format.md), the minutes prompt, word for word, so the prompt has one source. Or create the eleven pages by hand from the same files.
 
 ## 3 · How it works (your agent, or by hand)
 

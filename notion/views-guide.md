@@ -150,11 +150,11 @@ Claude Code or Codex writes the row, when the weekly review runs on its schedule
 - Under each Action and each item to tick: a toggle **Show the change**, with the before and after, and an empty line **Your note:**.
 
 How you use it:
-1. Read it. If you like, ask Brain Assistant "Run Weekly review" to read it with you: an optional companion that only reads the row, explains each item and decides nothing.
+1. Read it. If you like, ask Notion Brain Assistant "Run Weekly review" to read it with you: an optional companion that only reads the row, explains each item and decides nothing.
 2. Tick what you agree with. To change an item, write what you want on its **Your note:** line: that item waits for your next session in Claude Code or Codex, where your agent reads your note with you. Tick a `U` item to undo what the run did.
 3. Set the row's Brain Status to **Ready**. The next catch-up, on its schedule or asked for, applies each plain tick after checking that nothing changed since the row was written (an item that changed isn't applied, and the catch-up's report names it). An item you left unticked is declined for now, once nothing else in the row waits; until then you can still tick it. The row turns **Done** once nothing in it waits.
 
-The ticks, your notes and Ready are yours: neither the brain nor Brain Assistant ticks, unticks or writes a note, and every publish of the row keeps them as you left them. Anything else you write on the page is replaced at the next publish. A row you never set Ready hands its open items to next week's row, which says where they went. **Waiting for you** is decided in your agent session: say "what needs my decision".
+The ticks, your notes and Ready are yours: neither the brain nor Notion Brain Assistant ticks, unticks or writes a note, and every publish of the row keeps them as you left them. Anything else you write on the page is replaced at the next publish. A row you never set Ready hands its open items to next week's row, which says where they went. **Waiting for you** is decided in your agent session: say "what needs my decision".
 
 Example (synthetic): in *Week of 9 Nov 2026*, you tick `A3 · Draft a Document on pricing tiers` and `C1 · Merge "Acme Corp" into "Acme"`, write "only for the 2027 releases" on C4's Your note line, leave C2 unticked and set the row Ready. The 07:30 catch-up drafts the Document and merges the two, and leaves C4 for your next session; C2 stays open meanwhile, so you could still tick it. In that session you answer C4, C2 is declined, and the row turns Done.
 
@@ -211,14 +211,14 @@ Notion lets you shape how each database page opens. Set it once per database: op
 |---|---|---|---|---|
 | Keep | Keep as document | Inbox | Document asked → checked; Brain Status → Ready | Documents |
 | Keep | Keep as document | Tasks | Document asked → checked (nothing else: decision 0100) | Tasks (the brain acts on it with Documents on) |
-| Update | Refresh report | Documents (on the Inbox before 0.9.1, 0071) | Send message to Brain Assistant (0054; before 0.8.0: Refresh asked → checked). Refresh asked is now ticked by hand to queue a full refresh | Reports |
-| Tidy | Tidy capture | Inbox | Send message to Brain Assistant | core |
-| Write | Write up | Documents | Send message to Brain Assistant | Documents |
+| Update | Refresh report | Documents (on the Inbox before 0.9.1, 0071) | Send message to Notion Brain Assistant (0054; before 0.8.0: Refresh asked → checked). Refresh asked is now ticked by hand to queue a full refresh | Reports |
+| Tidy | Tidy capture | Inbox | Send message to Notion Brain Assistant | core |
+| Write | Write up | Documents | Send message to Notion Brain Assistant | Documents |
 | Accept | Accept | Documents | Accepted → checked; Accepted at → now: a write-up or a refreshed report (0071; Accept write-up on Documents and Accept refresh on the Inbox before 0.9.1) | Documents |
 
 The name and the label differ, so the layout doesn't show the same text twice (#144). The brain reads the boxes the checkbox buttons tick (and Accepted and Accepted at), never a button.
 
-**The Brain Assistant buttons (decision 0054)** use the action **Send message to** → Brain Assistant. The page a button sits on is not identified implicitly (verified for Tidy capture on a test Inbox row; that nothing else is passed is an inference, and the Write up and Refresh report messages are not yet run, docs/notion-space-design.md §3.16), so each message names the skill, references the row with an @ mention of **This page**, carries your confirmation and says what not to touch (verified on a test row, docs/notion-space-design.md §3.16). Type `@` and pick the current page where `@This page` is shown below:
+**The Notion Brain Assistant buttons (decision 0054)** use the action **Send message to** → Notion Brain Assistant. The page a button sits on is not identified implicitly (verified for Tidy capture on a test Inbox row; that nothing else is passed is an inference, and the Write up and Refresh report messages are not yet run, docs/notion-space-design.md §3.16), so each message names the skill, references the row with an @ mention of **This page**, carries your confirmation and says what not to touch (verified on a test row, docs/notion-space-design.md §3.16). Type `@` and pick the current page where `@This page` is shown below:
 
 | Button | Message |
 |---|---|
@@ -226,7 +226,7 @@ The name and the label differ, so the layout doesn't show the same text twice (#
 | Write up | `Run your Write up skill on this Documents page: @This page. I confirm: do it as the skill says. Do not change any property or any other page.` |
 | Refresh report | `Run your Refresh report skill on this report: @This page. I confirm: add or replace the Proposed refresh toggle as the skill says. Do not change the report's text outside it, or any property.` |
 
-**Select your own agent** (decision 0103 §1). In **Send message to**, select the Brain Assistant you created in your workspace: a duplicate of the template never carries a configured agent, so in a duplicate each of the three buttons is opened (database ••• → Properties → the button) and your agent selected, as **First things first** lists. Selecting the agent says who receives the message; the **@This page** in the message says which page it is about: keep the message as it is, one never replaces the other. The buttons that message Brain Assistant need Notion's Business or Enterprise plan with Notion credits, as Brain Assistant does (decision 0101 §7). A message without the page reference makes Brain Assistant stop and say so. A message carries the confirmation for its skill's page text only, never a yes to set a field: Brain Assistant sets your operational fields only in its chat, after your yes to the change it names with its value (decision 0101 §3, docs/notion-space-design.md §2). The Accept button uses **Edit property** on **This page**: Accepted → checked and Accepted at → Now.
+**Select your own agent** (decision 0103 §1). In **Send message to**, select the Notion Brain Assistant you created in your workspace: a duplicate of the template never carries a configured agent, so in a duplicate each of the three buttons is opened (database ••• → Properties → the button) and your agent selected, as **First things first** lists. Selecting the agent says who receives the message; the **@This page** in the message says which page it is about: keep the message as it is, one never replaces the other. The buttons that message Notion Brain Assistant need Notion's Business or Enterprise plan with Notion credits, as Notion Brain Assistant does (decision 0101 §7). A message without the page reference makes Notion Brain Assistant stop and say so. A message carries the confirmation for its skill's page text only, never a yes to set a field: Notion Brain Assistant sets your operational fields only in its chat, after your yes to the change it names with its value (decision 0101 §3, docs/notion-space-design.md §2). The Accept button uses **Edit property** on **This page**: Accepted → checked and Accepted at → Now.
 
 | Database | Heading (in order) | Property group: where · order | Hidden | Backlinks | Why |
 |---|---|---|---|---|---|
@@ -264,7 +264,7 @@ A row is on a Domain page when its Area has that Domain. A row with no Area, or 
 
 ## 10. Navigation (instead of Prompt 8)
 
-1. **On the "System" page,** create a synced block named "Tier 1 nav": one line of links, Home · Tasks · Meetings · Projects · Plan · Knowledge · Archive · How it works, unthemed (Tasks with the Tasks module, Plan with Planning). For questions, use Brain Assistant ([brain-assistant.md](brain-assistant.md)).
+1. **On the "System" page,** create a synced block named "Tier 1 nav": one line of links, Home · Tasks · Meetings · Projects · Plan · Knowledge · Archive · How it works, unthemed (Tasks with the Tasks module, Plan with Planning). For questions, use Notion Brain Assistant ([brain-assistant.md](brain-assistant.md)).
 2. **Still on "System",** create one synced block per Space, "Tier 2 nav – Plan" and so on. Each lists that Space's view names as links (right-click a view tab → *Copy link to view*), with its own icon and a light background color.
 3. **On each Space page,** add a narrow left column containing: Tier 1 nav, a divider, then that Space's Tier 2 nav. Home gets only Tier 1.
 4. **Above each page title,** add a small gray text label with the page name. It's a plain block, not synced.

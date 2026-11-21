@@ -19,6 +19,6 @@ There is no Review page since 0.16.0: you decide what the brain proposes in your
 The order is the one to use when time is short: Home and Meetings matter most during ingest. Tasks (7g) is for the Tasks module and Plan (7b) for Planning: skip them if you left those off. The other prompts carry module tags: delete the tagged lines of the modules you didn't choose ([CHECKLIST](../CHECKLIST.md)).
 
 Across all pages:
-- [ ] No database lives outside Brain Data, except Skills (Brain Assistant's skills) on System ([Prompt 9](09-assistant-and-guide.md)).
+- [ ] No database lives outside Brain Data, except Skills (Notion Brain Assistant's skills) on System ([Prompt 9](09-assistant-and-guide.md)).
 - [ ] Brain ID and Last Synced are hidden in every view (Projects "Which projects have gone quiet?" shows Last Synced on purpose).
 - [ ] Every view's database title is hidden; the tab label and the view name say what it shows.

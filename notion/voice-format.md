@@ -1,6 +1,6 @@
 # Voice note format
 
-For a voice or ramble capture in the Inbox (decision 0055, spec/capture-and-review.md §3.1). You record or dictate, the transcript lands on the page, and Notion AI (or Brain Assistant, on your request) writes the summary above it. Recording can be started from the page with your phone or Notion's own recording; if neither is available, paste the transcript into the **Transcript** toggle. The summary never authorizes a Task, and nothing is ingested until you set the row to **Ready**.
+For a voice or ramble capture in the Inbox (decision 0055, spec/capture-and-review.md §3.1). You record or dictate, the transcript lands on the page, and Notion AI (or Notion Brain Assistant, on your request) writes the summary above it. Recording can be started from the page with your phone or Notion's own recording; if neither is available, paste the transcript into the **Transcript** toggle. The summary never authorizes a Task, and nothing is ingested until you set the row to **Ready**.
 
 The page, in order:
 

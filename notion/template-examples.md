@@ -22,7 +22,7 @@ Every row is invented. They tell one story with synthetic names only: a kickoff 
 | 12 | Goals | `Example · Launch three client websites this year` | Status Active, Why below | Area → 2, Projects → 5 |
 | 13 | Key Results | `Example · Sites launched` | Kind Number, Start 0, Current 1, Target 3 | Goal → 12 |
 
-Rows 1 to 7 are 0084's; rows 8, 9 and 11 to 13 are 0087's; row 10 is the kickoff's open question tracked as a task (decision 0099 §3 to §5, since 0.16.0). The Skills database (Brain Assistant's skills) has no Example row. Every Brain ID stays empty: no Example row is ever a brain note.
+Rows 1 to 7 are 0084's; rows 8, 9 and 11 to 13 are 0087's; row 10 is the kickoff's open question tracked as a task (decision 0099 §3 to §5, since 0.16.0). The Skills database (Notion Brain Assistant's skills) has no Example row. Every Brain ID stays empty: no Example row is ever a brain note.
 
 There are no Decisions or Questions rows: those databases were retired in 0.16.0 (decision 0099), and the kickoff's decision and question live in the brain, shown in the project's Brief and Decision log. Row 10 is what the minutes' `Track: Waiting On —` on the question's line makes once the meeting is ingested (spec/capture-and-review.md §6.4); the examples show it at once, so the Tasks page's Questions tab has something in it.
 

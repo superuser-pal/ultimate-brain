@@ -28,7 +28,7 @@ const ORDER: ReadonlyArray<readonly [item: string, what: string]> = [
   ["notion-mcp", "connect your agent to Notion"],
   ["databases", "connect Notion"],
   ["minutes-prompt", "paste the minutes prompt"],
-  ["brain-assistant", "set up Brain Assistant"],
+  ["brain-assistant", "set up Notion Brain Assistant"],
   ["owner_person", "set your identities"],
   ["seeding", "seed your work"],
   ["first-value", "check first value"],
@@ -131,7 +131,7 @@ export async function setupStatus(root: string, config: Record<string, unknown>,
 
 /**
  * Which of steps 4a and 4b the latest `prerequisites` line takes (spec/setup.md §13, cli.md §5.2). From 0.17.0 its `credits` and `meetings`
- * keys decide: the minutes prompt with `notion-ai` among the meetings, Brain Assistant with `credits=yes`. A line without `credits` (before
+ * keys decide: the minutes prompt with `notion-ai` among the meetings, Notion Brain Assistant with `credits=yes`. A line without `credits` (before
  * 0.17.0) takes both unless it has `notion_ai=no`; with no line, both are taken.
  */
 export function stepsTaken(pairs: Readonly<Record<string, string>> | undefined): { "minutes-prompt": boolean; "brain-assistant": boolean } {

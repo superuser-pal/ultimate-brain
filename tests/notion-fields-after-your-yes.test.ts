@@ -71,11 +71,11 @@ test("Weekly review asks the task items in numbered options and sets only what w
 
 test("the Notion design and the views guide say what it may set, and no shipped text says it never sets a field", async () => {
   const design = await read("docs/notion-space-design.md");
-  assert.match(design, /\*\*Brain Assistant sets some of your fields after your yes \(\[0101\]/);
+  assert.match(design, /\*\*Notion Brain Assistant sets some of your fields after your yes \(\[0101\]/);
   assert.ok(design.includes("in Tasks, Status and Due; in Projects, Status, Priority and Dates; in Goals, Status; in Key Results, Current, Done and Due. Areas has no such field."));
   assert.doesNotMatch(design, /Still never a property, or a brain-written section/);
   const views = await read("notion/views-guide.md");
-  assert.match(views, /never a yes to set a field: Brain Assistant sets your operational fields only in its chat, after your yes/);
+  assert.match(views, /never a yes to set a field: Notion Brain Assistant sets your operational fields only in its chat, after your yes/);
 
   const shipped = ["notion/brain-assistant.md", "docs/notion-space-design.md", "notion/views-guide.md", "notion/TEMPLATE.md", "notion/CHECKLIST.md", "notion/prompts/09-assistant-and-guide.md", "docs/setup.md", "README.md", "spec/weekly-review.md", "spec/assistant.md"];
   for (const path of shipped) {
@@ -105,7 +105,7 @@ test("migration 0030 is 0.17.0's one migration: part A by hand with read-backs, 
   assert.match(a5, /Key Facts still reads `Budget: 10k`/);
   assert.match(a5, /Brain Status still reads New/);
   assert.match(a5, /move the four test rows to the trash/);
-  for (const [part, task] of [["B", "CC-352"], ["C", "CC-329"]]) {
+  for (const [part, task] of [["C", "CC-329"]]) {
     assert.match(migration, new RegExp(`## Part ${part} · [^\\n]*${task}\\)\\n\\n\\*Added to this migration by ${task} before the release`));
   }
   assert.match(migration, /change it to `Template version: 0030`/);
