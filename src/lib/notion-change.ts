@@ -53,11 +53,24 @@ export function projectsProblem(workspace: Workspace, target: Note): string | un
 export interface NotionWrite {
   proposal: string;
   database: string;
-  page_id: string;
+  page_id: string | null;
   property: string;
   payload: { type: string; value: unknown };
   expect: unknown;
   value: unknown;
+  /** A new_task (0.17.0): a Tasks row to create, its properties by their mapped names (spec/schema.md §11.2, cli.md §5.7). */
+  action?: "create";
+  properties?: Record<string, { type: string; value: unknown }>;
+}
+
+/** The Notion write of an approved new_task (0.17.0, spec/schema.md §11.2): create a Tasks row named V with its project's page. */
+export function createTaskWrite(workspace: Workspace, id: string, title: string, projectPage: string): NotionWrite {
+  const name = taskProperty(workspace, "title") || "Name";
+  const project = taskProperty(workspace, "project") || "Project";
+  return {
+    proposal: id, database: "tasks", action: "create", page_id: null, property: name, payload: { type: "title", value: title }, expect: null, value: title,
+    properties: { [name]: { type: "title", value: title }, [project]: { type: "relation", value: [projectPage] } },
+  };
 }
 
 const invalid = (pointer: string, message: string): never => {
@@ -258,7 +271,7 @@ export function settle(workspace: Workspace, items: ReadonlyArray<{ proposal: st
     if (note === undefined || note.type !== "proposal") { settled.push({ proposal: item.proposal, result: "failed", reason: "UNKNOWN_ID", changed: [] }); continue; }
     const status = String(note.attributes.status);
     if (status === "applied" || status === "closed") { settled.push({ proposal: item.proposal, result: "skipped", reason: "ALREADY_TERMINAL", changed: [] }); continue; }
-    if (note.attributes.kind !== "notion_change" || (status !== "approved" && status !== "edited")) { settled.push({ proposal: item.proposal, result: "failed", reason: "NOT_AWAITING", changed: [] }); continue; }
+    if ((note.attributes.kind !== "notion_change" && note.attributes.kind !== "new_task") || (status !== "approved" && status !== "edited")) { settled.push({ proposal: item.proposal, result: "failed", reason: "NOT_AWAITING", changed: [] }); continue; }
     const start = workspace.checkpoint();
     const document = workspace.edit(note);
     const result = item.result === "applied" ? "applied" : "closed";

@@ -29,6 +29,8 @@ export interface Summary {
   subjects: Subject[]; items: Item[]; problems: Problem[]; lines: string[]; unnumbered: Unnumbered[]; quick: Quick[]; quickItems: Item[]; scopes: Scope[];
   /** The lean shape only (decision 0079): its readable item lines as `extract-plan` lists them, and the quote entries with no readable line. */
   shape?: "lean"; readable?: LeanItem[]; orphans?: Item[];
+  /** The lean shape only: the text of each to-do of the Quick follow-ups group with no `q` id, in page order (`minutes check`, cli §5.36 step 4). */
+  untagged_todos?: string[];
 }
 /** A readable item line of lean minutes joined to its quote entry (cli §5.22, `items`). */
 export interface LeanItem {

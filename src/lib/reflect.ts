@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { posix } from "node:path";
 
 import { decodePath, linkTargets } from "./lint-links.ts";
@@ -22,6 +23,8 @@ const FINGERPRINT = {
   fact: new RegExp(`^(contradiction|stale):(${NOTE_ID}):([a-z][a-z0-9_]*)$`),
   merge: new RegExp(`^merge:(${NOTE_ID})\\+(${NOTE_ID})$`),
   promotion: new RegExp(`^promotion:(${NOTE_ID}):((?:mtg|src)-[0-9abcdefghjkmnpqrstvwxyz]{8})$`),
+  /** A weekly clean-up item (0.17.0, weekly-review.md §15.2; schema §11.4): tidy:<kind>:<target>[:<field> or the first 8 hex of sha256(line_before)]. */
+  tidy: new RegExp(`^tidy:(?:(pair_half|repeated_value):(${NOTE_ID}):([a-z][a-z0-9_]*)|(moved_link):(${NOTE_ID}):([0-9a-f]{8})|(stale_draft):(${NOTE_ID}))$`),
   theme: /^theme:([a-z0-9]+(?:-[a-z0-9]+){1,2})$/,
 };
 
@@ -436,6 +439,18 @@ export function fingerprintProblem(a: Record<string, unknown>, get: (id: string)
   const merge = FINGERPRINT.merge.exec(fingerprint);
   const promotion = FINGERPRINT.promotion.exec(fingerprint);
   const theme = FINGERPRINT.theme.exec(fingerprint);
+  const tidy = FINGERPRINT.tidy.exec(fingerprint);
+  if (tidy !== null) {
+    const tidyKind = tidy[1] ?? tidy[4] ?? tidy[7]!;
+    const target = tidy[2] ?? tidy[5] ?? tidy[8]!;
+    const expected = tidyKind === "stale_draft" ? "archive_draft" : "fix_structure";
+    if (kind !== expected) return { key: "fingerprint", message: `${fingerprint} is an ${expected}, not a ${String(kind)}` };
+    if (a.tidy !== tidyKind) return { key: "fingerprint", message: `names the clean-up kind ${tidyKind}, but the proposal's tidy is ${String(a.tidy)}` };
+    if (a.target !== target) return { key: "fingerprint", message: `names ${target}, but the target is ${String(a.target)}` };
+    if (tidy[3] !== undefined && a.field !== tidy[3]) return { key: "fingerprint", message: `names the field ${tidy[3]}, but the proposal's is ${String(a.field)}` };
+    if (tidy[6] !== undefined && createHash("sha256").update(String(a.line_before), "utf8").digest("hex").slice(0, 8) !== tidy[6]) return { key: "fingerprint", message: "names another line than line_before" };
+    return null;
+  }
   if (fact !== null) {
     const expected = fact[1] === "contradiction" ? "contradiction" : "update_fact";
     if (kind !== expected) return { key: "fingerprint", message: `${fingerprint} is a ${expected}, not a ${String(kind)}` };

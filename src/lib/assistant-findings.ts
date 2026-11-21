@@ -51,6 +51,8 @@ export interface Snapshot {
   projects?: ProjectRow[];
   areas?: AreaRow[];
   repos: RepoEntry[];
+  /** The brain's Weekly rows in the Inbox (0.17.0, weekly-review.md §15.6): read by `weekly plan` for the carry-over, unused by the assistant. */
+  weekly_rows?: Array<{ page: string; week: string; brain_status: "New" | "Ready" | "Done" }>;
 }
 
 export interface Recommendation { letter: string; action: string; value: unknown; label: string }

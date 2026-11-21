@@ -91,9 +91,9 @@ test("correction: three restatements in one selectable group; the independent, h
   const selection = week.select!.json.data;
   const [item] = selection.items;
   assert.equal(selection.items.length, 1);
-  assert.deepEqual([item.stream, item.kind, item.write, item.new_items, item.targets.length, item.shown_of], ["correction", "Correction", true, 3, 3, { k: 3, size: 4 }]);
+  assert.deepEqual([item.stream, item.kind, item.part, item.write, item.targets.length, item.shown_of], ["correction", "Correction", "T", true, 3, { k: 3, size: 4 }]);
   assert.equal(item.subject, "Quarry website budget 12k → 18k");
-  assert.deepEqual(selection.counts, { decisions: 1, new_items: 3, targets: 3, queued: 0 });
+  assert.deepEqual(selection.counts, { actions: 0, doubtful: 0, cleaned: 0, targets: 3, queued: 0 });
   assert.deepEqual(selection.corrections, [{ claim: `${QUARRY}:budget`, open: [], clarify: 1 }]);
 
   // One review_notes for the claim, its three changes each a selectable item with before and after, the uncertain match named only.
@@ -110,7 +110,9 @@ test("correction: three restatements in one selectable group; the independent, h
   assert.equal(group.status, "pending");
 
   const report = await readText(root, "reports/2026-11-09-weekly-review.md");
-  assert.match(report, /\n1\. Correction · Quarry website budget 12k → 18k · 4 notes restate 12k \(3 of 4 shown\) → \[decide in the session\]\(\.\.\/_proposals\/.+\.md\)\n/);
+  // A correction group is a session item (§6.1): counted in Waiting for you with its shown part, never a row to-do.
+  assert.match(report, /\n\*\*Waiting for you:\*\* 1 decision waits in the session \(3 of 4 shown\): say \*what needs my decision\* in Claude Code or Codex\.\n/);
+  assert.equal(/^- \[ \]/m.test(report), false);
   assert.match(report, /\n1 correction match needs clarification: say "weekly review corrections"\.\n/);
   // Nothing applied: every restating note still says 12k.
   assert.match(await readText(root, `knowledge/people/${ROWAN}.md`), /budget at 12k\./);
@@ -143,7 +145,7 @@ test("a same-week rerun reuses the group; an item rejected since is not proposed
   assert.equal(claim.targets.some((target: any) => target.note === APP), false, "a rejected target is never proposed again for the claim");
   assert.deepEqual(claim.targets.filter((target: any) => target.pending !== null).map((target: any) => target.note).sort(), [ROWAN, HOSTING].sort());
   const [item] = rerun.select!.json.data.items;
-  assert.deepEqual([item.key, item.write, item.proposal, item.new_items], [`correction:${QUARRY}:budget`, false, group.id, 0]);
+  assert.deepEqual([item.key, item.write, item.proposal, item.part], [`correction:${QUARRY}:budget`, false, group.id, "T"]);
   assert.equal((await proposalFiles(root)).length, 1, "no second group");
   assert.deepEqual(rerun.select!.json.data.counts, first.select!.json.data.counts, "the week's counts are kept");
 });
@@ -158,7 +160,7 @@ test("a group larger than the targets left: its first targets by note id are sho
   const [item] = first.select!.json.data.items;
   assert.deepEqual(item.targets, people.slice(0, 5));
   assert.deepEqual(item.shown_of, { k: 5, size: 6 });
-  assert.deepEqual(first.select!.json.data.counts, { decisions: 1, new_items: 5, targets: 5, queued: 0 });
+  assert.deepEqual(first.select!.json.data.counts, { actions: 0, doubtful: 0, cleaned: 0, targets: 5, queued: 0 });
   const after = (await state(root)).corrections;
   assert.deepEqual(after.open, [{ claim: `${QUARRY}:budget`, targets: [people[5]], old: ["12k"], new: "18k", date: "2026-11-05", source: KICKOFF }]);
   assert.match(await readText(root, "reports/2026-11-09-weekly-review.md"), /\(5 of 6 shown\)/);
