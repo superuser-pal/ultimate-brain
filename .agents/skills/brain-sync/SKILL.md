@@ -11,7 +11,7 @@ Notion is the user's view of the brain. The brain is canonical (Markdown + Git),
 - the **Notion-owned** fields: status, priority, dates, progress, archived, email and so on;
 - *(Tasks)* the **tasks that follow up open questions**, to ask about a finished one (0101 §6).
 
-Then it publishes what the brain changed. **Always pull before you push**, so the user's edits are read before the brain republishes over them (spec/cli.md §5.14). Nothing is decided in Notion: what needs the user is asked in the session (brain-apply).
+Then it publishes what the brain changed. **Always pull before you push**, so the user's edits are read before the brain republishes over them (spec/cli.md §5.14). Nothing is decided in Notion but a Weekly row's ticks, which a catch-up applies once the row is Ready (decision 0110 §4): what needs the user is asked in the session (brain-apply).
 
 Run CLI commands as `brain <command> --brain <brain> --json`. Database ids come from `brain config get notion.databases`. Query each through its data source (retrieve the database, then use its `data_sources[0].id`). If `brain` is not found (`command not found`), install it with `npm install -g ultimate-brain`, then retry.
 
@@ -103,7 +103,7 @@ Read [references/accepted-wording.md](references/accepted-wording.md) before any
 
 ## Rules
 
-- **Never write a body to a Document or report page that a wording row names** (`wording_waiting`, `wording_held`, `accepted_wording`): the text on that page is the user's or Brain Assistant's until they accept it.
+- **Never write a body to a Document or report page that a wording row names** (`wording_waiting`, `wording_held`, `accepted_wording`): the text on that page is the user's or Notion Brain Assistant's until they accept it.
 - **Never write a Notion-owned property** (status, priority, dates, progress, archived, email, website, relationship, type, What to fix, Only keep, Document asked, an Inbox row's Brain Status New or Ready, a task's Status). The user edits them in Notion, so a write would overwrite their change; `sync render` never emits them, so don't add them. Its exceptions are its own: a Report row's Refresh asked box and What to fix cleared once the brain has acted on them (decisions 0045, 0048). The skills' exceptions: the `notion_writes` of an approved `notion_change` (step 6b, brain-apply "Notion writes"), written by whichever skill ran the apply, and by Ultimate Assistant after the user's yes in chat; brain-catch-up clears Document asked (and sets the Inbox row to Done) once it has acted on the request, and sets a skipped Inbox row to Done with its Summary (decision 0048), and unticks Accepted and clears Accepted at once it has taken the accepted text in or found nothing to import ("Accepted wording" above, decision 0054).
 - **Never delete a Notion page or a brain note during a sync.** The one removal is a `trash` item of `--unpublish-drafts` (a draft page from before 0.9.1), which the user can restore for 30 days. Never delete a page permanently.
 - **Never decide for the user.** A correction from Notion and a finished task are asked in the session (step 6a); an unattended run leaves them waiting.

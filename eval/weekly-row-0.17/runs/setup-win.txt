@@ -1,0 +1,32 @@
+## brain.json settings.schedule
+{
+  "runner": "system",
+  "agent": "codex",
+  "model": "gpt-6",
+  "catch_up": {
+    "at": [
+      "07:30"
+    ]
+  },
+  "weekly_review": {
+    "at": [
+      "17:00"
+    ],
+    "days": [
+      "fri"
+    ]
+  }
+}
+
+## setup log lines
+- 2026-11-21T09:56:06Z setup - "" step=schedule result=done
+
+## commits
+setup: schedule
+setup: up to the first value
+settings: publish auto
+notes of 2026-11-19
+
+## scheduler files
+eu.ultimate-brain.brain-eac150b1.catch-up.xml
+eu.ultimate-brain.brain-eac150b1.weekly-review.xml
