@@ -54,13 +54,15 @@ test("Weekly review asks the task items in numbered options and sets only what w
   assert.doesNotMatch(weekly, /I set it myself/);
   assert.doesNotMatch(weekly, /Never edit a task/);
   assert.match(weekly, /\*\*Description:\*\*[^\n]*and set what I agree on its tasks\./);
-  assert.match(weekly, /\n6\. Then ask me about the task items in rounds of at most five, numbered in the row's order\./);
-  assert.match(weekly, /"leave it" last/);
+  // Since CC-372 (0110, the author's answer of 2026-11-20): the rounds ask the tasks Focus first names (step 8) and, in a row written before 0.17.0, its task items with the row's suggestion first (step 10).
+  assert.match(weekly, /\n8\. The tasks Focus first names: ask me about them in one round, numbered in the row's order/);
+  assert.match(weekly, /d\) leave it"/);
   assert.match(weekly, /Set nothing yet\./);
-  assert.match(weekly, /\n7\. My answer is my yes to exactly the options I picked\. Set each on its task \(Status or Due only\), then read each back/);
-  assert.match(weekly, /\n8\. End with one short list/);
+  assert.match(weekly, /\n9\. My answer is my yes to exactly the options I picked\. Set each on its task \(Status or Due only\), then read each back/);
+  assert.match(weekly, /\n10\. A row written before 0\.17\.0:[^\n]*Its task items: ask about them as in steps 8 and 9, in rounds of at most five, with the row's suggestion first, marked \(the review's suggestion\)\./);
+  assert.match(weekly, /\n11\. End with one short list/);
   assert.match(weekly, /Never set a property before my answer, or one I didn't pick\. Never edit the row or any other page\./);
-  assert.match(weekly, /Ask me nothing to decide about it/, "a proposal stays decided in the session");
+  assert.match(weekly, /that I decide it in Claude Code or Codex by saying "what needs my decision"/, "a proposal stays decided in the session");
   const spec = await read("spec/weekly-review.md");
   const s13 = section(spec, "## 13. Weekly review in Notion", "\n## ");
   assert.doesNotMatch(s13, /never edits a property/);
@@ -103,8 +105,8 @@ test("migration 0030 is 0.17.0's one migration: part A by hand with read-backs, 
   assert.match(a5, /Key Facts still reads `Budget: 10k`/);
   assert.match(a5, /Brain Status still reads New/);
   assert.match(a5, /move the four test rows to the trash/);
-  for (const [part, task] of [["C", "CC-329"], ["D", "CC-372"]]) {
-    // Each part names its task; a part not yet filled says who adds it (CC-329 filled part C).
+  for (const [part, task] of [["C", "CC-329"]]) {
+    // Each part names its task (CC-329 filled part C).
     assert.match(migration, new RegExp(`## Part ${part} · [^\\n]*${task}\\)\\n`));
   }
   assert.match(migration, /change it to `Template version: 0030`/);

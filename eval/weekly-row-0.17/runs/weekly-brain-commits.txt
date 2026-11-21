@@ -1,0 +1,21 @@
+bf70b42 undo clean-up: Kiln glaze temperatures
+89f7b29 Undo clean-up: Archive the draft "Kiln glaze temperatures"
+Op: op-1f79bdca
+Cleanup-undo: prp-tc91p8fy
+d93d028 log: catch up
+6b46a46 publish: catch up
+0c5d8c4 catch-up: weekly ticks 2026-W47 (1 merge applied, 4 declined); sync: 1 refreshed
+280cb4d log: catch up (unattended)
+44a89d6 publish: catch up
+8aa9a4b catch-up: weekly ticks 2026-W47 (3 applied); sync: 3 domains refreshed
+1f79030 publish: weekly review 2026-W47
+646601c weekly: review 2026-W47 (2 actions, 5 to tick, 3 cleaned)
+5f9dbe2 Clean-up: Archive the draft "Kiln glaze temperatures"
+Op: op-a930e1f7
+Cleanup: prp-tc91p8fy
+4f4e659 Clean-up: Remove a repeated value from aliases of "Owen Halberd"
+Op: op-98333702
+Cleanup: prp-rhv0yh2j
+d0add2e Clean-up: Add "Send the newsletter monthly" to the meeting "Newsletter planning"
+Op: op-2868a3ec
+Cleanup: prp-vvc1wkfj

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>eu.ultimate-brain.brain-2c4cc930.catch-up</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>~/.local/bin/claude</string>
+    <string>-p</string>
+    <string>catch up unattended</string>
+    <string>--model</string>
+    <string>claude-sonnet-5-5</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string><scratch>/sbx-s-mac/brain</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>~/.local/bin:/opt/homebrew/Cellar/node/26.5.0/bin:<scratch>/inst/prefix/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict>
+      <key>Hour</key>
+      <integer>6</integer>
+      <key>Minute</key>
+      <integer>45</integer>
+    </dict>
+  </array>
+  <key>StandardOutPath</key>
+  <string><scratch>/inst/home/Library/Logs/ultimate-brain/eu.ultimate-brain.brain-2c4cc930.catch-up.log</string>
+  <key>StandardErrorPath</key>
+  <string><scratch>/inst/home/Library/Logs/ultimate-brain/eu.ultimate-brain.brain-2c4cc930.catch-up.log</string>
+  <key>RunAtLoad</key>
+  <false/>
+  <key>ultimate-brain</key>
+  <string>{&quot;brain&quot;:&quot;<scratch>/sbx-s-mac/brain&quot;,&quot;job&quot;:&quot;catch-up&quot;,&quot;times&quot;:[&quot;06:45&quot;],&quot;days&quot;:null,&quot;agent&quot;:&quot;claude&quot;,&quot;model&quot;:&quot;claude-sonnet-5-5&quot;,&quot;prompt&quot;:&quot;catch up unattended&quot;}</string>
+</dict>
+</plist>

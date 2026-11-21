@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>ultimate-brain:{&quot;brain&quot;:&quot;<scratch>/sbx-s-win/brain&quot;,&quot;job&quot;:&quot;catch-up&quot;,&quot;times&quot;:[&quot;07:30&quot;],&quot;days&quot;:null,&quot;agent&quot;:&quot;codex&quot;,&quot;model&quot;:&quot;gpt-6&quot;,&quot;prompt&quot;:&quot;catch up unattended&quot;}</Description>
+  </RegistrationInfo>
+  <Triggers>
+    <CalendarTrigger>
+      <StartBoundary>2026-11-21T07:30:00</StartBoundary>
+      <Enabled>true</Enabled>
+      <ScheduleByDay>
+        <DaysInterval>1</DaysInterval>
+      </ScheduleByDay>
+    </CalendarTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <UserId>&lt;user&gt;</UserId>
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>LeastPrivilege</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <Enabled>true</Enabled>
+    <WakeToRun>true</WakeToRun>
+    <ExecutionTimeLimit>PT2H</ExecutionTimeLimit>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>%SystemRoot%\System32\cmd.exe</Command>
+      <Arguments>/d /s /c &quot;set &quot;PATH=<scratch>/sbx-s-win/bin;/opt/homebrew/Cellar/node/26.5.0/bin;%PATH%&quot; &amp;&amp; &quot;<scratch>/sbx-s-win/bin/codex.cmd&quot; &quot;exec&quot; &quot;--model&quot; &quot;gpt-6&quot; &quot;--sandbox&quot; &quot;workspace-write&quot; &quot;-c&quot; &quot;approval_policy=never&quot; &quot;-c&quot; &quot;sandbox_workspace_write.network_access=true&quot; &quot;catch up unattended&quot; &gt;&gt; &quot;<scratch>/inst/home/AppData/Local/ultimate-brain/logs/eu.ultimate-brain.brain-eac150b1.catch-up.log&quot; 2&gt;&amp;1&quot;</Arguments>
+      <WorkingDirectory><scratch>/sbx-s-win/brain</WorkingDirectory>
+    </Exec>
+  </Actions>
+</Task>
