@@ -56,6 +56,8 @@ test("migration 0029 makes the button by hand, reads it back by name and action,
   assert.match(migration, /change it to `Template version: 0029`/);
   assert.match(migration, /- \[ \] \*\(API\)\* The System callout reads `Template version: 0029`\./);
 
+  // The template includes 0029; a later release's migration moves the version on (0030 in 0.17.0).
   const template = await read("notion/TEMPLATE.md");
-  assert.match(template, /\| \*\*Template version\*\* \| `0029` \|/);
+  const version = Number(template.match(/\| \*\*Template version\*\* \| `(\d{4})` \|/)?.[1]);
+  assert.ok(version >= 29, `Template version ${version}`);
 });

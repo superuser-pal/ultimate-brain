@@ -30,7 +30,7 @@ import { chainOf, FOLLOW_UP } from "./extract.ts";
 import { wholeDocumentMarkdown } from "./whole-links.ts";
 import { FROM_THE_BRAIN_MARKER } from "./from-the-brain.ts";
 import { planTaskDocument, type TaskDocumentRequest } from "./task-documents.ts";
-import { changeText, dayMonthYear } from "./weekly-record.ts";
+import { changeText, dayMonthYear, NOTION_PROPERTY, notionValueWords } from "./weekly-record.ts";
 import { readState, type RowSlot } from "./weekly-state.ts";
 
 export const DATABASES = ["domains", "areas", "goals", "key_results", "projects", "people", "orgs", "decisions", "questions", "documents", "review", "inbox", "tasks"] as const;
@@ -1180,7 +1180,10 @@ export function showTheChange(proposal: Note, workspace: Workspace): string[] {
       return [`${title(a.target)} will be merged into ${title(a.merge_into)}.`, `It brings the aliases ${aliases.join(", ")}${facts.length > 0 ? ` and the facts ${facts.join(", ")}` : ""}.`, `${moving} note${moving === 1 ? "" : "s"} link${moving === 1 ? "s" : ""} to it; ${moving === 1 ? "that link moves" : "those links move"}.`];
     }
     case "set_field": return [`${String(a.field)}: ${shown(a.before)} → ${shown(a.after)}`];
-    case "notion_change": return [`${String(a.property)}: ${shown(a.value_before)} → ${shown(a.value_after)}`];
+    case "notion_change": {
+      const property = String(a.property);
+      return [`${NOTION_PROPERTY[property] ?? property}: ${notionValueWords(property, a.value_before, workspace.notes)} → ${notionValueWords(property, a.value_after, workspace.notes)}`];
+    }
     case "new_task": return [`New task "${String(a.task_title)}" in ${title(a.target)}.`];
     case "new_item": return [`A draft Document "${String(isRecord(a.note) ? a.note.title : a.title)}"${isRecord(a.note) && typeof a.note.summary === "string" ? `: ${a.note.summary}` : "."}`];
     case "archive_draft": {
@@ -1190,7 +1193,7 @@ export function showTheChange(proposal: Note, workspace: Workspace): string[] {
       return [`${title(a.target)}: a draft never reviewed${days === null ? "" : `, ${days} days old`}, and nothing links to it. Archived, not deleted.`];
     }
     case "fix_structure": return typeof a.line_before === "string" ? [`Before: ${a.line_before}`, `After: ${String(a.line_after)}`] : [`${String(a.field)}: ${shown(a.before)} → ${shown(a.after)}`];
-    default: return [changeText(a, get)];
+    default: return [changeText(a, get, workspace.notes)];
   }
 }
 
