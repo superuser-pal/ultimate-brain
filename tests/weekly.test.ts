@@ -516,7 +516,7 @@ async function schedule(dir: string, args: string[], env: NodeJS.ProcessEnv, hom
   return { code, json: JSON.parse(out.join("")) };
 }
 
-test("schedule install weekly-review: Monday 08:00 by default, the budget cap from settings or --max-budget-usd, as a plist and as a cron line", { skip: process.platform === "win32" ? "brain schedule writes launchd and cron entries, macOS and Linux only (decision 0097 §4)" : false }, async (context) => {
+test("schedule install weekly-review: Monday 08:00 by default, the budget cap from settings or --max-budget-usd, as a plist and as a cron line", { skip: process.platform === "win32" ? "the fake claude is a shell script; the Windows entries are tested in tests/schedule.test.ts (CC-369)" : false }, async (context) => {
   const root = await busy(context);
   const skill = join(root, ".claude/skills/brain-weekly-review");
   const { env, home, bin } = await scheduleEnv(context, "darwin");
@@ -548,7 +548,8 @@ test("schedule install weekly-review: Monday 08:00 by default, the budget cap fr
   const cron = await schedule(root, ["install", "weekly-review", "--model", "claude-sonnet-5-5"], linux.env, linux.home);
   assert.equal(cron.code, 0, JSON.stringify(cron.json));
   assert.deepEqual(cron.json.warnings.map((warning: any) => warning.code), ["FOLDER_TRUST"], "the cron line needs the trusted folder too");
-  assert.match(cron.json.data.cron[0], /^0 8 \* \* 1 mkdir -p .+ '-p' 'weekly review unattended' '--model' 'claude-sonnet-5-5' '--max-budget-usd' '2' >> "\$HOME\/\.ultimate-brain\/logs\/eu\.ultimate-brain\..+\.weekly-review\.log" 2>&1$/);
+  // The slot kept in settings.schedule by the install above (Sunday 07:30) is the stored slot (cli.md §5.21, 0110 §7).
+  assert.match(cron.json.data.cron[0], /^30 7 \* \* 0 mkdir -p .+ '-p' 'weekly review unattended' '--model' 'claude-sonnet-5-5' '--max-budget-usd' '2' >> "\$HOME\/\.ultimate-brain\/logs\/eu\.ultimate-brain\..+\.weekly-review\.log" 2>&1$/);
 });
 
 test("upgrade adds the attempt marker to an older brain's .gitignore, once", async (context) => {

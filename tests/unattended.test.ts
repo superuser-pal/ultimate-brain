@@ -300,7 +300,7 @@ async function schedule(dir: string, args: string[], env: NodeJS.ProcessEnv, hom
   return { code, json: JSON.parse(out.join("")) };
 }
 
-test("schedule install writes a launchd agent that runs claude -p in the brain at the given times with the pinned model; list and remove", { skip: process.platform === "win32" ? "brain schedule writes launchd and cron entries, macOS and Linux only (decision 0097 §4)" : false }, async (context) => {
+test("schedule install writes a launchd agent that runs claude -p in the brain at the given times with the pinned model; list and remove", { skip: process.platform === "win32" ? "the fake claude is a shell script; the Windows entries are tested in tests/schedule.test.ts (CC-369)" : false }, async (context) => {
   const dir = await fixtureCopy(context);
   const { agents, bin, spied, env, home } = await scheduleEnv(context);
   const before = await tree(dir);
@@ -327,12 +327,14 @@ test("schedule install writes a launchd agent that runs claude -p in the brain a
   assert.match(replaced, /<string>--model<\/string>\s*<string>claude-opus-5-5<\/string>/);
   assert.equal(replaced.includes("claude-sonnet-5-5"), false);
   const listed = await schedule(dir, ["list"], env, home);
-  assert.deepEqual(listed.json.data.schedules, [{ job: "catch-up", label: data.label, path: data.path, times: ["08:30"], days: null, model: "claude-opus-5-5", prompt: "catch up unattended" }]);
+  assert.deepEqual(listed.json.data.schedules, [{ job: "catch-up", label: data.label, path: data.path, times: ["08:30"], days: null, agent: "claude", model: "claude-opus-5-5", prompt: "catch up unattended", matches: true }]);
 
   assert.equal((await schedule(dir, ["remove", "catch-up"], env, home)).json.data.removed, true);
   assert.equal((await schedule(dir, ["remove", "catch-up"], env, home)).json.data.removed, false, "a second remove is a no-op");
   assert.deepEqual((await schedule(dir, ["list"], env, home)).json.data.schedules, []);
-  assert.deepEqual(await tree(dir), before, "schedule writes nothing in the brain");
+  // From 0.17.0 the schedule is kept in brain.json (0110 §7), and nothing else in the brain is written.
+  assert.deepEqual((await tree(dir)).filter((line) => !line.startsWith("brain.json ")), before.filter((line) => !line.startsWith("brain.json ")), "schedule writes nothing in the brain but settings.schedule");
+  assert.deepEqual(JSON.parse(await readFile(join(dir, "brain.json"), "utf8")).settings.schedule, { runner: "system", agent: "claude", model: "claude-opus-5-5", catch_up: "off", weekly_review: "off" });
   assert.equal(await absent(spied), true, "launchctl is never called under UB_LAUNCH_AGENTS_DIR");
   assert.equal(await absent(join(home, "Library", "Logs")), true, "no log folder is made under UB_LAUNCH_AGENTS_DIR");
 });
@@ -361,7 +363,7 @@ test("schedule install makes a relative PATH entry absolute", async (context) =>
   assert.deepEqual(installed.json.warnings.map((warning: any) => warning.code), ["FOLDER_TRUST"], "a dry run warns too");
 });
 
-test("schedule install elsewhere prints the cron line and writes nothing", { skip: process.platform === "win32" ? "brain schedule writes launchd and cron entries, macOS and Linux only (decision 0097 §4)" : false }, async (context) => {
+test("schedule install elsewhere prints the cron line and writes nothing", { skip: process.platform === "win32" ? "the fake claude is a shell script; the Windows entries are tested in tests/schedule.test.ts (CC-369)" : false }, async (context) => {
   const dir = await fixtureCopy(context);
   const { agents, env, home, spied } = await scheduleEnv(context, "linux");
   const before = await tree(dir);
@@ -375,7 +377,7 @@ test("schedule install elsewhere prints the cron line and writes nothing", { ski
   const listed = await schedule(dir, ["list"], env, home);
   assert.deepEqual([listed.json.data.schedules, listed.json.warnings[0].code], [[], "SCHEDULE_NOT_MANAGED"]);
   assert.equal((await schedule(dir, ["remove", "catch-up"], env, home)).json.data.removed, false);
-  assert.deepEqual(await tree(dir), before, "nothing written in the brain");
+  assert.deepEqual((await tree(dir)).filter((line) => !line.startsWith("brain.json ")), before.filter((line) => !line.startsWith("brain.json ")), "nothing written in the brain but settings.schedule");
   assert.equal(await absent(spied), true);
   assert.equal(await absent(join(home, ".ultimate-brain")), true, "nothing written outside it either");
 });
@@ -389,8 +391,8 @@ test("schedule install refuses a bad job, time, day or model, a missing claude, 
   assert.equal(await code(["catch-up", "--at", "7:00", "--model", "claude-sonnet-5-5"]), "USAGE");
   assert.equal(await code(["catch-up", "--at", "07:00", "--days", "monday", "--model", "claude-sonnet-5-5"]), "USAGE");
   assert.equal(await code(["catch-up", "--at", "07:00", "--model", "sonnet"]), "USAGE", "a moving alias is refused");
-  assert.equal(await code(["catch-up", "--at", "07:00"]), "USAGE");
-  assert.equal(await code(["catch-up", "--at", "07:00", "--model", "claude-sonnet-5-5"], { ...env, PATH: "/nonexistent" }), "CLAUDE_NOT_FOUND");
+  assert.equal(await code(["catch-up", "--at", "07:00"]), "USAGE", "no --model and none kept in settings.schedule");
+  assert.equal(await code(["catch-up", "--at", "07:00", "--model", "claude-sonnet-5-5"], { ...env, PATH: "/nonexistent" }), "AGENT_NOT_FOUND", "replaces CLAUDE_NOT_FOUND (0.17.0)");
   assert.equal(await code(["reflect", "--at", "08:00", "--days", "mon", "--model", "claude-sonnet-5-5"]), "USAGE", "reflection has no schedule in 0.11.0 (0076 §5)");
   await rm(join(dir, ".claude", "skills", "brain-catch-up"), { recursive: true, force: true });
   assert.equal(await code(["catch-up", "--at", "07:00", "--model", "claude-sonnet-5-5"]), "SKILL_MISSING");
