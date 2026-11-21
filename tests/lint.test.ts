@@ -248,3 +248,18 @@ test("freshness ignores latest", async (context) => {
   await replace(ACME, "Retail client since October 2026.", "The retailer of the latest maintenance.")(dir);
   assert.deepEqual((await issuesFor(dir)).map((issue) => issue.rule), []);
 });
+
+test("lint accepts a clean-up proposal closed as undone, approved by cleanup, and no other (schema §11)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const file = "_proposals/2026-12-03-acme-mobile-app-relaunch.md";
+  const undone = (by: string) => `status: closed\ndecision:\n  action: approve\n  decided_at: 2026-12-04T08:00:00Z\n  decided_by: ${by}\nclosed_reason: undone\nundone_at: 2026-12-05T08:00:00Z\n`;
+  const statusIssues = async () => (await brain(["lint", file, "--brain", dir, "--json"])).json.data.issues
+    .filter((issue: { rule: string }) => issue.rule === "proposal-status");
+
+  await replace(file, "status: pending\n", undone("cleanup"))(dir);
+  assert.deepEqual(await statusIssues(), []);
+
+  await replace(file, "decided_by: cleanup", "decided_by: chat")(dir);
+  const [issue] = await statusIssues();
+  assert.match(issue?.message ?? "", /undone/);
+});
