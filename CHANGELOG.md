@@ -2,6 +2,30 @@
 
 One line per task, under the release that ships it (decision 0038). From 0.4.0 on, `scripts/release.mjs` writes each section from the tasks' `**Changelog:**` lines in build/TASKS.md (decision 0039); don't edit those sections by hand. 0.3.x lines are hand-written.
 
+## 0.17.0 — 2026-11-22
+
+- CC-325 (#473): In Notion, Brain Assistant can set a task's status or due date, or a project's status, once you say yes; it never changes what the brain knows.
+- CC-326 (#453): development only: the contracts for meetings from any tool, minutes the agent writes, and setup without Notion AI.
+- CC-327 (#474): Your agent can write a meeting's minutes from its transcript, and the brain checks every quote against the transcript before they are written.
+- CC-328 (#477): Without Notion AI, your agent writes your meeting minutes for you to check, and runs Prep, Today and the other Brain Assistant skills when you ask.
+- CC-329 (#475): The setup guide shows how to bring meetings from another notetaker or by pasting, and what works on each Notion plan.
+- CC-352 (#478): The Notion agent is now called Notion Brain Assistant, so it isn't confused with Ultimate Assistant in Claude Code or Codex.
+- CC-362 (#465): development only: the memory evaluation's scorer reads "No rule on record says so" and "the brain doesn't release …" as the honest abstentions they are, so 0.16.2's smoke runs no longer fail a correct Claude Code answer on trust-04 or trust-10.
+- CC-363 (#467): development only: planning, the skill fixes found by assessing the fork's skills with NVIDIA SkillEvaluator.
+- CC-364 (#468): The skills' descriptions are shorter and say when to use each skill sooner, setting up Notion installs a fixed version of the Notion MCP server, and the how-to guide no longer says the same thing twice.
+- CC-365 (#470): The catch-up, sync, ingest and query skills are smaller, so an agent reads less on every run, with the same rules.
+- CC-366 (#479): development only: the ingest eval's capture case and brain-ingest's rule for a capture without Notion say the same thing.
+- CC-367 (#472): development only: decision 0110 plans the weekly row with its clean-up and scheduling on Mac and Windows in 0.17.0, and folds the unreleased 0.16.3 and 0.16.4 work into it.
+- CC-368 (#476): development only: the contracts for the schedule kept in `brain.json`, the weekly row's two parts and its clean-up.
+- CC-369 (#482): You can schedule the daily catch-up and the weekly review on Windows as on a Mac, run by Claude Code or Codex, and the schedule is kept in your brain, so installing it again on another computer gives the same times.
+- CC-370 (#483): The weekly run tidies what is mechanical and safe on its own, one commit each with an undo, and applies the clean-up items and actions you tick once you set the week's row Ready.
+- CC-371 (#481): The weekly review writes Your week and Clean-up in its Inbox row, a catch-up applies what you ticked once you set the row Ready, and setup asks when to run the weekly review and the daily catch-up, on a Mac or on Windows.
+- CC-372 (#480): The guides and the template show the new weekly row, how to tick and set it Ready, and how to schedule the brain on a Mac or on Windows.
+- CC-373 (#484): The weekly row and its Show the change name a task's project or area by its title, a due date as a date and a status or archive in plain words, never a page id or raw value.
+- CC-383 (#489): development only: the skills release 1.12.0 is classified in the skills-integration issue, applying migration 0030 to the template and to the author's space get their rows, and five follow-ups from 0.17.0's live checks are recorded for a later release.
+
+Skills: ultimate-brain-skills 1.12.0 (sha256-1180d06a9f848586e3d2ad064fd0207d75ec0969032f05451d053bbdd4317cd5)
+
 ## 0.16.2 — 2026-11-19
 
 - CC-267 (#458): a catch-up writes its Notion pages and Tasks in a fresh context, so a long run no longer runs out of context while it publishes.
