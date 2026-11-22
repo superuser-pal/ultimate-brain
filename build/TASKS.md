@@ -390,7 +390,7 @@ A feature release, by explicit roadmap change after the cutoff ([0112](../decisi
 
 | Task | Work | Files | When | Status |
 |---|---|---|---|---|
-| CC-375 | Record 0112 and plan 0.18.0 and 0.19.0 | decision and amendment pointers, this plan, vision, v2-ideas, AGENTS.md | the author's selection of 2026-11-22 | `in progress` |
+| CC-375 | Record 0112 and plan 0.18.0 and 0.19.0 | decision and amendment pointers, this plan, vision, v2-ideas, AGENTS.md | the author's selection of 2026-11-22 | `review` |
 | CC-376 | The seven checks, then the opening scope review | this plan; a decision if an answer changes 0112 | first | `todo` |
 | CC-377 | Contracts for groups A, B and E | `spec/memory.md`, `spec/cli.md`, `spec/setup.md`, `spec/schema.md` | after CC-376 | `todo` |
 | CC-378 | Contracts for groups C and D | `spec/cli.md`, `spec/weekly-review.md`, `spec/capture-and-review.md`, `spec/eligibility.md`, `docs/notion-space-design.md` | after CC-376 | `todo` |
@@ -400,7 +400,7 @@ A feature release, by explicit roadmap change after the cutoff ([0112](../decisi
 | CC-382 | Guides and template text | the README, `docs/`, `templates/brain/` | after CC-379 to CC-381 | `todo` |
 | U-44 | 0.18.0 in your brain | your brain | after 0.18.0 is released | author's task |
 
-### CC-375 · Plan 0.18.0: fourteen features from the LifeOS study, and Español moved to 0.19.0 (decision 0112) · `in progress`
+### CC-375 · Plan 0.18.0: fourteen features from the LifeOS study, and Español moved to 0.19.0 (decision 0112) · `review`
 **Release:** 0.18.0
 **Changelog:** development only: decision 0112 plans fourteen features from the LifeOS study in 0.18.0 and moves Español to 0.19.0.
 **Output:** planning only, from the author's selection and three answers of 2026-11-22 (no CLI, spec, skill, template, live Notion, brain or CHANGELOG change). (1) Decision 0112: the requirements of the fourteen features in five groups (§1 to §14), each with its rules and what its scope review settles; Español in 0.19.0 (§F); the seven checks that open the release (§15); what the choice costs (§16); and an "Amended by 0112" line in 0061, 0106, 0110 and 0111. (2) This plan: 0.18.0's section becomes the features' release, with rows CC-376 to CC-382 and U-44; a new 0.19.0 section holds CC-354 with Release 0.19.0, a Moved line and its Changelog naming 0.19.0, the rest of its text as recorded, and U-40 with "0.19.0's contracts"; the release sequence's 0.18.0 row, a new 0.19.0 row and 1.0.0 "cut after 0.19.0"; a sentence in the cutoff paragraph and a status line. (3) `docs/vision.md`'s roadmap, `docs/v2-ideas.md`'s table and its LifeOS section, and `AGENTS.md`'s release line say what 0112 changes. Stacked on CC-374 (PR #486), which records 0111.
