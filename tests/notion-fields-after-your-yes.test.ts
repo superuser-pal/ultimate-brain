@@ -106,7 +106,8 @@ test("migration 0030 is 0.17.0's one migration: part A by hand with read-backs, 
   assert.match(a5, /Brain Status still reads New/);
   assert.match(a5, /move the four test rows to the trash/);
   for (const [part, task] of [["C", "CC-329"]]) {
-    assert.match(migration, new RegExp(`## Part ${part} · [^\\n]*${task}\\)\\n\\n\\*Added to this migration by ${task} before the release`));
+    // Each part names its task (CC-329 filled part C).
+    assert.match(migration, new RegExp(`## Part ${part} · [^\\n]*${task}\\)\\n`));
   }
   assert.match(migration, /change it to `Template version: 0030`/);
   assert.match(migration, /- \[ \] \*\(API\)\* The System callout reads `Template version: 0030`\./);

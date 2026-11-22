@@ -98,8 +98,8 @@ All views use the Tasks database. Using your own Tasks database (0018)? Map the 
 | 5 | Calendar | When did we meet? | Calendar (by Date) | — | — | — | Name, Brain Status | Find a meeting by when it happened |
 
 **The meeting flow, for reference:**
-1. You create the meeting ahead of time (New meeting on Home), or Notion AI creates it when it starts taking notes.
-2. Notion AI writes the minutes. Use [minutes-format.md](minutes-format.md) for the sections.
+1. You create the meeting ahead of time (New meeting on Home), or Notion AI or another tool creates it when it starts taking notes.
+2. Notion AI writes the minutes, or another tool, or your agent for a transcript with none (0.17.0; [docs/meetings-from-other-tools.md](../docs/meetings-from-other-tools.md)). Use [minutes-format.md](minutes-format.md) for the sections.
 3. You tick the "Before setting Ready" checklist and set **Ready**.
 4. The ingest sets **Done** (and Ingested At), fills in Attendees and creates the meeting's Tasks, once. Never let Notion AI or a notetaker create Tasks from the meeting: the ingest would create them again (decision 0101 §5).
 5. Meetings have one extra state, **Skipped**, for a meeting you keep but don't want in the brain: the brain never reads it.

@@ -16,7 +16,7 @@ const MIGRATION = "notion/migrations/0030-your-fields-after-your-yes-the-path-wi
 // 0.17.0's skills release is vendored.
 const SHIPPED_DIRS = ["notion", "templates", "src"];
 const SHIPPED_FILES = [
-  "docs/notion-space-design.md", "docs/setup.md", "docs/guide.md", "README.md", "PRIVACY.md",
+  "docs/notion-space-design.md", "docs/setup.md", "docs/meetings-from-other-tools.md", "docs/chatgpt.md", "docs/guide.md", "README.md", "PRIVACY.md",
   "spec/setup.md", "spec/assistant.md", "spec/weekly-review.md", "spec/cli.md", "spec/capture-and-review.md",
 ];
 const OLDER_MIGRATION = /^notion\/migrations\/(00[0-2]\d)-/;

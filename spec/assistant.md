@@ -372,4 +372,4 @@ A user without Notion Brain Assistant (no Notion credits, setup.md §13), or any
   - **Fields.** From 0.17.0 the operational fields CC-325 lets Notion Brain Assistant set after a yes (0101 §3) are set the same way here, through §6's actions; a brain-owned property never.
   - **Weekly review** opens this week's Weekly row and reads it with the user, as Notion Brain Assistant does; the review itself stays the `brain-weekly-review` skill's ([weekly-review.md](weekly-review.md)).
 - **Answers.** The answer is the skill's, in the chat, under the response style of the brain (cli.md §5.3.1). Nothing is written to Git and nothing is logged: like Notion Brain Assistant, running a skill changes no knowledge. A Notion write it makes is the user's yes, carried out as §6.4.
-- **ChatGPT** (0101 §8.5) runs the same text through Notion's MCP, from the guide CC-329 writes after OpenAI's and Notion's current documents are checked; nothing in this section depends on it.
+- **ChatGPT** (0101 §8.5) runs the same text through Notion's MCP, from docs/chatgpt.md, which CC-329 wrote after OpenAI's and Notion's current documents were checked; nothing in this section depends on it.
