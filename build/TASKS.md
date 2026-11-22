@@ -218,12 +218,12 @@ A feature release, by explicit roadmap change after the cutoff ([0106](../decisi
 
 | Task | Work | Files | When | Status |
 |---|---|---|---|---|
-| CC-325 | Brain Assistant sets your operational fields after your yes (moved from 1.0.0) | brain-assistant.md, Notion design, the one migration, brain-howto through a fork PR | after CC-326 is merged; one migration with CC-352 | `todo` |
+| CC-325 | Brain Assistant sets your operational fields after your yes (moved from 1.0.0) | brain-assistant.md, Notion design, the one migration, brain-howto through a fork PR | after CC-326 is merged; one migration with CC-352 | `done` (#473) |
 | CC-326 | Contracts for the path without Notion AI (moved from 1.0.0) | `spec/capture-and-review.md`, `spec/cli.md`, `spec/setup.md`, Notion design | may start beside 0.16.2 | `done` (#453) |
 | CC-327 | The CLI for the path without Notion AI (moved from 1.0.0) | the minutes check, the drop folder's transcript row, setup's answers, tests | after CC-326 is merged | `done` (#474) |
-| CC-328 | The skills for the path without Notion AI, through the fork (moved from 1.0.0) | catch-up, ingest, setup, how-to; the one skills release, vendored | after CC-326 is merged; its minutes step after CC-327 | `todo` |
-| CC-329 | Notion, setup and the guides without Notion AI (moved from 1.0.0) | `docs/setup.md`, the guides, README Get started, Start here | after CC-326 is merged | `todo` |
-| CC-352 | Brain Assistant becomes Notion Brain Assistant | brain-assistant.md, button messages, guides, views guide, the one migration, the fork | after CC-326 is merged; with CC-325 and CC-328 | `todo` |
+| CC-328 | The skills for the path without Notion AI, through the fork (moved from 1.0.0) | catch-up, ingest, setup, how-to; the one skills release, vendored | after CC-326 is merged; its minutes step after CC-327 | `done` (#477) |
+| CC-329 | Notion, setup and the guides without Notion AI (moved from 1.0.0) | `docs/setup.md`, the guides, README Get started, Start here | after CC-326 is merged | `done` (#475) |
+| CC-352 | Brain Assistant becomes Notion Brain Assistant | brain-assistant.md, button messages, guides, views guide, the one migration, the fork | after CC-326 is merged; with CC-325 and CC-328 | `done` (#478) |
 | CC-353 | The demo video's script | `docs/demo-script.md` | dropped by 0107 | `dropped` |
 | CC-362 | The smoke-run scorer reads No rule on record and does not release (moved from 0.16.3) | `eval/memory-0.12/score.mjs`, its tests and README | merged | `done` (#465) |
 | CC-363 | Plan the skill fixes from the SkillEvaluator assessment (moved from 0.16.3) | this plan | the author's answer of 2026-11-19 | `done` (#467) |
@@ -231,12 +231,13 @@ A feature release, by explicit roadmap change after the cutoff ([0106](../decisi
 | CC-365 | The four largest skills move detail into their references (moved from 0.16.3) | the fork's brain-catch-up, brain-sync, brain-ingest, brain-query; vendored | after CC-364's fork PR is merged | `done` (#470) |
 | CC-366 | Ingest's capture case agrees with "a capture needs Notion" (moved from 0.16.4) | `eval/ingest-text`'s 03-capture or brain-ingest's sources.md through the fork | the author's answer first | `done` (#479) |
 | CC-367 | Plan 0.17.0's weekly row, scheduling and the folded 0.16.x rows (decision 0110) | decision 0110 and its pointers, this plan, HISTORY.md, vision, v2-ideas, issues #466 and #471 | the author's scope grill of 2026-11-20 | `done` (#472) |
-| CC-368 | Contracts for the schedule and the weekly row with its clean-up (0110) | `spec/schema.md`, `spec/cli.md`, `spec/weekly-review.md`, `spec/setup.md`, `spec/capture-and-review.md`, `spec/schemas/`, Notion design | after CC-367 is merged | `todo` |
+| CC-368 | Contracts for the schedule and the weekly row with its clean-up (0110) | `spec/schema.md`, `spec/cli.md`, `spec/weekly-review.md`, `spec/setup.md`, `spec/capture-and-review.md`, `spec/schemas/`, Notion design | after CC-367 is merged | `done` (#476) |
 | CC-369 | Scheduling in the CLI: `brain.json`, launchd and Windows Task Scheduler, `claude -p` and `codex exec` | `src/commands/schedule.ts`, `status`, tests, the Windows CI job | after CC-368 is merged | `done` (#482) |
-| CC-370 | The clean-up in the CLI: safe items alone with an undo, ticks applied after a stale check | the clean-up command, `weekly`, `sync`, tests | after CC-368 is merged | `todo` |
+| CC-370 | The clean-up in the CLI: safe items alone with an undo, ticks applied after a stale check | the clean-up command, `weekly`, `sync`, tests | after CC-368 is merged | `done` (#483) |
 | CC-371 | The skills for the weekly row and scheduling, through the fork | brain-weekly-review, brain-catch-up, brain-setup, brain-howto; the skills release shared with CC-325, CC-328 and CC-352, vendored | after CC-368 is merged; its CLI steps after CC-369 and CC-370 | `done` (#481) |
-| CC-372 | Guides, Notion design and template text for the weekly row and scheduling | `docs/setup.md`, README Get started, brain-assistant.md, Notion design, views guide, TEMPLATE.md, the one migration | after CC-368 is merged; its migration steps with CC-325, CC-329 and CC-352 | `todo` |
+| CC-372 | Guides, Notion design and template text for the weekly row and scheduling | `docs/setup.md`, README Get started, brain-assistant.md, Notion design, views guide, TEMPLATE.md, the one migration | after CC-368 is merged; its migration steps with CC-325, CC-329 and CC-352 | `done` (#480) |
 | U-36 | The path without Notion AI on a Free workspace | a test brain and workspace | after CC-328 and CC-329 are merged | author's task |
+| CC-373 | The weekly row names a relation by its page title, not its id | spec/weekly-review.md §3.3 and §15.5, `src/lib/weekly-record.ts`, tests | found by CC-371's evals against CC-370 | `done` (#484) |
 | CC-376 | 0.17.0 release bookkeeping: the skills release 1.12.0 classified, U-45 and U-46, five follow-up rows | this plan, issue #485 | the author's yes of 2026-11-22 | `done` (#488) |
 | U-43 | Scheduling on a Mac and on Windows, and one weekly row end to end | your brain, a Windows machine | after 0.17.0 is released (CC-369 to CC-372 merged) | author's task |
 | U-45 | Publish the 0.17.0 template: migration 0030 (parts A to D and L1) on the template copy | the published Notion template | after 0.17.0 is released | author's task |
