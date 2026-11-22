@@ -48,6 +48,14 @@ const NEITHER = new RegExp(`${NEITHER_OPENS} (${NEITHER_PART}) nor (${NEITHER_PA
 const NEITHER_DENIES = {
   test: (clause) => [...clause.matchAll(NEITHER)].some(([, a, b, verb]) => /^(?:records?|says?|mentions?)$/.test(verb) || NEITHER_STORE.test(`${a} ${b}`)),
 };
+// CC-389: "Nothing available to me records that …": "nothing" as the subject of "records", "mentions", "says", "shows" or
+// "states" (an optional "that" before the verb), with up to eight words between, each one naming what the agent can read:
+// the brain and its stores, "available / accessible / visible to me", "I can read / found / have", "on record", "here",
+// and the small words that join them. Any other word ends it, so "Nothing in the client's contract records a discount"
+// and "Nothing in the migration note mentions an owner" state facts about one document. Right after "if", "unless",
+// "when", "whether" or "in case" it is a condition, not a denial ("If nothing on record mentions it, ask the client").
+const NOTHING_WORD = "(?:available|accessible|visible|to|me|i|i've|we|can|could|read|see|reach|find|found|have|has|searched|checked|returned|in|on|from|among|across|within|of|the|this|these|my|its|and|or|here|so|far|brain|brain's|repo|repo's|repository|notes|memories|memory|sessions?|records?|sources|results|search(?:es)?|files)";
+const NOTHING_DENIES = new RegExp(`(?<!\\b(?:if|unless|when|whether|in case) )\\bnothing(?: ${NOTHING_WORD}){0,8}? (?:that )?(?:records|mentions|says|shows|states)\\b`);
 const SAYS_UNKNOWN = [
   /\b(?:couldn't|could not|can't|cannot|can not|didn't|did not|wasn't able to|was not able to|unable to) (?:find|locate)\b/,
   /\b(?:couldn't|could not) (?:establish|confirm|determine|verify)\b/,
@@ -68,6 +76,8 @@ const SAYS_UNKNOWN = [
   /\b(?:brain|memories|notes) (?:\w+ )?(?:holds?|has|have|records?|contains?|keeps?) no\b/,
   // CC-349: "Neither <A> nor <B> records / says / mentions …" (NEITHER_DENIES above).
   NEITHER_DENIES,
+  // CC-389: "Nothing available to me records that …" (NOTHING_DENIES above).
+  NOTHING_DENIES,
   // CC-362: "No rule on record says so": one or two words of <thing>, none a determiner, "doubt" or a form of "be", so
   // "No doubt the rule on record says yes" states a fact. "Says" and "states" deny only with "so", "it" or "either" after
   // them, or nothing ("No rule on record says Postmark is required" reports what a rule would say); "records", "mentions",
