@@ -4,6 +4,7 @@
 **Date:** 2026-11-21
 **Release:** post-1.0, none assigned (recorded by CC-374 in 1.0.0's section; nothing is built)
 **Amends:** [0051](0051-unattended-catch-up-and-schedules.md)'s rule that an unattended run interprets no text you wrote: a rule the user stated and approved in a session, kept in "My rules", is applied as written by a scheduled run (§2); it takes effect only when candidate 1 is built
+**Amended by:** [0112](0112-0-18-0-fourteen-features-and-espanol-in-0-19-0.md) (2026-11-22; 0.18.0): the five candidates of §1 are built in 0.18.0, by the author's selection, which replaces §4's order; §2, §3 and §5 stand
 **Keeps:** the feature cutoff and the release sequence ([0061](0061-roadmap-and-launch-boundary.md), [0106](0106-beta-on-0-16-x-patches-0-17-0-and-0-18-0-before-1-0-and-the-launch-bar.md), [0110](0110-the-weekly-row-scheduling-on-mac-and-windows-and-0-16-x-folded-into-0-17-0.md)); [0008](0008-agent-memory-store.md) (memories never reach Notion); [0009](0009-memory-scope-levels.md) and [0074](0074-scoped-memory-handovers-and-bounded-recall.md) (reach, approval, the closing review); [0015](0015-notion-access-via-mcp.md) (only the agent reads Notion); [0060](0060-hermes-operator-and-learning.md) and [0030](0030-capability-based-onboarding-profiles.md) as they are; [0104](0104-product-design-principles.md)
 
 ## Context
