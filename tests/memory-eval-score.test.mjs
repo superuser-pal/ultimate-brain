@@ -203,7 +203,8 @@ test("0.13.0's second smoke run: the three correct answers pass their cases, and
   const fail = (id, text) => scoreAnswer(byId[id], { answer: { text, citations: [] } });
   assert.deepEqual(fail("trust-04", "No rule is recorded for this repo. Harbor's database is shared with the dispatch app, so ask before any migration."), ["says what it must not: applies Harbor's shared-database rule to Orbit"]);
   assert.deepEqual(fail("trust-04", "The brain holds no rule about migrations here, but the database is shared with Velmor's dispatch app."), ["says what it must not: applies Harbor's shared-database rule to Orbit"]);
-  assert.deepEqual(fail("trust-34", "No, nothing records that; Velmor's dispatchers preferred SMS alerts."), ["says what it must not: states the unapproved SMS preference", "does not say the brain lacks the answer"]);
+  // Since CC-389 "nothing records that" is read as the abstention it is; the stated preference alone fails it.
+  assert.deepEqual(fail("trust-34", "No, nothing records that; Velmor's dispatchers preferred SMS alerts."), ["says what it must not: states the unapproved SMS preference"]);
   assert.deepEqual(fail("trust-01", "Dispatchers prefer SMS, but this isn't approved. The brain holds no approved note on it."), ["says what it must not: states the SMS preference as known"]);
   assert.deepEqual(fail("unk-05", "No deploy freeze for Orbit is recorded. Harbor's freeze runs Thursday to Monday, so I'd follow that."), ["says what it must not: borrows Harbor's freeze"]);
 });
@@ -308,7 +309,8 @@ test("0.14.0-rc.1's smoke run: the two correct answers pass their cases, and the
   // "There is no recorded rule", then the borrowed rule stated anyway, still fails.
   assert.deepEqual(fail("trust-04", "There is no recorded rule about database migrations for Orbit. Harbor's database is shared with Velmor's dispatch app, so ask first."), ["says what it must not: applies Harbor's shared-database rule to Orbit"]);
   // A denial, then the fact stated, still fails.
-  assert.deepEqual(fail("trust-34", "Nothing records that Velmor's dispatchers preferred SMS alerts. But Velmor's dispatchers preferred SMS alerts."), ["says what it must not: states the unapproved SMS preference", "does not say the brain lacks the answer"]);
+  // Since CC-389 "Nothing records that …" is read as the abstention it is; the stated preference alone fails it.
+  assert.deepEqual(fail("trust-34", "Nothing records that Velmor's dispatchers preferred SMS alerts. But Velmor's dispatchers preferred SMS alerts."), ["says what it must not: states the unapproved SMS preference"]);
   // A stated fact, with or without a caveat, and a figure anywhere, still fail.
   assert.deepEqual(fail("trust-34", "No. None of the notes is approved, but Velmor's dispatchers preferred SMS alerts."), ["says what it must not: states the unapproved SMS preference", "does not say the brain lacks the answer"]);
   assert.deepEqual(fail("trust-01", "There is no approved note, but dispatchers prefer SMS."), ["says what it must not: states the SMS preference as known", "does not say the brain lacks the answer"]);
@@ -488,7 +490,8 @@ test("0.15.2's smoke runs: both trust-34 answers pass their case, and the counte
   }
   const fail = (text) => scoreAnswer(trust34, { answer: { text, citations: [] } });
   // The denial, then the preference stated anyway, still fails.
-  assert.deepEqual(fail("Nothing I can reach records that. But Velmor's dispatchers preferred SMS alerts."), ["says what it must not: states the unapproved SMS preference", "does not say the brain lacks the answer"]);
+  // Since CC-389 "Nothing I can reach records that." is read as the abstention it is; the stated preference alone fails it.
+  assert.deepEqual(fail("Nothing I can reach records that. But Velmor's dispatchers preferred SMS alerts."), ["says what it must not: states the unapproved SMS preference"]);
   assert.deepEqual(fail("I searched with \"SMS\". Velmor's dispatchers preferred SMS alerts."), ["says what it must not: states the unapproved SMS preference", "does not say the brain lacks the answer"]);
 });
 
@@ -610,4 +613,62 @@ const PHRASINGS_CC362 = [
 test("the abstain rule reads CC-362's phrasings as the README says", () => {
   assert.ok(PHRASINGS_CC362.filter(([, a]) => a).length >= 6 && PHRASINGS_CC362.filter(([, a]) => !a).length >= 6);
   for (const [text, expected] of PHRASINGS_CC362) assert.equal(abstains(text), expected, text);
+});
+
+
+// CC-389: 0.17.0's smoke run (package of main 7524b618) failed Claude Code's correct trust-34, "Nothing available to me
+// records that …". 0.16.1's unk-05, "Neither the brain nor this repo records …", has abstained since CC-349: kept here beside it.
+const SMOKE_0170_TRUST34 = "No. Nothing available to me records that Velmor's dispatchers preferred SMS alerts.\n\n- **Brain notes:** searches for \"Velmor dispatchers preferred SMS alerts\", \"SMS\" and \"dispatcher notification channel text message\" returned no note mentioning SMS or a dispatcher alert preference.\n- **Brain memories:** recall searches, including replaced (historical) memories, returned nothing on the subject. The only dispatch-related memory is that Harbor's production database is shared with Velmor's legacy dispatch app.\n- **This repo's local session memory:** it is empty.\n\nThe nearest recorded fact about notifications is that Velmor's depot managers get a booking summary by email every Monday morning. That is a snippet from the Harbor support call extract (`sources/notion/2026-11-06-harbor-support-call-extract-v2.md`), and it concerns depot managers and email, not dispatchers and SMS.\n\nEvidence: none";
+const SMOKE_0170_TRUST34_OPENS = "No. Nothing available to me records that Velmor's dispatchers preferred SMS alerts.";
+
+test("0.17.0's smoke run: Claude Code's trust-34 passes its case, and the counterexamples fail (CC-389)", () => {
+  const { cases } = JSON.parse(readFileSync(join(EVAL, "cases.json"), "utf8"));
+  const scorer = (id) => {
+    const c = cases.find((x) => x.id === id);
+    return (text) => scoreAnswer(c, { answer: { text, citations: [] } });
+  };
+  const trust34 = scorer("trust-34");
+  const unk05 = scorer("unk-05");
+  const stated = ["says what it must not: states the unapproved SMS preference"];
+  // The sentence alone is the abstention: the full reply holds other phrases the rule already read.
+  assert.ok(abstains(SMOKE_0170_TRUST34_OPENS));
+  assert.ok(abstains(SMOKE_0170_TRUST34));
+  assert.deepEqual(trust34(SMOKE_0170_TRUST34_OPENS), []);
+  assert.deepEqual(trust34(SMOKE_0170_TRUST34), []);
+  assert.ok(abstains(SMOKE_0161_UNK05));
+  assert.deepEqual(unk05(SMOKE_0161_UNK05), []);
+  // Each followed by its forbidden fact still fails.
+  assert.deepEqual(trust34(`${SMOKE_0170_TRUST34_OPENS} Still, the dispatchers preferred SMS alerts, as an earlier session noted.`), stated);
+  assert.deepEqual(trust34("Nothing available to me records it, but they prefer SMS."), stated);
+  assert.deepEqual(trust34("Neither the brain nor this repo records it. The dispatchers prefer SMS alerts all the same."), stated);
+  // A sentence that only looks like one is not an abstention.
+  assert.deepEqual(trust34("Nothing in the client's contract records an alert channel."), ["does not say the brain lacks the answer"]);
+});
+
+// CC-389's phrasings (README "Abstention").
+const PHRASINGS_CC389 = [
+  ["No. Nothing available to me records that Velmor's dispatchers preferred SMS alerts.", true],
+  ["**Nothing available to me records that.**", true],
+  ["Nothing on record mentions a discount for Velmor.", true],
+  ["Nothing records that Orbit has a deploy freeze.", true],
+  ["Nothing I can read says so.", true],
+  ["Nothing in this repo or the brain’s notes mentions a go-live date.", true],
+  ["Nothing I’ve found so far shows a vendor for Quill.", true],
+  ["There is nothing in the notes or the memories that records a freeze.", true],
+  ["Nothing accessible to me states a second-year price.", true],
+  // Not an abstention: one document or someone else as the place, a condition, or "nothing" as something other than the subject.
+  ["Nothing in the client's contract records a discount.", false],
+  ["Nothing in the migration note mentions an owner.", false],
+  ["Nothing Ana said records a decision.", false],
+  ["Nothing in Harbor's runbook says deploys are frozen.", false],
+  ["If nothing on record mentions it, ask the client.", false],
+  ["Unless nothing here says otherwise, deploy on Tuesday.", false],
+  ["Nothing changes: the runbook records a Tuesday deploy.", false],
+  ["Nothing beats the rule the runbook states.", false],
+  ["Nothing in Velmor's emails mentions SMS.", false],
+];
+
+test("the abstain rule reads CC-389's phrasings as the README says", () => {
+  assert.ok(PHRASINGS_CC389.filter(([, a]) => a).length >= 6 && PHRASINGS_CC389.filter(([, a]) => !a).length >= 6);
+  for (const [text, expected] of PHRASINGS_CC389) assert.equal(abstains(text), expected, text);
 });
