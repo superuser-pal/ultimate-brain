@@ -1,6 +1,6 @@
 # Build history
 
-Done waves and releases, v1 to 0.10.0, moved out of [TASKS.md](TASKS.md) by CC-94 (to 0.8.0), CC-141 (0.8.1 to 0.9.2) and CC-150 (0.10.0) so a session reads only open work. Rows keep their ids, status and `**Changelog:**` lines; the scripts read both files. Add nothing here by hand except when a release's rows are moved.
+Done waves and releases, v1 to 0.17.0, moved out of [TASKS.md](TASKS.md) by CC-94 (to 0.8.0), CC-141 (0.8.1 to 0.9.2), CC-150 (0.10.0), CC-162 (0.10.2 to 0.11.1), CC-346 (0.12.0 to 0.16.1) and CC-390 (0.16.2 and 0.17.0) so a session reads only open work. Rows keep their ids, status and `**Changelog:**` lines; the scripts read both files. Add nothing here by hand except when a release's rows are moved.
 
 ---
 
