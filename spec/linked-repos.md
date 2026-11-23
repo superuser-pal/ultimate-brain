@@ -19,7 +19,7 @@ How this file fits: [cli.md §5.29](cli.md) holds the commands, [schema.md §12]
 9. A repo that serves several Projects: its rollup (module off) goes on the Area page, `brain link` gets no `--project`, and each note the ingest takes from it is linked to the Projects it is about, not to all of them (§2.3).
 10. A Project in another Area than the repo's is allowed (§2.2). 0.9.0 to 0.17.0 refused it.
 11. With Factories on, the three-part message of §1.2 replaces §8's question. After an answer without the last part, the link back stays available on request.
-12. `modules.factories` absent means "never asked". A no writes `false`, so the module is offered once (schema §12).
+12. `modules.factories` absent means "never asked". A link, or a folder connected, without it writes `false`, so the module is offered once; refusing the link itself ("no") leaves it absent, since nothing was linked (§1.2, schema §12).
 
 ---
 
@@ -70,7 +70,7 @@ Answer: all / 1 / 1, 2 / no
 - **Part 1** is §3 and `repo add --kit`. **Part 2** is `brain modules on factories`, the Notion steps of `notion/modules/factories.md`, and the publish of the rows (cli.md §5.14.4). **Part 3** is the setup of connected-workflows.md §3.5 with the Factory as its destination; its last step is the link back of §8.
 - **Its effect on the kit.** None: connecting a Factory doesn't change `tasks`.
 - **What fails stays undone,** and what succeeded before it stays: the report says which part is missing and the words that do it later ("connect acme-api").
-- **A no to all** writes nothing.
+- **A no to all** writes nothing: no repo was linked and the module wasn't answered, so the next link shows part 2 again. Only a link without part 2 is a no to the module.
 
 The text is normative in its parts, order and answers; the words in part 1 to 3 name the repo, the level, the work type and the statuses the setup found.
 
