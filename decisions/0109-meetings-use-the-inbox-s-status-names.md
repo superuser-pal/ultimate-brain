@@ -5,6 +5,7 @@
 **Release:** 0.16.2
 **Amends:** [0007](0007-notion-meeting-notes-not-deleted.md) (an ingested meeting's Brain Status reads Done, no longer Ingested; Ingested At stays); [0045](0045-review-in-one-row-fix-before-ingest.md) (a corrected meeting is set back to Ready, no longer Reviewed, to be read again); [0106](0106-beta-on-0-16-x-patches-0-17-0-and-0-18-0-before-1-0-and-the-launch-bar.md) §1 (this rename ships in 0.16.2 as a named exception, as §12 and §13 did)
 **Keeps:** [0048](0048-modules-and-simpler-rows.md)'s Inbox Brain Status (New → Ready → Done) unchanged; 0079's ids, quotes, selection and For the brain toggle; [0007](0007-notion-meeting-notes-not-deleted.md)'s rule that a meeting page is marked, never deleted or rewritten; Documents' Lifecycle (its Reviewed means you checked the knowledge, not that an input may be taken in)
+**Amended by:** [0113](0113-factories-and-domain-homes-in-0-18-0-the-fourteen-features-in-0-19-0-espanol-in-0-20-0.md) (2026-11-23): the name map that maps New, Ready, Done and Skipped for Meetings is 0.20.0's (CC-354)
 
 ## Context
 

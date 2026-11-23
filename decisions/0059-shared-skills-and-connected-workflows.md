@@ -5,6 +5,7 @@
 **Release:** 0.9.0
 **Amends:** 0014, 0024, 0029, 0038 (skill source and delivery); 0018 (optional workflow coordination)
 **Keeps:** 0003, 0009, 0015, 0022, 0048, 0049 as amended by 0054 and 0058, 0055
+**Amended by:** [0113](0113-factories-and-domain-homes-in-0-18-0-the-fourteen-features-in-0-19-0-espanol-in-0-20-0.md) (2026-11-23; 0.18.0): a Factory is a third destination of a connected workflow, beside a Project and an Area, offered at linking with Tasks only as the suggested level; a task the user wrote for a Factory is taken without the unknown-task question; the Factory's overview replaces the counts-only summary there. Nothing connects by itself, and the user's status still wins
 
 ## Context
 
