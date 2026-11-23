@@ -1,20 +1,15 @@
-2026-12-14T09:05:00Z update page <id 1> in areas properties={"Name": "Clients", "Summary": "Paid client work for the consulting business.", "Brain ID": "area-2m7c4h8n"} + sections Brief
-2026-12-14T09:05:00Z update page <id 2> in projects properties={"Name": "Acme website", "Summary": "Rebuild of Acme's marketing website, launching February 2027.", "Brain ID": "prj-9x4t1b7e", "Key Facts": "Budget: 80000 EUR · Launch date: 2027-02", "Area": ["<id 1>"], "Client": ["<id 3>"], "People": ["<id 4>"]} + sections Brief/Decision log
-2026-12-14T09:05:00Z update page <id 4> in people properties={"Summary": "Product manager at Acme since December 2026, previously designer.", "Lifecycle": "Reviewed", "Org": ["<id 3>"]}
-2026-12-14T09:05:00Z create page in people (id <id 5>) properties={"Name": "Lena Hart", "Summary": "Lena Hart reviews page texts at Acme.", "Lifecycle": "Reviewed", "Brain ID": "per-4m7q2x9c", "Role": null, "Org": []}
-2026-12-14T09:05:00Z create page in people (id <id 6>) properties={"Name": "Mira Lund", "Summary": "Mira Lund reviews page texts at Acme.", "Lifecycle": "Reviewed", "Brain ID": "per-5j8r3x6m", "Role": null, "Org": []}
-2026-12-14T09:05:00Z create page in people (id <id 7>) properties={"Name": "Otto Kern", "Summary": "Otto Kern reviews page texts at Acme.", "Lifecycle": "Reviewed", "Brain ID": "per-6t3w8k2p", "Role": null, "Org": []}
-2026-12-14T09:05:00Z create page in people (id <id 8>) properties={"Name": "Ivo Brand", "Summary": "Ivo Brand reviews page texts at Acme.", "Lifecycle": "Reviewed", "Brain ID": "per-8d4f2j6k", "Role": null, "Org": []}
-2026-12-14T09:05:00Z create page in people (id <id 9>) properties={"Name": "Carlos Ruiz", "Summary": "Developer at Acme working on the website rebuild.", "Lifecycle": "Draft", "Brain ID": "per-9t2c6m4a", "Role": "Developer", "Org": ["<id 3>"]}
-2026-12-14T09:05:00Z update page <id 3> in orgs properties={"Name": "Acme", "Summary": "Client; mid-size retailer rebuilding its marketing website.", "Brain ID": "org-6d1f9z3k"}
-2026-12-14T09:05:00Z update page <id 10> in documents properties={"Summary": "Database access rules evaluated per row; used by Supabase for auth-aware queries.", "Lifecycle": "Draft", "Area": [], "Origin": "Learned"} + body
-2026-12-14T09:05:00Z update page <id 11> in meetings properties={"Attendees": ["<id 4>"], "Project": ["<id 2>"], "Area": ["<id 1>"], "Brain Status": "Done", "Ingested At": {"start": "2026-10-01", "end": null}, "Brain ID": "mtg-5r2k8v3a"}
-2026-12-14T09:05:00Z update page <id 12> in meetings properties={"Attendees": ["<id 4>"], "Project": ["<id 2>"], "Area": ["<id 1>"], "Brain Status": "Done", "Ingested At": {"start": "2026-12-03", "end": null}, "Brain ID": "mtg-8c4n2p7w"}
-2026-12-14T09:05:00Z update page <id 13> in meetings properties={"Attendees": ["<id 4>"], "Project": ["<id 2>"], "Area": ["<id 1>"], "Brain Status": "Done", "Ingested At": {"start": "2026-11-23", "end": null}, "Brain ID": "mtg-mv6vph7m"}
-2026-12-14T09:05:00Z update page <id 14> in meetings properties={"Attendees": ["<id 4>"], "Project": ["<id 2>"], "Area": ["<id 1>"], "Brain Status": "Done", "Ingested At": {"start": "2026-11-23", "end": null}, "Brain ID": "mtg-wqdpdepn"}
-2026-12-14T09:05:00Z update page <id 2> in projects properties={"People": ["<id 4>", "<id 9>"]}
-2026-12-14T09:05:00Z update page <id 11> in meetings properties={"Attendees": ["<id 4>", "<id 9>"]}
-2026-12-14T09:05:00Z update page <id 12> in meetings properties={"Attendees": ["<id 4>", "<id 9>"]}
-2026-12-14T09:05:00Z update page <id 13> in meetings properties={"Attendees": ["<id 4>", "<id 9>"]}
-2026-12-14T09:05:00Z update page <id 14> in meetings properties={"Attendees": ["<id 4>", "<id 9>"]}
-2026-12-14T09:05:00Z create Inbox row (database inbox <id 15>): Name "Catch-up 14 Dec: 2 in, 3 need you", Kind Catch-up, Brain Status Done, no Brain ID; body = the run's report (Done: 2 meetings ingested · 5 notes in · 1 weekly tick applied; Needs you: 7 decisions waiting · "Acme budget call" skipped, no Date · C3 (Week of 14 Dec) waits on your note · C2 stale · Maria López role correction (Product lead) waits; Check: 2 action items without tasks (Tasks off), Notion edit of Maria López Role not applied; Next: say "what needs my decision")
+Update areas page <id 1> (area-2m7c4h8n): set Name, Summary, Brain ID, Last Synced + replace toggles Brief
+Update projects page <id 2> (prj-9x4t1b7e): set Name, Summary, Brain ID, Key Facts, Area, Client, People, Last Synced + replace toggles Brief/Decision log
+Update people page <id 3> (per-3h8w2n6c): set Summary, Lifecycle, Org, Last Synced
+Create people page for per-4m7q2x9c in database <id 4>: set Name, Summary, Lifecycle, Brain ID, Role, Org (simulation returned no page id, so not recorded; the next publish creates it again)
+Create people page for per-5j8r3x6m in database <id 4>: set Name, Summary, Lifecycle, Brain ID, Role, Org (simulation returned no page id, so not recorded; the next publish creates it again)
+Create people page for per-6t3w8k2p in database <id 4>: set Name, Summary, Lifecycle, Brain ID, Role, Org (simulation returned no page id, so not recorded; the next publish creates it again)
+Create people page for per-8d4f2j6k in database <id 4>: set Name, Summary, Lifecycle, Brain ID, Role, Org (simulation returned no page id, so not recorded; the next publish creates it again)
+Create people page for per-9t2c6m4a in database <id 4>: set Name, Summary, Lifecycle, Brain ID, Role, Org (simulation returned no page id, so not recorded; the next publish creates it again)
+Update orgs page <id 5> (org-6d1f9z3k): set Name, Summary, Brain ID, Last Synced
+Update documents page <id 6> (con-1s6t8e2b): set Summary, Lifecycle, Area, Origin, Last Synced + replace page body
+Update meetings page <id 7> (mtg-3fznaxc7): set Attendees, Project, Area, Brain Status, Ingested At, Brain ID
+Update meetings page <id 8> (mtg-5r2k8v3a): set Attendees, Project, Area, Brain Status, Ingested At, Brain ID
+Update meetings page <id 9> (mtg-8c4n2p7w): set Attendees, Project, Area, Brain Status, Ingested At, Brain ID
+Update meetings page <id 10> (mtg-vnmrb04b): set Attendees, Project, Area, Brain Status, Ingested At, Brain ID
+Pending (not written): Acme website People relation to per-9t2c6m4a and the meetings' Attendees to it wait until Carlos Ruiz's People page exists; a second render after the page ids come back sends them.

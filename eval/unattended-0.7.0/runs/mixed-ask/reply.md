@@ -1,24 +1,22 @@
-Done: 2 meetings taken in, 1 Weekly tick applied, 1 meeting skipped, and nothing published. All of it is committed on `main`. `brain lint` reported 0 errors. There is no git remote, so `git push` found nothing to push and the work isn't backed up (say "fix my backup").
+Done: 2 meetings in (6 new notes, all drafts) · 1 weekly tick applied · 1 Notion edit queued as a correction · 7 decisions pending
+Needs you:
+- **Acme budget call:** skipped, still Ready. It has no Date, so set one in Notion.
+- **Decisions waiting (7):** the proposals include a launch date change, 2027-02 → 2027-03, and Maria López's role, Product Manager → Product lead, from your Notion edit. A launch-date summary on the project still says February.
+- **Weekly row, Week of 14 Dec:**
+  - C2: not applied. Its file changed since the review, so the proposal is closed.
+  - C3: waits. Its note ("only the short name, and Mira now leads the copy team") is text I don't act on unattended.
+  - C4: left open, because C3 still waits.
+- **Notion:** nothing was published (`settings.publish` is `ask`). The two ingested meetings stay Ready in Notion, and the Weekly row stays Ready.
+- **No backup:** there is no git remote, so the commits are local only (not pushed). Say "fix my backup".
 
-**Done**
-- **Notion edit:** your Role change for Maria López ("Product lead") is a pending correction. It isn't applied, because the brain can't tell your edit from an automation's.
-- **Weekly row, Week of 14 Dec:** C1 (Lena Hart's repeated alias) is applied.
-- **Acme design review, 10 Dec:** it is a draft meeting note with its source. It has one pending review, with no decision note, because "use the new grid" didn't meet the decision bar. The action item stays text, because Tasks is off.
-- **Acme content check-in, 12 Dec:** it is a draft meeting note with its source, plus the draft question "Who approves the German copy?". A pending proposal changes the Acme website `launch_date` from 2027-02 to 2027-03.
-- **Writes to Notion:** none. Publish is set to `ask`, so I wrote no lines to `writes.md`, and both meetings stay Ready until an attended run publishes them.
+I wrote nothing to `writes.md`: no Notion write was due this run.
 
-**Needs you**
-- **Acme budget call:** it has no Date, so it was skipped and stays Ready.
-- **C2 (Mira Lund's alias):** not applied, because Mira's note changed since the review. Its proposal is closed.
-- **C3 (Otto Kern's alias):** it has your note ("only the short name, and Mira now leads the copy team"), so it waits for a session. A scheduled run doesn't interpret notes.
-- **C4:** unticked, so it stays open while C3 waits.
-- **Decisions waiting:** 7 in total, asked at your next attended session. They are the Role correction, the launch-date change, three new-note reviews, the Acme mobile app relaunch addition and the C3 item. Say *what needs my decision*.
+What I wrote:
+- **Meetings ingested:** Acme design review (10 Dec) and Acme content check-in (12 Dec). Both are drafts.
+- **New notes:** a decision note "Move the Acme launch to March 2027" and a question "Who approves the German copy?". Their action items are lines in the meeting bodies, because Tasks is off.
+- **Proposals:** the launch date change above, plus one proposal per meeting for its new notes. Nothing was applied.
+- **Weekly row:** C1 applied (removed the repeated alias for Lena Hart).
 
-**Check**
-- `brain lint` has 4 orphan-person warnings: Ivo Brand, Lena Hart, Mira Lund and Otto Kern.
-- Skills aren't pinned (`brain upgrade` would pin them).
-- The Notion Documents row's Project edit isn't something the brain can take.
-- The proposal files are dated 2026-11-23 because that is the machine's clock, not the 2026-12-14 run time.
-- The catch-up log line records `seconds=300`, an estimate rather than a measured time.
+`brain lint`: 0 errors, 4 orphan-person warnings and 1 info. Those 4 are people the new notes don't link to, and were there before this run.
 
-Next action: run an attended catch-up to decide the 7 waiting items and publish.
+Next: say "what needs my decision" in a session.

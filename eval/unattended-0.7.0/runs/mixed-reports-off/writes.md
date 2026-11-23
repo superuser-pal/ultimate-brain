@@ -1,19 +1,15 @@
-- areas: update page <id 1> (area-2m7c4h8n) set {"Name": "Clients", "Summary": "Paid client work for the consulting business.", "Brain ID": "area-2m7c4h8n", "Last Synced": {"start": "2026-11-23T12:55:24Z", "end": null}}; Brief section written
-- projects: update page <id 2> (prj-9x4t1b7e) set {"Name": "Acme website", "Summary": "Rebuild of Acme's marketing website, launching February 2027.", "Brain ID": "prj-9x4t1b7e", "Key Facts": "Budget: 80000 EUR · Launch date: 2027-02", "Area": ["<id 1>"], "Client": ["<id 3>"], "People": ["<id 4>"], "Last Synced": {"start": "2026-11-23T12:55:24Z", "end": null}}; Brief section written
-- people: update page <id 4> (per-3h8w2n6c) set {"Summary": "Product manager at Acme since December 2026, previously designer.", "Lifecycle": "Reviewed", "Org": ["<id 3>"], "Last Synced": {"start": "2026-11-23T12:55:24Z", "end": null}}
-- people: create page for per-4m7q2x9c (Lena Hart) with {"Name": "Lena Hart", "Summary": "Lena Hart reviews page texts at Acme.", "Lifecycle": "Reviewed", "Brain ID": "per-4m7q2x9c", "Role": null, "Org": []}
-- people: create page for per-5j8r3x6m (Mira Lund) with {"Name": "Mira Lund", "Summary": "Mira Lund reviews page texts at Acme.", "Lifecycle": "Reviewed", "Brain ID": "per-5j8r3x6m", "Role": null, "Org": []}
-- people: create page for per-6t3w8k2p (Otto Kern) with {"Name": "Otto Kern", "Summary": "Otto Kern reviews page texts at Acme.", "Lifecycle": "Reviewed", "Brain ID": "per-6t3w8k2p", "Role": null, "Org": []}
-- people: create page for per-8d4f2j6k (Ivo Brand) with {"Name": "Ivo Brand", "Summary": "Ivo Brand reviews page texts at Acme.", "Lifecycle": "Reviewed", "Brain ID": "per-8d4f2j6k", "Role": null, "Org": []}
-- people: create page for per-9t2c6m4a (Carlos Ruiz) with {"Name": "Carlos Ruiz", "Summary": "Developer at Acme working on the website rebuild.", "Lifecycle": "Draft", "Brain ID": "per-9t2c6m4a", "Role": "Developer", "Org": ["<id 3>"]}
-- orgs: update page <id 3> (org-6d1f9z3k) set {"Name": "Acme", "Summary": "Client; mid-size retailer rebuilding its marketing website.", "Brain ID": "org-6d1f9z3k", "Last Synced": {"start": "2026-11-23T12:55:24Z", "end": null}}
-- documents: update page <id 5> (con-1s6t8e2b) set {"Summary": "Database access rules evaluated per row; used by Supabase for auth-aware queries.", "Lifecycle": "Draft", "Area": [], "Origin": "Learned", "Last Synced": {"start": "2026-11-23T12:55:24Z", "end": null}}
-- meetings: update page <id 6> (mtg-5r2k8v3a) set {"Attendees": ["<id 4>"], "Project": ["<id 2>"], "Area": ["<id 1>"], "Brain Status": "Done", "Ingested At": {"start": "2026-10-01", "end": null}, "Brain ID": "mtg-5r2k8v3a"}
-- meetings: update page <id 7> (mtg-7yepz9v9) set {"Attendees": ["<id 4>"], "Project": ["<id 2>"], "Area": ["<id 1>"], "Brain Status": "Done", "Ingested At": {"start": "2026-11-23", "end": null}, "Brain ID": "mtg-7yepz9v9"}
-- meetings: update page <id 8> (mtg-8c4n2p7w) set {"Attendees": ["<id 4>"], "Project": ["<id 2>"], "Area": ["<id 1>"], "Brain Status": "Done", "Ingested At": {"start": "2026-12-03", "end": null}, "Brain ID": "mtg-8c4n2p7w"}
-- meetings: update page <id 9> (mtg-c6sg6dn7) set {"Attendees": ["<id 4>"], "Project": ["<id 2>"], "Area": ["<id 1>"], "Brain Status": "Done", "Ingested At": {"start": "2026-11-23", "end": null}, "Brain ID": "mtg-c6sg6dn7"}
-- projects: update page <id 2> (prj-9x4t1b7e) set {"People": ["<id 4>", "<id 10>"], "Last Synced": {"start": "2026-11-23T12:55:36Z", "end": null}}; Brief section written
-- meetings: update page <id 6> (mtg-5r2k8v3a) set {"Attendees": ["<id 4>", "<id 10>"]}
-- meetings: update page <id 7> (mtg-7yepz9v9) set {"Attendees": ["<id 4>", "<id 10>"]}
-- meetings: update page <id 8> (mtg-8c4n2p7w) set {"Attendees": ["<id 4>", "<id 10>"]}
-- meetings: update page <id 9> (mtg-c6sg6dn7) set {"Attendees": ["<id 4>", "<id 10>"]}
+update page <id 1> in areas (area-2m7c4h8n): Name="Clients", Summary="Paid client work for the consulting business.", Brain ID="area-2m7c4h8n" + replace toggle sections Brief
+update page <id 2> in projects (prj-9x4t1b7e): Name="Acme website", Summary="Rebuild of Acme's marketing website, launching February 2027.", Brain ID="prj-9x4t1b7e", Key Facts="Budget: 80000 EUR · Launch date: 2027-02", Area=["<id 1>"], Client=["<id 3>"], People=["<id 4>"] + replace toggle sections Brief, Decision log
+update page <id 4> in people (per-3h8w2n6c): Summary="Product manager at Acme since December 2026, previously designer.", Lifecycle="Reviewed", Org=["<id 3>"]
+create page in people (per-4m7q2x9c): Name="Lena Hart", Summary="Lena Hart reviews page texts at Acme.", Lifecycle="Reviewed", Brain ID="per-4m7q2x9c", Role=null, Org=[] [NOT recorded: no page id exists in this simulation]
+create page in people (per-5j8r3x6m): Name="Mira Lund", Summary="Mira Lund reviews page texts at Acme.", Lifecycle="Reviewed", Brain ID="per-5j8r3x6m", Role=null, Org=[] [NOT recorded: no page id exists in this simulation]
+create page in people (per-6t3w8k2p): Name="Otto Kern", Summary="Otto Kern reviews page texts at Acme.", Lifecycle="Reviewed", Brain ID="per-6t3w8k2p", Role=null, Org=[] [NOT recorded: no page id exists in this simulation]
+create page in people (per-8d4f2j6k): Name="Ivo Brand", Summary="Ivo Brand reviews page texts at Acme.", Lifecycle="Reviewed", Brain ID="per-8d4f2j6k", Role=null, Org=[] [NOT recorded: no page id exists in this simulation]
+create page in people (per-9t2c6m4a): Name="Carlos Ruiz", Summary="Developer at Acme working on the website rebuild.", Lifecycle="Draft", Brain ID="per-9t2c6m4a", Role="Developer", Org=["<id 3>"] [NOT recorded: no page id exists in this simulation]
+update page <id 3> in orgs (org-6d1f9z3k): Name="Acme", Summary="Client; mid-size retailer rebuilding its marketing website.", Brain ID="org-6d1f9z3k"
+update page <id 5> in documents (con-1s6t8e2b): Summary="Database access rules evaluated per row; used by Supabase for auth-aware queries.", Lifecycle="Draft", Area=[], Origin="Learned"
+update page <id 6> in meetings (mtg-5r2k8v3a): Attendees=["<id 4>"], Project=["<id 2>"], Area=["<id 1>"], Brain Status="Done", Ingested At={"start": "2026-10-01", "end": null}, Brain ID="mtg-5r2k8v3a"
+update page <id 7> in meetings (mtg-8c4n2p7w): Attendees=["<id 4>"], Project=["<id 2>"], Area=["<id 1>"], Brain Status="Done", Ingested At={"start": "2026-12-03", "end": null}, Brain ID="mtg-8c4n2p7w"
+update page <id 8> in meetings (mtg-j4c5r2y2): Attendees=["<id 4>"], Project=["<id 2>"], Area=["<id 1>"], Brain Status="Done", Ingested At={"start": "2026-11-23", "end": null}, Brain ID="mtg-j4c5r2y2"
+update page <id 9> in meetings (mtg-sayem824): Attendees=["<id 4>"], Project=["<id 2>"], Area=["<id 1>"], Brain Status="Done", Ingested At={"start": "2026-11-23", "end": null}, Brain ID="mtg-sayem824"
+set Brain Status = Done on meetings <id 9> and ...202 (included in their update lines above)
