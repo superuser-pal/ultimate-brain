@@ -1,23 +1,10 @@
-Done: 10 drop-folder files ingested · 10 proposals (1 per file)
-Needs you: 2 drop-folder files left for the next run (the 10-file budget was used) · 13 proposals waiting for your decision in chat (10 new, 3 older) · Notion isn't connected · not pushed (there's no git remote, so 12 commits are only local)
-Next: say "what needs my decision"
+Done: 10 drop-folder files taken in, 2 left for the next run. The unattended catch-up ran with no Notion and no git remote.
 
-**What came in**
-- Supplier notes 1 to 10 (dated 2026-12-01 to 2026-12-10). Each one records the same thing: Maria López from Acme asked for update number N on the website content plan, and Carlos Ruiz will reply by ten days later (2026-12-11 to 2026-12-20).
-- None of them justified a new person, decision or question note. Each file became a source, plus one proposal to add a dated line about it to the Acme website project.
-
-**What changed**
-- Nothing is applied yet. The 10 proposals only add lines to Acme website once you approve them.
-- The 10 files moved to `processed/` in the drop folder.
-
-**Check**
-- **The files call themselves "Supplier notes", but the brain records Acme as a client.** Is the title just a label, or is Acme also a supplier?
-- **Ten near-identical proposals.** You may want to approve them all or reject them all together. They are routine status requests, so you might decide they don't belong on the project.
-- **Action items with no task:** Carlos Ruiz replies to Maria López's update requests 1 to 10, due 2026-12-11 to 2026-12-20. They aren't yours, so they stay in the source text.
-- **Not done in this run:**
-  - No Notion sync, Inbox, meetings or publish, because Notion isn't connected.
-  - No linked repos to check.
-  - No backlog of older Review notes to write.
-  - You weren't here, so the identities question was skipped and will be asked at your next catch-up.
-
-The run log is committed (62 seconds, 2 notes read in full), and lint shows no errors.
+- **Ingested:** `note-01.md` to `note-10.md`, supplier notes from Maria López at Acme. Each is now a source linked to the Clients area and the Acme website project, in commit a119b5c.
+- **Moved:** the 10 files are in `budget-drop/processed/`.
+- **Left:** `note-11.md` and `note-12.md` stay in the queue because the unattended input limit is 10.
+- **No other notes:** I wrote no other notes. The files are repeated update requests from Maria, each with a Carlos Ruiz reply date, and I judged that nothing durable to keep. I created no tasks, because the owner of the replies is unclear.
+- **Needs you:** 3 proposals are still pending for your next session. They are two sets of new notes to review (from Acme sync and Acme kickoff) and the Acme mobile app relaunch change.
+- **Not run:** Notion pull and publish, because Notion isn't configured. The setup check also shows no git remote.
+- **Lint:** `brain lint` reports 0 errors and 0 warnings. The log line is in commit ad756f6.
+- **Not pushed:** `git push` failed because no push destination is configured, so both commits are local only. Not backed up: no remote is configured. Say "fix my backup".

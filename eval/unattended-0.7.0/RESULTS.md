@@ -1,20 +1,46 @@
-# Unattended catch-up for 0.7.0: blind run results
+# Unattended catch-up: blind run results
 
-CC-64 acceptance (decision 0051). Eight fresh `claude -p` sessions on 2026-10-30, each in its own brain built with `scripts/blind-brain.mjs brain-acme <dir>`, the CLI of the CC-64 branch through a `brain` shim, no MCP servers, no git remote, the user away. Notion is simulated: where a run reads it, it reads a file in the shape the tools return (`snapshot.json`, `meetings.json`); where it would write, it appends a line to `writes.md`. A real Notion connection is U-20.
+CC-64's acceptance (decision 0051), rewritten by CC-388 for the 0.17.0 model: no Review, Decisions or Questions rows (decisions 0096, 0099); what a run meets is queued for the next session (0096 §4); a Notion edit waits as a correction (0101 §4); a Ready Weekly row's ticks are applied after a stale check (0110 §4). The eight cases are the same.
 
-**To reproduce:** `npm run build`, then `eval/unattended-0.7.0/run.sh` (or `run.sh mixed-on requests` for some). [setup.py](setup.py) creates the shim, an empty MCP config, every brain and its simulated Notion files under `$UB_EVAL_DIR` (default `/tmp/ub-eval-0.7.0`), after running `proposal backlog` so the one-time backlog rows aren't work. [run.sh](run.sh) starts each run and the attended follow-up, and keeps the traces in [runs/](runs/): `reply.md` (what the agent said), `commits.txt`, `log.txt` (the catch-up log line), `status.txt` (`brain status` `unattended`), `changes.txt` (files changed, `index.md` and `log/` left out), `report-rows.txt` (the unattended Report rows its Notion writes hold), `fix-text.txt` and `writes.md` (what it would have written to Notion). The traces are the agent's own words and vary from run to run; what is checked is in the table. A run whose `claude -p` fails, or whose reply says a limit was hit, is listed as incomplete and `run.sh` exits 1: the traces here come from a run in which all eight exited 0.
+**The 0.7.0 record** (2026-10-30, its results and its traces): `git show v0.17.0:eval/unattended-0.7.0/RESULTS.md` and `v0.17.0:eval/unattended-0.7.0/runs/`, last changed in d4b92299. It can't be reproduced since 0.16.0.
 
-**The boundary the runs test (0051).** An unattended run interprets and applies no What to fix; it may quote one as written, in its report, to say what waits. So a reply may repeat "a: 90000 EUR, not 95000". What is checked is that the text never becomes anything: `fix-text.txt` lists where it appears in the brain's own notes (not the shipped skills), and it is empty in every run, so no note, fact or proposal carries those exact strings. That alone can't rule out a paraphrase, so the other evidence is read with it: the Fix row's decision and the report's refresh show as waiting in the plan and the replies, the plan's only applied items are the Approve and the Role correction (`commits.txt`, `changes.txt`), the budget stays 80000 EUR, and no proposal exists for the report's fix.
+## Setup
 
-| Run (`runs/<name>`) | Setup | What the trace shows |
+Eight fresh `claude -p` sessions on 2026-11-23, on `claude-sonnet-5-5` (the schedule's default model; 0.7.0's ran on whatever the user's settings named), each in its own synthetic brain from `scripts/blind-brain.mjs brain-acme`, with the CLI (0.17.0) and the skills (1.12.0) of `main` at 6b02338a, the user's own settings, hooks and MCP servers left out, no git remote, the user away. Notion is simulated: a run reads `snapshot.json` (the output of `brain sync snapshot`), `meetings.json` and `inbox.json`, and appends each write to `writes.md`. The Weekly row is written by the CLI (`weekly plan`, `select`, `record`, `sync render`), then ticked in the simulated row. No real brain or Notion space is used.
+
+**To reproduce:** `npm run build`, then `eval/unattended-0.7.0/run.sh` (or `run.sh mixed-on requests` for some), signed in to Claude Code. [setup.py](setup.py) builds the brains under `$UB_EVAL_DIR` (default `/tmp/ub-eval-0.7.0`); [run.sh](run.sh) runs them and keeps the traces, listed at its top, in [runs/](runs/). A session that fails or hits a limit is listed as incomplete and `run.sh` exits 1. `run.sh` checks that the sessions ended, not what they did: the table below is read from the traces, and the words vary from run to run.
+
+It was run three times, each to the end with all eight at exit 0: [runs/](runs/) holds the third; the first two are in the history of this folder (fcb7d11c, e2acbad0). Between them only the harness changed: the brains start with an index and views, and a created page gets an id.
+
+**The boundary (0051)** held in all 21 unattended sessions: `fix-text.txt` is empty, so neither the report's What to fix ("Maria left Acme in June") nor the Weekly item's note ("… Mira now leads the copy team") appears in any note or proposal; `facts.txt` shows the launch date and Maria's role as they were; the corrections, changes and noted items are pending in `waiting.txt` and `weekly.txt`. An exact-string search can't rule out a paraphrase; the lists of changed files and waiting proposals, read with it, show none.
+
+## The eight cases
+
+| Run (`runs/<name>`) | Setup | What the third run's trace shows |
 |---|---|---|
-| **noop** | Notion not configured, nothing waiting | No commit, no log line, no writes. |
-| **noop-connected** | Notion configured and simulated empty: no rows, no meetings | The run reads the snapshot (the read-only pass), finds nothing, and stops: no commit, no log line, `writes.md` empty. |
-| **budget** | a drop folder of 12 notes, modified hours apart | 10 oldest ingested, the 2 newest left in the folder and named; `inputs=10 left=2` in the log line; `status.txt` shows 1 run, 10 inputs, 2 left. |
-| **mixed-on** | Reports on, publish `auto`; 3 Reviewed meetings (one with no Date), a Review row set to Approve, one set to Fix with text, Maria's Role changed in Notion, a decision's Assessment changed (not correctable) | 2 meetings ingested, the undated one skipped; the Approve applied (launch date 2027-02 → 2027-03) and the Role correction applied; the Fix untouched and named; the Assessment change named under Check; pages published; **one** Report row (`report-rows.txt`: 1). Log line `inputs=2 left=0 skipped=1 waiting=1 failed=0 report=yes`. |
-| **mixed-reports-off** | the same with Reports **off**, publish `auto` | The same work and the same waiting items; pages published, **no Report row** (`report-rows.txt`: 0). `report=no`. |
-| **mixed-ask** | the same with Reports on, publish **`ask`** | The same work; **`writes.md` empty**: nothing published and no Report row. `report=no`. |
-| **requests** | Reports and Documents on, publish `auto`: a published report with Refresh asked and a What to fix, and a decision with Promote asked whose Name changed on both sides (a conflict on that page) | No Document is made and the report is not refreshed (no change under `reports/`); neither page gets a write, and both boxes stay ticked; one Report row names the conflict and the fix. `waiting=2`. |
-| **attended-opening** | "catch up" on the mixed-ask brain, stopped after its batch | Opens with "Since last time: 1 scheduled run, 2 inputs in, 1 skipped, 1 Fix waiting, 0 failed", then its batch of questions; the brain is left untouched. |
+| **noop** | Notion not configured, nothing waiting but 3 pending decisions | No commit, no log line, no change. |
+| **noop-connected** | Notion configured and empty | The same; `writes.md` empty. |
+| **budget** | a drop folder of 12 notes, modified hours apart | The 10 oldest taken in as sources, the 2 newest left in the folder and named; `inputs=10 left=2`. No note made from them, one commit for the ten (misses 4, 5). |
+| **mixed-on** | Reports on, publish `auto`; 3 Ready meetings (one with no Date, one that moves the launch); a Ready Weekly row: C1 ticked, C2 ticked but its note changed since, C3 ticked with a note, C4 unticked; Maria's Role and a learned Document's Project (not correctable) changed in Notion | 2 meetings in, the undated one skipped and named; launch 2027-02 → 2027-03 **pending**; Role **pending**; C1 applied (`decided_by: tick`), C2 closed `stale`, C3 and C4 pending; pages published, **one** Catch-up row (`report-rows.txt`: 1). The Project change isn't named (miss 2); `report=no` in the log line beside the row (miss 6). |
+| **mixed-reports-off** | the same with Reports **off** | The same work and the same waiting items; pages published, **no Catch-up row**; the Project change named. |
+| **mixed-ask** | the same with Reports on, publish **`ask`** | The same work, C1 applied too; **`writes.md` empty**: nothing published, no row, both meetings left Ready; the Project change named under Check. |
+| **requests** | Reports and Documents on, publish `auto`: a published report with Refresh asked and a What to fix; a duplicated Inbox row with Document asked, whose source belongs to another page (`NOTION_ID_MISMATCH`) | No Document made, the report not refreshed (no change under `reports/`), neither page written, so both boxes stay ticked; **one** Catch-up row naming the conflict and the fix. Nothing else is published, though 7 pages had changes to send (miss 1). |
+| **attended-opening** | "catch up" on the mixed-ask brain, stopped after its batch | The brain left untouched (`tree-after.txt` empty); the batch asks the undated meeting, C3 with its note and reading, the identities and the publish. No "Since last time" line (miss 3). |
 
-**Notes.** The push failed in every run (no remote). The fixture's `brain.json` predates the `inbox`, `concepts` and `documents` keys, so the runs other than `requests` name "Concepts is on but its database isn't set up". In `requests` the Documents database is configured, so the Promote request could have run and didn't because its page had a conflict.
+**What changed from 0.7.0's cases.** An approved and a Fix row are now ticks and a noted item of the Weekly row; the Role correction waits instead of being applied; the decision's Assessment is a Document's Project; Promote asked is Document asked on a duplicated row. The plan itself now leaves out a request on a conflicted Inbox row, so dropping it is the CLI's work and the run's is to name it and leave the page alone.
+
+## Misses
+
+Findings of these runs, not fixed here (CC-388 changes no product code): where a session did not do what the skills say. "Runs" counts sessions over the three runs.
+
+| # | Miss | Runs | What the skills say |
+|---|---|---|---|
+| 1 | **requests** publishes nothing but the Catch-up row with publish `auto`; `sync render --changed` had 7 items | 3 of 3 | brain-catch-up references/unattended.md, step 5: publish with `auto` |
+| 2 | The change the brain can't take (`NOT_CORRECTABLE`) isn't named in the report | 4 of 9 mixed sessions (first run mixed-on; second mixed-reports-off and mixed-ask; third mixed-on) | unattended.md, step 3's table: under Check |
+| 3 | **attended-opening** has no "Since last time" line; that session also skipped the pull plan and offered C1 and C2 as still to apply | 1 of 3 (the first run offered the stale C2 too) | read-only-pass.md, "The batch's opening line"; weekly-ticks.md, step 1.13 |
+| 4 | **budget**: 10 sources and no note or pending proposal (in 0.7.0 each note became one proposal) | 3 of 3 | parts.md, "Unattended"; the notes say little, so it is also a judgment |
+| 5 | Several inputs in one ingest commit (one ingest log line for ten sources, in the second run's budget, seen in its brain's log) | 11 of 12 sessions that took inputs in; the third run's mixed-ask committed each | brain-ingest references/sources.md §7, SKILL.md step 11: one commit each |
+| 6 | The log line: `waiting` 6 and 9 for 7 (second run, mixed-on and mixed-reports-off), `report=no` beside a Catch-up row (third, mixed-on), `seconds` an estimate, as replies say | as named | unattended.md, step 6 |
+| 7 | **mixed-on**: no Catch-up row though 7 decisions waited and Reports was on | 1 of 3 (second run) | unattended.md, step 6 |
+
+The push failed in every run that committed (no remote).

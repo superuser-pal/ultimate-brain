@@ -42,21 +42,23 @@ function skillEntries(assistant: string): Entry[] {
   });
 }
 
-/** Prompt 9 §2: one page per skill, its name the title, its Description line in Description, its text block the
- *  page body. An entry with no text block names its source on its "**Text:**" line: the body is the one text block
- *  of the file that line links (Write minutes: minutes-format.md). */
+/** Prompt 9 §2 (CC-385): one page per skill, its name the title, its text block in Description, its body empty. An
+ *  entry with no text block names its source on its "**Text:**" line: its Description line goes in Description and
+ *  the body is the one text block of the file that line links (Write minutes: minutes-format.md). */
 async function publishedPages() {
   const pages = [];
   for (const entry of skillEntries(await read("notion/brain-assistant.md"))) {
-    let body = entry.blocks[0];
+    let description = entry.blocks[0];
+    let body = "";
     if (entry.blocks.length === 0) {
       const link = /^\*\*Text:\*\* .*?\]\(([^)]+\.md)\)/m.exec(entry.text)?.[1];
       assert.ok(link, `${entry.name} has a text block or a Text: line that links its source`);
       const source = textBlocks(await read(join("notion", link)));
       assert.equal(source.length, 1, `${link} holds one text block`);
+      description = entry.description!;
       body = source[0];
     }
-    pages.push({ title: entry.name, description: entry.description, body });
+    pages.push({ title: entry.name, line: entry.description, description, body });
   }
   return pages;
 }
@@ -67,8 +69,29 @@ test("publishing Brain Assistant's skills creates eleven pages: the ten skills a
   const pages = await publishedPages();
   assert.deepEqual(pages.map((page) => page.title), [...TEN, "Write minutes"]);
   for (const page of pages) {
-    assert.ok(page.description, `${page.title} has a Description line`);
-    assert.ok(page.body && page.body.trim().length > 0, `${page.title} has a body`);
+    assert.ok(page.line, `${page.title} has a Description line`);
+    if (page.title === "Write minutes") {
+      assert.equal(page.description, page.line, "Write minutes' Description is its Description line");
+      assert.ok(page.body.trim().length > 0, "Write minutes' body is the minutes prompt");
+    } else {
+      assert.match(page.description, /^Goal: /, `${page.title}'s Description is its text block`);
+      assert.equal(page.body, "", `${page.title}'s body is empty`);
+      // A rich_text item holds 2000 characters and the block is cut at line ends, so no line may be longer.
+      for (const line of page.description.split("\n")) assert.ok(line.length < 2000, `${page.title}: a line fits one item`);
+    }
+  }
+});
+
+test("the prompt, the setup and the specs name one place for a skill's text: Description (CC-385)", async () => {
+  const prompt9 = await read("notion/prompts/09-assistant-and-guide.md");
+  assert.match(prompt9, /\*\*Description:\*\* the skill's whole text block, word for word/);
+  assert.match(prompt9, /\*\*Body:\*\* empty/);
+  assert.match(prompt9, /at most 2000 characters/);
+  assert.match(await read("notion/brain-assistant.md"), /its whole text block goes in Description, and the body stays empty/);
+  assert.match(await read("spec/setup.md"), /A skill page keeps its whole text block in \*\*Description\*\*, with an empty body/);
+  assert.match(await read("docs/notion-space-design.md"), /in its \*\*Description\*\* property, and its body is empty/);
+  for (const file of ["notion/prompts/09-assistant-and-guide.md", "notion/brain-assistant.md", "notion/pasting-the-minutes-prompt.md", "spec/setup.md", "docs/notion-space-design.md"]) {
+    assert.doesNotMatch(await read(file), /as the body|replace the body|text block is the page body/, file);
   }
 });
 
