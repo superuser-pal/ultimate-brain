@@ -34,6 +34,7 @@ A space is a **core** plus the **modules** you chose at onboarding. You can turn
 | **Reports** | Documents (shared; Reports needs the Documents module on, 0071): a report is a Documents row with Origin Report; Ask rows on the Inbox | the Ask the brain button on Home; the Refresh report button (a Notion Brain Assistant message, §3.17), Refresh asked and What to fix on a report's Documents row; "Reports" on project and area pages | off |
 | **Tasks** | Tasks, or your own tasks database (0018) | the Tasks Space, with its Questions and Risks tabs (Kind, 0099); Document asked and the Keep as document button on Tasks, acted on with Documents on (0100); "What's on my plate here?" on project and area pages; Home's "What's on today?" Tasks tab, its "due" counts and "Due across areas" | off |
 | **Planning** | Goals, Key Results | the Plan Space; Goal on Projects; "What am I working toward here?" on area pages | off |
+| **Factories** (0.18.0, [0113](../decisions/0113-factories-and-domain-homes-in-0-18-0-the-fourteen-features-in-0-19-0-espanol-in-0-20-0.md) §1) | Factories | a row per working folder where agents build (§3.20); Factory on Tasks; the Factories tab of Projects; the Factory page's Overview and its board of your tasks. Offered once, when you link your first repo or connect your first folder | off |
 
 A part of a page that belongs to a module that is off is left out, and nothing replaces it (0050). The build prompts create only the chosen modules, except the Domains database, its relations and the Domain rollups, which every space has (0065, 0105); each module's own steps, for turning it on later, are in [notion/modules/](../notion/modules/).
 
@@ -89,6 +90,16 @@ Every database that mirrors a brain note has three kinds of properties. Each pro
 - **Work record** on a Task page of a connected workflow, also in a mapped external Tasks database: scope, acceptance criteria, dependencies, documents and progress (spec/connected-workflows.md §6.1).
 - Toggle headings named **`Repo tasks · <repo>`** on the Project or Area page where a linked repo with tasks tracked in the repo is placed: a dated, read-only rollup of those tasks, one toggle per repo (spec/linked-repos.md §4).
 
+**The Overview toggle of a Factory's page (0.18.0, [0113](../decisions/0113-factories-and-domain-homes-in-0-18-0-the-fourteen-features-in-0-19-0-espanol-in-0-20-0.md) §6).** The brain owns the toggle heading **Overview**, the first thing on every Factory page: what the folder's plan is, what is being built, what comes next and what was done lately, with its date (spec/connected-workflows.md §9.1). A session or a catch-up replaces its content; nobody edits it, and the brain never reads it back. It is in the Factories template, and the skill adds it at the top when a page has none. For a Factory it takes the place of two toggles above: `Repo tasks · <repo>`, which is written only with Factories off, and the **Workflow** toggle of a workflow whose destination is the Factory. Everything else on the page is yours.
+
+| Factory page or row | Owner | Read back |
+|---|---|---|
+| Overview (toggle) | Brain | never |
+| Name, Area, Projects, Overview as of, Archived | Brain | never: you change a Factory by changing its link, in the session |
+| Workflow | You (the brain sets it at setup and when you end the connection, after your yes, as §3.19) | by reconcile and by a session |
+| the tasks, and Factory on a task | You | by a session and by reconcile |
+| My notes | You | never |
+
 **The Weekly row's ticks and notes (0.17.0, [0110](../decisions/0110-the-weekly-row-scheduling-on-mac-and-windows-and-0-16-x-folded-into-0-17-0.md) §4; [spec/weekly-review.md](../spec/weekly-review.md) §15.7).** The body of a Weekly row is the brain's, but it is also where you decide: the **tick** of each to-do and the text after **Your note:** under it are **yours**, and so is the row's Brain Status Ready. The brain never ticks, unticks or writes a note, and every publish of the row keeps them as you left them; anything else you write in that body is overwritten by the next publish. Ready is the go: a catch-up reads the ticks only then.
 
 Each is found by its exact name and its children replaced. Before appending one to a Project page with no toggle headings at all, the skill first appends empty **Brief** and **Decision log** toggles, so the next render finds them.
@@ -97,7 +108,7 @@ Each is found by its exact name and its children replaced. Before appending one 
 
 ## 3. Databases
 
-Up to eleven databases, all on the backend page **Brain Data**: the six of Core plus those of the modules you chose (§1): Inbox, Meetings, Projects, Areas, People, Domains, Orgs, Documents, Tasks, Goals and Key Results ([0099](../decisions/0099-notion-without-decisions-and-questions.md); Review went in 0.16.0 too, 0096). One more database, **Skills** (Notion Brain Assistant's skills; "Brain Assistant Skills" in a space built before 0.14.0, decision 0085), sits on **System**: it holds Notion Brain Assistant's skills, and the brain never reads it (§5). Naming: plural Title Case database names, Title Case property names, no emoji in property names (the agent addresses them by name through the Notion MCP).
+Up to twelve databases, all on the backend page **Brain Data**: the six of Core plus those of the modules you chose (§1): Inbox, Meetings, Projects, Areas, People, Domains, Orgs, Documents, Tasks, Goals, Key Results and, from 0.18.0, Factories ([0099](../decisions/0099-notion-without-decisions-and-questions.md); Review went in 0.16.0 too, 0096). One more database, **Skills** (Notion Brain Assistant's skills; "Brain Assistant Skills" in a space built before 0.14.0, decision 0085), sits on **System**: it holds Notion Brain Assistant's skills, and the brain never reads it (§5). Naming: plural Title Case database names, Title Case property names, no emoji in property names (the agent addresses them by name through the Notion MCP).
 
 **Common properties** on every brain-mirrored database (Areas, Goals, Projects, People, Orgs, Documents):
 
@@ -311,6 +322,7 @@ Minimal, so the brain can send action items (0018). If you already have a tasks 
 | Brain ID | Text | Set when the brain created it; on a task that tracks a question, the question's id |
 | Keep | Button labelled **Keep as document**: ticks Document asked | You (Tasks module, 0.16.0, [0100](../decisions/0100-keep-a-task-as-a-document.md); the connect step expects it on the default database, spec/setup.md §6.2.2). The brain acts on it with the Documents module on; with Documents off, a ticked box stays ticked |
 | Document asked | Checkbox | You, through the Keep as document button: "waiting for the brain". The next catch-up keeps the task's page as a Document, linked to its project or area, the question it tracks and the task, and clears it (0100; [spec/capture-and-review.md](../spec/capture-and-review.md) §13). A database you map yourself is offered both at connect (spec/setup.md §6.2.2); without them, ask in the session |
+| Factory | Relation → Factories (two-way with Factories · Tasks; limit 1, by hand) | You (Factories module, 0.18.0, [0113](../decisions/0113-factories-and-domain-homes-in-0-18-0-the-fourteen-features-in-0-19-0-espanol-in-0-20-0.md) §3): the folder where you want the task done. A task with a Factory is your instruction there: a session in that folder lists it (To Do and Doing) and agrees the how with you (spec/connected-workflows.md §8.4, §15). The agent sets it only on a task you said yes to, and never changes it. A handful per Factory: the detailed plan stays in the folder. It adds no status, and it puts a task in "What's due today?" only with a Due date, as any task. Shown in the property group after Area with the module on, hidden with it off |
 | Last edited time | Last edited time | System (Notion fills it; groups the Done tab by week) |
 
 ### 3.13 Concepts (retired in 0.9.1)
@@ -369,6 +381,7 @@ Archived and Done (on a milestone) stay checkboxes: they describe a state, not a
 | Areas | At a glance | Brain ID, Last Synced |
 | Goals, Projects, People, Orgs, Meetings, Tasks | the "You" properties of §3 | Brain ID, Last Synced, Ingested At |
 | Domains | Archived | Brain ID, Last Synced |
+| Factories (0.18.0) | Workflow, Area, Projects | Brain ID, Last Synced |
 
 **Domain on Projects, Meetings and Documents (0.16.1, 0105 §1).** The Domain rollup sits in the property group right after Area with the Domains module on, and is hidden with it off, as Domain is on area homes. It is never pinned: you change the Area, not the Domain. The Domains layout keeps Areas, Org and Summary in its property group, and shows no Type (0105 §3).
 
@@ -452,6 +465,47 @@ The contract is [spec/connected-workflows.md](../spec/connected-workflows.md) §
 - **No values are filled in** by the build or by migration [0015](../notion/migrations/0015-workflow-settings-on-projects-and-areas.md): every Project and Area starts as Standard.
 - **What a connected workflow writes on pages:** the **Workflow** toggle on the destination, the **Work record** toggle on each of its Task pages (§2). A connected workflow needs the Tasks module with the Brain ID property mapped, and the Documents module for any level above Tasks only; setup offers what is missing once and never turns a module on silently. It adds no Tasks property and no new database or view.
 
+### 3.20 Factories (0.18.0, decision [0113](../decisions/0113-factories-and-domain-homes-in-0-18-0-the-fourteen-features-in-0-19-0-espanol-in-0-20-0.md) §1 to §6; Factories module)
+
+A **Factory** is a working folder where agents build: a linked repo, or any folder you connected to the brain. One row per folder. The contracts are [spec/linked-repos.md](../spec/linked-repos.md) §1.1 and [spec/connected-workflows.md](../spec/connected-workflows.md) §3.5, §8.4, §9.1 and §15; why it is a database of its own and not a property of Projects or Areas is 0113 §1's review (0104 §3).
+
+| Property | Type | Owner | Notes |
+|---|---|---|---|
+| Name | Title | Brain | The repo's name, or the folder's |
+| Area | Relation → Areas (two-way, shown there as Factories; limit 1, by hand) | Brain | The one Area of the link |
+| Domain | Rollup: Area → Domain, Show original | Notion | Read-only, as on Projects (0105 §1). Hidden with the Domains module off |
+| Projects | Relation → Projects (two-way, shown there as Factories) | Brain | Several, in any Area; a Project may have several Factories |
+| Tasks | Relation → Tasks (the other side of Tasks · Factory) | You | What you want built there |
+| Workflow | Select: Standard, Connected | You | Is work there connected? Empty or Standard pauses it. The brain sets it at setup and when you end the connection, after your yes. Work type, logging level and Log artifacts are not here: you agree them in the session (spec/connected-workflows.md §4.1) |
+| Overview as of | Date (with time) | Brain | When its overview was last written |
+| Archived | Checkbox | Brain | Ticked when the repo is unlinked or the folder's connection ended; its tasks and its last overview stay |
+| Brain ID | Text | System | `fac-7k2m9q4x` |
+| Last Synced | Date (with time) | System | |
+
+No Summary, no Lifecycle, no status of its own. Views leave archived rows out. A row you make by hand is never taken in: say "link this repo" or "connect this folder" in a session there. Each description starts with its owner and is at most 280 characters, as everywhere.
+
+**Views of the database:** Open (Archived is not ticked, by Area) and Archived. **In the Projects Space,** a tab **Factories**, "Where is work being built?": a table of the open ones with Name, Area, Projects, Workflow and Overview as of, sorted by Overview as of, newest first. It follows the module.
+
+**The Factory page** (its template is the database's default, by hand):
+1. **Overview**, an empty toggle heading the brain fills (§2).
+2. **"What should happen next here?"**: a linked view of Tasks, a board grouped by Status, filtered by **Factory contains This page**; Name, Due and Project on the card; sorted by Due. No Done group older than this month (Last edited time is within the past month, or Status is not Done and not Won't Do).
+3. **"My notes"**.
+
+**What the API can build and what is by hand** (Notion's API reference, version 2026-03-11, read on 2026-11-23; CC-399's migration and `notion/modules/factories.md` give the steps):
+
+| Piece | How | Reference |
+|---|---|---|
+| The database with its first properties | API, or Notion AI's prompt. The Notion MCP has no tool that creates a database, so in a session it is Notion AI or by hand | [Create a database](https://developers.notion.com/reference/create-a-database) |
+| Relations (two-way, with the name of the other side), the Domain rollup, Select, Date, Checkbox, Text, descriptions; Tasks · Factory | API and MCP | [Update a data source](https://developers.notion.com/reference/update-a-data-source) |
+| Limit 1 on Area and on Tasks · Factory | By hand: the limit is read-only in the API | [Update data source properties](https://developers.notion.com/reference/update-data-source-properties) |
+| Rollup display Show original | API | [Property object](https://developers.notion.com/reference/property-object) |
+| The database's views, and the tab in the Projects Space | API (views), but not in the MCP; by hand or Notion AI in a session | [Create a view](https://developers.notion.com/reference/create-view) |
+| The template: its toggle heading, its board filtered by This page, and making it the default | By hand. The API lists templates and creates a page from one; creating or editing one isn't documented | [List data source templates](https://developers.notion.com/reference/list-data-source-templates), [Creating pages from templates](https://developers.notion.com/docs/creating-pages-from-templates) |
+| A page from the template; the Overview toggle and its content | API and MCP | [Append block children](https://developers.notion.com/reference/patch-block-children), [Update page content as markdown](https://developers.notion.com/reference/update-page-markdown) |
+| The page layout (what is pinned and collapsed, §3.15), hiding Domain or Factory | By hand: page layouts aren't in the API | [API reference](https://developers.notion.com/reference/intro) |
+
+**A Tasks database you mapped yourself** is offered the Factory relation when the module is turned on ("Add a Factory property to your tasks database?"), set in `brain.json` as `notion.tasks.properties.factory`. A no leaves the row and its overview, and no work can be connected to a Factory.
+
 ## 4. Templates (contextual workspaces, Easlo pattern)
 
 Each template is the default for its database. Every linked view sits under an H3 heading named by the question it answers, with the database title hidden, and is filtered to "this page". Where a block has tabs, they follow the record's life (now → later → done). The table is the intent; [Prompt 6](../notion/prompts/06-templates.md) is the exact definition and wins where they differ. The live snapshot is [notion/templates.md](../notion/templates.md).
@@ -461,6 +515,7 @@ Each template is the default for its database. Every linked view sits under an H
 | Areas | **The area's home (0050).** Domain is visible when the Domains module is on. "Brief" toggle heading (brain-written, 0041) · "What needs me here?" with tabs Today (Tasks due today or earlier, neither Done nor Won't Do) · Meetings (to review, held today or earlier) · Inbox (where Area is this page and Brain Status is New or Ready) · "What am I working toward here?" (Goals, Active) · "What's active here?" (Projects: Active, Planned, Done) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "What came in?" (Inbox where Area is this page, newest first) · "What do we know?" (Documents where Area is this page) · "Reports" (Documents where Area is this page and Origin is Report, 0045, 0071) · "My notes". People and Clients show as the "via projects" rollups in the page header (0034). Each part follows its module (§1, 0050): Today and "What's on my plate here?" with Tasks; "What am I working toward here?" with Planning; "What do we know?" with Documents; "Reports" with Reports; Clients via projects with Orgs. A new area is one page from this template |
 | Domains | Areas and, when Orgs is on, Org in the page header; the description; three linked views, each filtered by **Domain contains This page** (0.16.1, 0105 §1): "Which projects?" (Projects), "Which meetings?" (Meetings, Date descending) and "What do we know?" (Documents, Documents module) · "My notes". No Type (0105 §3). A row with no Area, or whose Area has no Domain, is on no Domain page. The exact views are in [views-guide.md](../notion/views-guide.md) §9a |
 | Goals | "How are the key results moving?" (Key Results: Open, Done) · "Which projects serve it?" (Projects) · "My notes" |
+| Factories (0.18.0, Factories module) | "Overview" toggle heading (brain-written, §2) · "What should happen next here?" (Tasks where Factory is this page, a board by Status) · "My notes" (§3.20) |
 | Projects | A muted line "The brain writes only inside its toggles: Brief and Decision log, and Workflow or Repo tasks when you connect work or link a repo. Add your own notes in My notes." (0.9.0; before it: "Brief and Decision log are written by the brain. Add your own notes in My notes.") · "Brief" toggle heading (brain-written) · "Decision log" toggle heading (brain-written) · "What's on my plate here?" (Tasks: Open, Waiting On, Done) · "Which meetings?" (Meetings: Upcoming, Past) · "Who's involved?" (People) · "What came in?" (Inbox where Project is this page, newest first) · "What do we know?" (Documents where Project is this page) · "Reports" (Documents where Project is this page and Origin is Report, sorted by Created time descending, 0045, #137, 0071) · "My notes". Parts follow their modules as on Areas. A project the brain publishes is created from this default template through the API (0068), so it must stay the Projects default; a space without one falls back to **New project** |
 | Meetings | Unchanged from the hand-reworked template (see notion/templates.md): "Before setting Ready" checklist callout, ending with the gray line "Check the minutes, fix them, then set Brain Status to Ready. Fixed them after the brain took them in? Set Ready again: it reads only what changed." (0045, 0109) · Notion AI meeting notes block · "My notes" · toggle Tasks (the Decisions and Questions toggles went in 0.16.0, 0099; the minutes still list both) |
 | People | "Which meetings were they in?" (Meetings: Upcoming, Past) · "What are they working on?" (Projects) · "My notes" |
@@ -501,7 +556,7 @@ Each Space: the synced Spaces navigation in a narrow left column, then one tabs 
 | **Home** | Start of day: your areas, then your work | With Domains on, group the Areas tab by Domain, including No domain. Left: navigation, then "Needs you": "Which minutes need review?" (Meetings, New, held today or earlier, 5 rows). Decisions on what the brain proposes are made in the agent session, and the week's review is an Inbox row (Kind Weekly) in the Inbox tab ([0096](../decisions/0096-one-place-to-decide.md)), whose actions and clean-up you tick there and set Ready (0.17.0, [0110](../decisions/0110-the-weekly-row-scheduling-on-mac-and-windows-and-0-16-x-folded-into-0-17-0.md) §4). Right: buttons Quick capture (→ Inbox, Kind Capture, Brain Status **Ready**, 0048), Ask the brain (→ Inbox, Kind Ask, Brain Status New; Reports module), New meeting, New project, New task (→ Tasks, Kind Task, the database's default Status, no project or due date; Tasks module; [0106](../decisions/0106-beta-on-0-16-x-patches-0-17-0-and-0-18-0-before-1-0-and-the-launch-bar.md) §12); then "What's on today?" with tabs **Areas** (one line per area, 0050: a linked view of Areas, not Archived, showing Name and At a glance, e.g. "Day job · 1 meeting · 2 due"; below it "What's due across areas?", Tasks due today or overdue, Tasks module; #143, decision 0053) · Tasks (due today or overdue; Tasks module) · Meetings (today) · Projects (Active) · **Inbox** ("What's in my inbox?": New or Ready, oldest first, showing Name, Kind, Brain Status; #146); then "What did the brain take in?" (the Brain feed, 0043) with tabs Came in (Inbox, Done, newest first, 10 rows) · Meetings (Brain Status Done, newest Ingested At first, 10 rows) |
 | **Tasks** (Tasks module) | Do the work | Today · Upcoming (by day) · No date · Waiting On · Someday · **Questions** · **Risks** (Kind is Question, or Risk, and Status isn't Done, across every project; 0099 §4) · Done (by week) |
 | **Meetings** | Prepare, review minutes, track ingestion | Upcoming · To review · Ready for the brain · Ingested this week · Calendar |
-| **Projects** | Run projects | Active (board by Status) · By area · Deadlines (timeline) · Gone quiet |
+| **Projects** | Run projects | Active (board by Status) · By area · Deadlines (timeline) · Gone quiet · Factories (Factories module, 0.18.0: where is work being built?, §3.20) |
 | **Plan** (Planning module) | Areas → goals → key results → projects | Goals · Key results (by goal) · Areas (the way into each Area page) · Projects by goal |
 | **Knowledge** | Navigate what the brain knows | Documents (What did we keep?, 0045, 0049; What did we learn?, 0071) · People (by org, Disputed) · Orgs (Clients, Others) · Inbox (What came in?: Done, newest first; the rows still waiting are Home's Inbox tab). Each tab follows its module |
 | **Archive** (linked from System) | Find what's finished | One tab per database of your modules: Projects (Done or Archived) · Goals (Achieved, Dropped or Archived) · Areas · Documents · People · Orgs (Archived) |
@@ -539,17 +594,18 @@ See "After building" in [notion/CHECKLIST.md](../notion/CHECKLIST.md): connect t
 
 ```json
 {
-  "modules": { "domains": false, "orgs": true, "documents": false, "reports": false, "tasks": true, "planning": false },
+  "modules": { "domains": false, "orgs": true, "documents": false, "reports": false, "tasks": true, "planning": false, "factories": true },
   "notion": {
     "databases": {
       "domains": "<id>", "areas": "<id>", "goals": "<id>", "key_results": "<id>", "projects": "<id>",
-      "meetings": "<id>", "people": "<id>", "orgs": "<id>", "inbox": "<id>", "documents": "<id>"
+      "meetings": "<id>", "people": "<id>", "orgs": "<id>", "inbox": "<id>", "documents": "<id>", "factories": "<id>"
     },
     "tasks": {
       "database": "<id>",
       "properties": {
         "title": "Name", "status": "Status", "due": "Due",
-        "project": "Project", "area": "Area", "meeting": "Meeting", "source": "Source", "brain_id": "Brain ID", "kind": "Kind"
+        "project": "Project", "area": "Area", "meeting": "Meeting", "source": "Source", "brain_id": "Brain ID", "kind": "Kind",
+        "factory": "Factory"
       },
       "new_task_status": "To Do"
     }
