@@ -15,7 +15,7 @@ Create a top-level page named "Ultimate Brain". Inside it create these pages, in
 "Brain Data"
 "System"
 Inside "System" create two pages: "Archive" and "How it works".
-At the top of "Ultimate Brain", above these pages, add a callout with Notion's default icon and one text: "Start here" in bold, then a colon and these sentences: "This is the Notion half of Ultimate Brain. Next: install Ultimate Brain, and in your brain folder tell your agent "set up my brain". Get started shows every step. Then open First things first: create your own Notion Brain Assistant and select it in its buttons. Notion Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits."
+At the top of "Ultimate Brain", above these pages, add a callout with Notion's default icon. Its text is "Start here:" in bold, then these sentences: "This is the Notion half of Ultimate Brain. Next: install Ultimate Brain, and in your brain folder tell your agent "set up my brain". Get started shows every step. Then open First things first: create your own Notion Brain Assistant and select it in its buttons." Inside the callout, below that text, a paragraph: "Notion Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits."
 Leave the pages empty for now. Do not add any databases yet.
 ```
 
@@ -24,5 +24,5 @@ Leave the pages empty for now. Do not add any databases yet.
 The published template also has a line `Template version: NNNN`, in the System callout on its top page (docs/notion-space-design.md §10, decision 0085). Don't add it here: a space built from the prompts has no version line, so the brain records its version as unknown and never guesses one (spec/setup.md §9).
 
 ## Verify
-- [ ] "Ultimate Brain" starts with the "Start here" callout, its "Get started", "First things first" and "Notion credits" linked, then contains the pages above, in that order (nine with every module; seven with neither Tasks nor Planning), and "System" contains "Archive" and "How it works".
+- [ ] "Ultimate Brain" starts with the "Start here:" callout, its "Get started", "First things first" and "Notion credits" linked, then contains the pages above, in that order (nine with every module; seven with neither Tasks nor Planning), and "System" contains "Archive" and "How it works".
 - [ ] "First things first" holds the eight to-dos of §10.1, unticked, with their links; "System" starts with a link to it.
