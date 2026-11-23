@@ -1,0 +1,11 @@
+title: Remove a repeated value from aliases of "Ivo Brand"
+status: pending
+title: Remove a repeated value from aliases of "Lena Hart"
+status: applied
+  decided_by: tick
+title: Remove a repeated value from aliases of "Mira Lund"
+status: closed
+  decided_by: tick
+closed_reason: stale
+title: Remove a repeated value from aliases of "Otto Kern"
+status: pending

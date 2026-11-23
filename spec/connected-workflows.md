@@ -285,7 +285,7 @@ A Factory's row carries one setting, **Workflow**, with the same options and the
 - **One Notion Task**, created or updated through the existing Tasks mapping (schema §12), with:
   - title: `item.title`;
   - status: `status_map[item.status]`, typed as `notion.tasks.status_type`;
-  - project, or area: the destination, plus the area of a Project destination, each when mapped. With a Factory destination (0.18.0): the **Factory** relation, and no project; its Area follows the rule for every task the brain creates (0113 §9; capture-and-review.md §6);
+  - project, or area: the destination, plus the area of a Project destination, each when mapped. With a Factory destination (0.18.0): the **Factory** relation, and no project; its Area follows the rule for every task the brain creates (0113 §9; capture-and-review.md §6.5), which is its Factory's;
   - brain_id: the item's `wi-` id.
 
   Unmapped properties are left out, as in `sync tasks` (cli.md §5.14.5). An adopted Notion task whose Brain ID holds another id keeps it (§11.5). A **taken** task (§8.4) keeps its Project, Area, Due and every other property as the user set them: the brain sends it only `brain_id` (when empty), status and title.

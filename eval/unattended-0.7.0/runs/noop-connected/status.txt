@@ -1,1 +1,1 @@
-{"catch_up": null, "backlog": false}
+{"catch_up": null, "backlog": false, "weekly": null}

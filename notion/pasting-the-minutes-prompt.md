@@ -5,7 +5,7 @@ Decision 0079 makes the minutes Notion AI writes shorter and easier to skim: **I
 **Since 0.16.2 (decision 0106 §13)** the prompt lays the same minutes out to be scanned: each section is a heading followed by a divider (`## In one line` with its sentence below it, `## Quick follow-ups`, `## Tasks for the brain`, `## <Subject> [s1]`), and each line of a subject is a bullet, its prefix in bold (`- **Decided:** … [s1.i2]`). The items, tags, quotes and the For the brain toggle don't change. Migration 0029 has the step that replaces the prompt you keep; Check minutes changes with it. You paste the new prompt once.
 
 1. **The minutes prompt.** Keep the text block of [minutes-format.md](minutes-format.md) where you can copy it, replacing any older one you kept. It runs in the Notion AI chat on each meeting page, not from Notion AI's settings: there, Notion AI replaced the transcript with the minutes (CC-193's release gate).
-2. **Notion Brain Assistant's "Check minutes".** In the agent's Skills database, replace the body of **Check minutes** with the block in [brain-assistant.md](brain-assistant.md) (it now knows the lean shape and the For the brain toggle, and still checks earlier minutes). **Voice summary** does not change: voice notes keep their format.
+2. **Notion Brain Assistant's "Check minutes".** In the agent's Skills database, replace the text of **Check minutes** (in its Description; in the page body where your Skills pages keep it there) with the block in [brain-assistant.md](brain-assistant.md) (it now knows the lean shape and the For the brain toggle, and still checks earlier minutes). **Voice summary** does not change: voice notes keep their format.
 
 ## Running it on a meeting
 

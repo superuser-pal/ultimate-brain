@@ -1,1 +1,1 @@
-- 2026-10-30T18:13:47Z catch-up - "" mode=unattended inputs=0 left=0 skipped=0 waiting=2 failed=0 report=yes notes_read=0 seconds=80
+- 2026-11-23T13:04:30Z catch-up - "" mode=unattended inputs=0 left=0 skipped=2 waiting=3 failed=0 report=yes notes_read=0 seconds=60
