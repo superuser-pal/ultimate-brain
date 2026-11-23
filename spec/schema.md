@@ -36,7 +36,7 @@ Decisions referenced: 0001–0005, 0008–0011, 0013, 0017, 0018, 0020, 0021, 00
 | `org` | org | | `mem` | memory |
 | `mtg` | meeting | | `prp` | proposal |
 | `vw` | view | | `ref` | reference |
-| `dom` | domain | | | |
+| `dom` | domain | | `fac` | Factory: an entry of `brain.json` (§12), not a note, so no note has it and `brain id new` doesn't mint it (0.18.0, 0113 §1) |
 
 The prefix is fixed at creation even if `type` later changes; `type` is the truth.
 
@@ -627,22 +627,28 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
                               "catch_up": { "at": ["07:30"] }, "weekly_review": { "at": ["08:00"], "days": ["mon"] } },
                 "cleanup": { "auto": "on" },
                 "style": { "preset": "simple", "length": "normal" } },
-  "modules": { "domains": false, "orgs": true, "documents": true, "reports": true, "tasks": true, "planning": true },
+  "modules": { "domains": false, "orgs": true, "documents": true, "reports": true, "tasks": true, "planning": true, "factories": true },
   "repos": [
     { "name": "acme-api", "path": "~/code/acme-api", "area": "area-2m7c4h8n",
       "patterns": ["decisions/**", "docs/vision.md", "CHANGELOG.md"], "commit": "" },
-    { "name": "acme-web", "path": "~/code/acme-web", "area": "area-2m7c4h8n", "project": "prj-9x4t1b7e",
+    { "name": "acme-web", "path": "~/code/acme-web", "area": "area-2m7c4h8n", "projects": ["prj-9x4t1b7e", "prj-4k2r8m6t"],
       "patterns": ["docs/**"], "never_read": [".env*"], "commit": "", "kit": { "sha256": "sha256:<64 hex>" } }
+  ],
+  "factories": [
+    { "id": "fac-7k2m9q4x", "name": "acme-api", "repo": "acme-api" },
+    { "id": "fac-3n8w5t2c", "name": "Workshop kit", "path": "~/work/workshop-kit", "area": "area-2m7c4h8n",
+      "projects": [], "plan": ["PLAN.md"] }
   ],
   "notion": {
     "template_version": "0024",
     "databases": { "domains": "", "areas": "", "goals": "", "key_results": "", "projects": "", "meetings": "",
-                   "people": "", "orgs": "", "inbox": "", "documents": "" },
+                   "people": "", "orgs": "", "inbox": "", "documents": "", "factories": "" },
     "tasks": {
       "database": "",
       "properties": { "title": "Name", "status": "Status", "due": "Due", "project": "Project",
                       "area": "Area", "owner": "", "meeting": "Meeting", "meeting_url": "", "source": "Source",
-                      "brain_id": "Brain ID", "kind": "Kind", "document_asked": "Document asked" },
+                      "brain_id": "Brain ID", "kind": "Kind", "document_asked": "Document asked",
+                      "factory": "Factory" },
       "new_task_status": "To Do",
       "status_type": "status"
     }
@@ -696,8 +702,9 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
 | `reports` | `false` | `true` | `documents`, shared with the Documents module: a report is a Documents row (0071); Ask rows on the Inbox (0043, 0045). **Needs `documents` on:** Reports counts as off while Documents is off; `brain modules` turns Documents on with Reports and Reports off with Documents (cli.md §5.20), and `brain upgrade` turns Documents on in a brain that has Reports on (cli.md §5.15) |
 | `tasks` | `false` | `true` | `notion.tasks` |
 | `planning` | `false` | `false` | `goals`, `key_results` |
+| `factories` (0.18.0, 0113 §1) | `false` | absent | `factories`, and Tasks · Factory. **Absent also means "never asked":** the first link, or the first folder connected, offers it once, a yes writes `true` and a no `false` (linked-repos.md §1.2, cli.md §5.20). `brain upgrade` and the brain template don't write it, and setup doesn't ask it |
 
-- **`modules` absent:** every module except Domains is on; Domains is off. That is every brain made before 0.6.0; `brain upgrade` writes the block with every key `true` except Domains (cli.md §5.15). **A key absent from a present block** takes its default. **A new brain** (0078 §4, from 0.14.0) gets the block from `templates/brain/brain.json` with the "New brain" column: Orgs, Documents, Reports and Tasks on, Planning and Domains off (Knowledge too, until 0.16.0); setup's seeding turns Domains on when the user's work has two or more contexts ([setup.md](setup.md) §8). The Default column is unchanged, so a brain made before 0.14.0 keeps its modules.
+- **`modules` absent:** every module except Domains and Factories is on; those two are off. That is every brain made before 0.6.0; `brain upgrade` writes the block with every key `true` except Domains (cli.md §5.15). **A key absent from a present block** takes its default. **A new brain** (0078 §4, from 0.14.0) gets the block from `templates/brain/brain.json` with the "New brain" column: Orgs, Documents, Reports and Tasks on, Planning and Domains off (Knowledge too, until 0.16.0); setup's seeding turns Domains on when the user's work has two or more contexts ([setup.md](setup.md) §8). The Default column is unchanged, so a brain made before 0.14.0 keeps its modules.
 - **A module off** means the CLI neither reads nor writes Notion for it: `sync plan` ignores its databases' rows, `sync render` publishes none of its notes and leaves out the relations to them, `sync tasks` refuses with `MODULE_OFF`, and reports are not published (cli.md §5.14, §5.20). It is off even when its database ids are set. **Nothing is deleted:** the notes stay in Git and are still indexed, linted and listed; Notion keeps its databases and rows. Turning it on again publishes what changed meanwhile.
 - **The Domains database is in every Notion space** (0065), with the module on or off; `notion.databases.domains` is set whenever it exists. Like any module, Domains off means the brain neither reads nor writes it.
 - **A module on with an empty database id** behaves as today: its notes are skipped with `DATABASE_NOT_CONFIGURED`.
@@ -705,9 +712,33 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
 
 **Repos** (0042): the linked repos the brain reads, never writes. Each has a unique `name` (lowercase kebab-case), a `path` (absolute for the platform, `/…` or on Windows `C:\…`, or starting with `~/`; the machine's own clone), the `area` its knowledge belongs to (an existing `area-` id), `patterns` (non-empty list of Git glob pathspecs, relative to the repo root, e.g. `decisions/**`), and `commit`, the last commit ingested (40 hex, or `""` before the first ingest). Written by `brain repo add` and `brain repo record` (cli.md §5.16), and `path` also by `brain repo refresh --path` (§5.29); `repos` absent means none. Three optional keys come from a link kit (0066, [linked-repos.md](linked-repos.md) §5): `never_read` (Git glob pathspecs never read, even when a pattern matches; absent means none), `project` (a `prj-` id the repo is placed under) and `kit` (`{ "sha256": "sha256:<64 hex>" }`, the kit last applied). With `kit`, `area`, `patterns`, `never_read` and `project` are copies of the kit, written only by `repo add --kit` and `repo refresh`; removed by `repo unlink` (cli.md §5.29).
 
+From 0.18.0 a kit's Projects are copied to **`projects`**, a list of `prj-` ids without repeats (0113 §2). `project` is the key written until 0.17.0, still valid and read as a list of one; an entry holds one of the two (the JSON schema), and `repo refresh` replaces the old one (linked-repos.md §5).
+
+**Factories** (0.18.0, decision [0113](../decisions/0113-factories-and-domain-homes-in-0-18-0-the-fourteen-features-in-0-19-0-espanol-in-0-20-0.md) §1; [linked-repos.md](linked-repos.md) §1.1): the working folders where agents build, one entry per folder, each a row of Notion's Factories database. `factories` absent means none, so every `brain.json` from 0.17.0 is valid as it is. Entries are in the order they were made and are never deleted. Written by `brain factory` (cli.md §5.39), `repo add` and `repo unlink` (§5.16, §5.29), `brain modules on factories` (§5.20), `workflow set` (connected-workflows.md §12) and, for the row's `notion` and `last_synced`, `sync record` (§5.14.6); never by hand.
+
+| Key | Req | Value |
+|---|---|---|
+| `id` | ✔ | `fac-` and 8 characters of the 0017 alphabet, permanent, unique among the entries |
+| `name` | ✔ | The row's Name: the `repos` name for a linked repo, else the folder's own name or what the user calls it. Not empty, unique ignoring case |
+| `repo` | one of the two | The name of the `repos` entry. Its path, Area and Projects are read from there, and never repeated here while it is linked |
+| `path` | one of the two | A folder that is not a linked repo: the same forms as `repos` `path`, unique by real path, never the brain's |
+| `area` | with `path` | Its `area-` id. Also on an archived `repo` entry, copied from the link when it was removed |
+| `projects` | — | `prj-` ids without repeats, as `area`; absent means none |
+| `plan` | — | With `path` only: the plan files, relative to the folder, without repeats, in the order the user named them (connected-workflows.md §3.5). A repo's are in its kit (linked-repos.md §2.2) |
+| `archived` | — | `true` once unlinked or ended (linked-repos.md §9, connected-workflows.md §3.5); removed when it is linked or connected again |
+| `notion` | — | The row's page id, as a note's |
+| `last_synced`, `published` | — | As on a note (§3.1, §7): when the row was last sent, and the values sent |
+| `overview` | — | What Git keeps of the last overview written (connected-workflows.md §9.1), and no text of it: `{ as_of, by, sha256, folder, tasks }`, all required. `as_of` a UTC timestamp; `by` `session` or `catch-up`; the other three `sha256:<64 hex>` |
+
+**What a 0.17.0 entry becomes when the module is turned on:** its `repos` entry is not changed, and `factories` gains `{ id, name, repo }` for it (linked-repos.md §1.1). Its Area and its one `project`, if any, are the row's Area and Projects.
+
+**Checks** (`brain lint`, `BRAIN_CONFIG_INVALID` where a command reads them): `id`, `name`, `repo` and `path` unique as above; an unarchived `repo` names a `repos` entry; `area` and `projects` exist; a non-ended workflow's `destination.factory` names an entry.
+
 **Template version** (0078, from 0.14.0): `notion.template_version` is the four-digit number of the last Notion migration the user's space includes, as a string (`"0024"`), from the Template version line in the Notion template's System callout, on its top page (decision 0085); absent means unknown, never guessed. `brain upgrade` names the migrations with a higher number (cli.md §5.15, [setup.md](setup.md) §9). The JSON schema gains it, and the `markitdown`, `gh` and `schedule` settings above, with CC-190; `schedule`'s object and `cleanup` with CC-368 (0.17.0).
 
 **Databases:** `inbox` is the database formerly called Capture Inbox; a `brain.json` that still has `capture_inbox` is read as `inbox` when `inbox` is absent, and `brain upgrade` renames the key (cli.md §5.15). `documents` holds reference notes, shown as Documents (0045, 0049), learned ones included (0071), and a brain without the key publishes none (warning `DATABASE_NOT_CONFIGURED`, cli.md §5.14.4). A `brain.json` that still has `references` is read as `documents` when `documents` is absent, and `brain upgrade` renames the key (cli.md §5.15). `concepts` is retired in 0.9.1 (0071): a `brain.json` that still has it is valid, the key is never read, and `brain upgrade` removes it (cli.md §5.15 step 5). `decisions` and `questions` are retired in 0.16.0 (0099): their databases are archived by the 0.16.0 Notion migration, which reads only `questions`, once (cli.md §5.14.9), and then removes both keys; until then they are kept, and nothing else reads them. Like `review`, a `brain.json` that still has them is valid; the JSON Schema keeps accepting them.
+
+`factories` (0.18.0, 0113 §1) is the Factories database, set when the module is turned on (cli.md §5.20).
 
 **Tasks mapping (0018):** each value is the name of a property in your Tasks database; an empty string means "this database has no such property", and the field is skipped.
 - `title` is required.
@@ -721,6 +752,7 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
 - `brain_id`: a text property holding the brain's id for the task's source meeting (or source), so a re-run never duplicates tasks; on a task that tracks a question, the question's id (cli.md §5.14.5).
 - `kind` (0099 §4, from 0.16.0): a select property with the options Task, Question and Risk, on which the Tasks page filters its Questions and Risks tabs. The default Tasks database has it (`Kind`), and the connect step offers to add it to a database you mapped yourself ([setup.md](setup.md) §6.2.1). A task the brain creates to track a question gets Kind Question, one that tracks a risk Kind Risk; the brain sends no Kind on any other task, which you may set to Task. Empty or absent means the database has none: a tracking task's title then starts with `Question: ` or `Risk: `, so a title filter still finds it (cli.md §5.14.5).
 - `document_asked` (0.16.0, 0100 §1, §5): the checkbox the **Keep as document** button on a task ticks, asking the brain to keep the task as a Document (capture-and-review §13). The default Tasks database has it (`Document asked`) with the button, and the connect step offers both to a database you mapped yourself ([setup.md](setup.md) §6.2.2). The snapshot passes the ticked rows and the skill clears the box once it has acted (cli.md §5.14.1, §5.14.2); sync reads nothing else of the task for it. Empty or absent means the database has none: you ask in the session instead ("keep the go-live task as a document").
+- `factory` (0.18.0, 0113 §3): the relation → Factories that says in which folder a task is to be done. Yours: you write it, and the brain sends it only on a task its own workflow or your yes creates there (connected-workflows.md §6.1, cli.md §5.14.5), and never changes it afterwards. It is never read back: a session and reconcile read the tasks through it (connected-workflows.md §8.4). Turning Factories on adds it to the default Tasks database and offers it for one you mapped yourself (docs/notion-space-design.md §3.20). Empty or absent means the database has none: a Factory still has its row and its overview, and no work can be connected to it.
 
 ## 13. Generated files
 
@@ -778,6 +810,12 @@ A withheld standalone proposal is closed with `closed_reason: stale` (§11.1). A
 | People · Role, Org, Email | `facts.role`, `org`, `notion_fields.email` |
 | Orgs · Relationship, Website | `notion_fields.relationship`, `.website` |
 | Areas · Brief toggle | the area's `area_brief` view (§16.3, 0041) |
+| Factories · Name, Area, Projects, Overview as of, Archived (0.18.0, 0113) | the `factories` entry (§12): `name`; its Area and Projects; `overview.as_of`; `archived`. Brain-owned, never read back, as an Inbox row's (cli.md §5.14.4) |
+| Factories · Brain ID, Last Synced | the entry's `id`, `last_synced` |
+| Factories · Workflow | yours (select: Standard, Connected); read by reconcile and by a session only, as Projects · Workflow (connected-workflows.md §4.1, §8.4); not stored in the entry |
+| Factories · Domain, Tasks | Notion-owned, derived: the rollup Area → Domain, as on Projects (0105 §1), and the other side of Tasks · Factory. The brain never writes them |
+| Factories · Overview toggle | connected-workflows.md §9.1; no text of it in Git |
+| Tasks · Factory (0.18.0, 0113 §3) | yours (`notion.tasks.properties.factory`, §12) |
 | Documents · Area, Project, page body | `area`, `projects`, the body (0045, 0049). A `promoted` Document's body is sent on create only: after that it is yours. On a report: its `area`, `projects` and body (0071) |
 | Documents · Origin | select, brain-owned, written from the note (0071): `whole` and `part` (and a reference with no `origin`) → Kept, `learned` → Learned, `promoted` → Promoted, `workflow` → Workflow, a report view → Report. Never read back: a changed Origin is not a correction (it is not in the correctable table of cli.md §5.14.2) |
 | Documents · Task (0.16.0, 0100 §2) | on a Document kept from a task: the task (a one-way relation → Tasks), from the page id in its `task` source's key; brain-owned, never read back (cli.md §5.14.4) |

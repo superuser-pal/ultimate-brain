@@ -173,6 +173,11 @@
           "type": "boolean",
           "default": false,
           "description": "Optional Domains around PARA (decision 0055, spec/capture-and-review.md §1). Off unless true, even in a brain whose `modules` block is absent (where every other module is on)."
+        },
+        "factories": {
+          "type": "boolean",
+          "default": false,
+          "description": "Factories: a row per working folder where agents build (decision 0113 §1, spec/linked-repos.md §1.1). Off unless true; absent means never asked, false declined or turned off."
         }
       }
     },
@@ -219,10 +224,11 @@
             "items": { "type": "string", "minLength": 1 }
           },
           "project": {
-            "description": "The Project the repo is placed under (decision 0066). Copied from the kit.",
+            "description": "The Project the repo is placed under (decision 0066), as written until 0.17.0; read as projects with one id. Not together with projects.",
             "type": "string",
             "pattern": "^prj-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
           },
+          "projects": { "description": "The Projects the repo serves (decision 0113 §2, 0.18.0). Copied from the kit.", "$ref": "#/$defs/projectIds" },
           "kit": {
             "description": "The link kit last applied by `repo add --kit` or `repo refresh` (spec/linked-repos.md §5).",
             "type": "object",
@@ -232,7 +238,54 @@
               "sha256": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
             }
           }
-        }
+        },
+        "not": { "required": ["project", "projects"] }
+      }
+    },
+    "factories": {
+      "description": "The working folders where agents build, one entry per folder (decision 0113 §1, spec/schema.md §12). Absent: none. Uniqueness and that ids exist are lint's.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^fac-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
+          "name": { "type": "string", "pattern": "\\S" },
+          "repo": { "description": "The repos entry this Factory is.", "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+          "path": { "description": "A folder that is not a linked repo.", "type": "string", "pattern": "^(/|~/|[A-Za-z]:[\\\\/])" },
+          "area": { "type": "string", "pattern": "^area-[0-9abcdefghjkmnpqrstvwxyz]{8}$" },
+          "projects": { "$ref": "#/$defs/projectIds" },
+          "plan": {
+            "description": "The plan files of a folder that is not a linked repo, relative to it.",
+            "type": "array",
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1, "pattern": "^(?!/)(?!.*(^|/)\\.\\.(/|$)).+$" }
+          },
+          "archived": { "const": true },
+          "notion": { "type": "string", "pattern": "^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$" },
+          "last_synced": { "$ref": "#/$defs/utc" },
+          "published": { "description": "The values last sent to the row.", "type": "object" },
+          "overview": {
+            "description": "What Git keeps of the last overview written: never its text (spec/connected-workflows.md §9.1).",
+            "type": "object",
+            "required": ["as_of", "by", "sha256", "folder", "tasks"],
+            "additionalProperties": false,
+            "properties": {
+              "as_of": { "$ref": "#/$defs/utc" },
+              "by": { "enum": ["session", "catch-up"] },
+              "sha256": { "$ref": "#/$defs/hash" },
+              "folder": { "$ref": "#/$defs/hash" },
+              "tasks": { "$ref": "#/$defs/hash" }
+            }
+          }
+        },
+        "oneOf": [
+          { "required": ["repo"], "not": { "anyOf": [{ "required": ["path"] }, { "required": ["plan"] }] } },
+          { "required": ["path", "area"], "not": { "required": ["repo"] } }
+        ],
+        "if": { "required": ["repo"], "not": { "required": ["archived"] } },
+        "then": { "not": { "anyOf": [{ "required": ["area"] }, { "required": ["projects"] }] } }
       }
     },
     "notion": {
@@ -303,6 +356,9 @@
             },
             "documents": {
               "$ref": "#/$defs/dbId"
+            },
+            "factories": {
+              "$ref": "#/$defs/dbId"
             }
           }
         },
@@ -370,6 +426,10 @@
                 "document_asked": {
                   "type": "string",
                   "description": "The Tasks database's Document asked checkbox, ticked by the Keep as document button (decision 0100, schema.md §12). Empty or absent: the database has none, and a task is kept as a document only when you ask in the session."
+                },
+                "factory": {
+                  "type": "string",
+                  "description": "The Tasks database's relation to Factories (decision 0113 §3, schema.md §12). Empty or absent: the database has none, and no work can be connected to a Factory."
                 }
               }
             },
@@ -459,6 +519,13 @@
         }
       ]
     },
+    "projectIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^prj-[0-9abcdefghjkmnpqrstvwxyz]{8}$" }
+    },
+    "utc": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$" },
+    "hash": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
     "dbId": {
       "description": "Notion database id; empty string until `brain connect-notion` fills it.",
       "type": "string",
