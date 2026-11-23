@@ -56,6 +56,12 @@ def given(d, data, *args, now=NOW):
     return brain(d, *args, "--input", str(f), now=now)
 
 
+def commit(d, message):
+    """Index and views as a brain in use has them, so a run's changes are its own."""
+    brain(d, "index"); brain(d, "views")
+    git(d, "add", "-A"); git(d, "commit", "-qm", message)
+
+
 def make(name):
     d = B / name
     shutil.rmtree(d, ignore_errors=True)
@@ -64,7 +70,7 @@ def make(name):
     (d / ".claude/agents").mkdir(parents=True)
     shutil.copy(R / "templates/brain/.claude/agents/ultimate-assistant.md", d / ".claude/agents")  # a product file blind-brain.mjs leaves out; brain lint wants it
     sh("brain", "proposal", "backlog", "--brain", str(d), "--json")  # the one-time backlog rows are not work for these runs
-    git(d, "add", "-A"); git(d, "commit", "-qm", "setup: backlog done", check=False)
+    commit(d, "setup: backlog done")
     return d
 
 
@@ -101,7 +107,7 @@ def scenario_noop():
 
 def scenario_noop_connected():
     d = make("noop-connected"); connect(d, reports=True, publish="auto")
-    git(d, "add", "-A"); git(d, "commit", "-qm", "setup: Notion connected")
+    commit(d, "setup: Notion connected")
     sim_files("noop-connected", [], [])  # an empty workspace
 
 
@@ -113,7 +119,7 @@ def scenario_budget():
         f.write_text(f"# Supplier note {i}\n\nOn 2026-12-{i:02d} Maria López from Acme asked for update number {i} on the website content plan. Carlos Ruiz will reply by 2026-12-{i + 10:02d}.\n")
         os.utime(f, (1765000000 + i * 3600, 1765000000 + i * 3600))
     with open(d / "AGENTS.md", "a") as f: f.write(f"\nDrop folder: {drop}\n")
-    git(d, "add", "-A"); git(d, "commit", "-qm", "setup: drop folder")
+    commit(d, "setup: drop folder")
 
 
 def publish(d, note, page, now=NOW):
@@ -164,7 +170,7 @@ def mixed(name, reports, publish_setting):
     assert "notion:" not in t
     rp.write_text(t.replace("\n---\n", f'\nnotion: {uid(103)}\nnotion_published:\n  Name: Row-level security\n  Project: []\n  "Brain ID": con-1s6t8e2b\n---\n', 1))
     week = weekly_row(d, uid(101))
-    git(d, "add", "-A"); git(d, "commit", "-qm", "setup: published baseline, this week's row")
+    commit(d, "setup: published baseline, this week's row")
     rows = [
         {"database": "inbox", "page_id": uid(101), "last_edited": week["last_edited"], "properties": {"Brain ID": week["Brain ID"]}},
         {"database": "people", "page_id": MARIA_PAGE, "last_edited": "2026-12-13T18:00:00Z", "properties": {"Brain ID": "per-3h8w2n6c", "Role": "Product lead"}},
@@ -188,7 +194,7 @@ def scenario_requests():
     publish(d, vw, uid(301))
     given(d, {"notes": [{"type": "source", "id": "src-4m9q2x7c", "title": "Hosting offer", "file_date": "2026-12-10", "frontmatter": {"source_key": "agent:eval/hosting-offer", "kind": "document"}, "body": "The hosting offer covers the Acme website.\n"}]}, "note", "new")
     publish(d, "src-4m9q2x7c", uid(302))
-    git(d, "add", "-A"); git(d, "commit", "-qm", "setup: published report, published source")
+    commit(d, "setup: published report, published source")
     rows = [
         {"database": "documents", "page_id": uid(301), "last_edited": "2026-12-13T18:00:00Z", "properties": {"Brain ID": vw, "Refresh asked": True, "What to fix": "Maria left Acme in June"},
          "wording": {"accepted": False, "accepted_at": None, "page_edited_at": "2026-12-13T18:00:00Z", "body_markdown": text, "unconvertible": False, "pending_revision": False, "pending_refresh": False}},

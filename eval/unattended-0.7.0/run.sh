@@ -73,7 +73,7 @@ collect() { # name: the traces of one scenario; returns 1 on anything missing or
   git -C "$d" cat-file -e "$base^{commit}" 2>/dev/null || { echo "$s: baseline commit $base is not in its brain" >&2; return 1; }
   git -C "$d" log --format='%s' "$base"..HEAD > "$o/commits.txt" || return 1
   git -C "$d" diff --name-status "$base" HEAD > "$o/changes.all" || return 1
-  grep -v -e ' index.md$' -e ' log/' "$o/changes.all" > "$o/changes.txt" || true
+  grep -v -e $'\tindex.md$' -e $'\tlog/' "$o/changes.all" > "$o/changes.txt" || true
   rm -f "$o/changes.all"
   cat "$d"/log/*.md 2>/dev/null | grep -h 'catch-up' > "$o/log.txt" || true  # no log folder is a legitimate empty result
   brain status --brain "$d" --json | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin)['data']['unattended']))" > "$o/status.txt" || return 1
