@@ -376,3 +376,40 @@ test("a weekly Action's new_task carries its Project's Area, when published and 
   await config(dir, (value) => { value.notion.tasks.properties.area = ""; });
   assert.deepEqual(await create(WEBSITE, "Draft the copy"), { Name: name("Draft the copy"), Project: relation(WEBSITE_PAGE) });
 });
+
+test("sync tasks --direct with a Factory: the relation, and with no Project the Factory's Area (0113 §5, 0114)", async (context) => {
+  const dir = await setUp(context);
+  await withFactories(dir);
+  const items = [
+    { title: "Add rate limits", factory: "fac-7k2m9q4x" },
+    { title: "Print the handouts", factory: "fac-3n8w5t2c" },
+    { title: "Both", factory: "fac-3n8w5t2c", projects: [WEBSITE] },
+    { title: "In two areas", factory: "fac-7k2m9q4x", projects: [WEBSITE, COURSE] },
+    { title: "Given", factory: "fac-7k2m9q4x", area: TRAINING },
+    { title: "New folder", factory: "fac-5q1y7w4f" },
+  ];
+  const result = await tasks(dir, ["--direct"], items);
+  assert.deepEqual(result.areas, [relation(CLIENTS_PAGE), relation(TRAINING_PAGE), relation(CLIENTS_PAGE), undefined, relation(TRAINING_PAGE), relation(TRAINING_PAGE)]);
+  assert.deepEqual(result.warnings, [NOT_SET(4, "In two areas")]);
+  assert.deepEqual(result.data.items[0].properties, { Name: { type: "title", value: "Add rate limits" }, Status: { type: "select", value: "To Do" }, Project: { type: "relation", value: [] }, Factory: relation(FACTORY), Area: relation(CLIENTS_PAGE) });
+  assert.equal(result.data.items[5].properties.Factory, undefined);
+  assert.deepEqual(result.data.items[5].pending_relations, [{ property: "Factory", ids: ["fac-5q1y7w4f"] }], "its row isn't published yet");
+});
+
+test("sync tasks refuses a factory on any other form, with Factories off or unmapped, and an unknown or archived one", async (context) => {
+  const dir = await setUp(context);
+  await withFactories(dir);
+  const item = { title: "Add rate limits", factory: "fac-7k2m9q4x" };
+  const refused = async (args: string[], input: unknown = item) => {
+    const error = (await run(dir, ["sync", "tasks", ...args], { items: [input] })).json.error;
+    return [error.code, error.details[0].pointer];
+  };
+  const INVALID = ["INPUT_INVALID", "/items/0/factory"]; const UNKNOWN = ["UNKNOWN_ID", "/items/0/factory"];
+  assert.deepEqual(await refused(["--meeting", MEETING]), INVALID);
+  assert.deepEqual(await refused(["--question", "que-8n3v5x1d"], { factory: item.factory }), INVALID);
+  for (const factory of ["fac-9z9z9z9z", "fac-4p9x6v3d", 7]) assert.deepEqual(await refused(["--direct"], { ...item, factory }), UNKNOWN, String(factory));
+  await config(dir, (value) => { value.notion.tasks.properties.factory = ""; });
+  assert.deepEqual(await refused(["--direct"]), INVALID);
+  await withFactories(dir, false);
+  assert.deepEqual(await refused(["--direct"]), INVALID);
+});

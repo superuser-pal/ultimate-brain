@@ -30,19 +30,23 @@ export interface TaskAreaUnset {
 /** Factories is on only when `brain.json` says so (schema §12). */
 export const factoriesOn = (config: Record<string, unknown>): boolean => isRecord(config.modules) && config.modules.factories === true;
 
-interface Factory { id: string; repo?: string; area?: string; notion?: string }
-const factoriesOf = (config: Record<string, unknown>): Factory[] => (Array.isArray(config.factories) ? config.factories.filter(isRecord) : []) as unknown as Factory[];
+/** A `factories` entry of `brain.json` (schema §12), as a task's Area reads it. */
+export interface Factory { id: string; repo?: string; area?: string; archived?: true; notion?: string }
+export const factoriesOf = (config: Record<string, unknown>): Factory[] => (Array.isArray(config.factories) ? config.factories.filter(isRecord) : []) as unknown as Factory[];
 
 /** A Factory's Area (schema §12): its linked repo's, or the entry's own for a plain folder and for an unlinked repo. */
 const factoryArea = (config: Record<string, unknown>, factory: Factory): string | undefined => factory.area ?? linkedRepos(config).find((repo) => repo.name === factory.repo)?.area;
 
 const distinct = (areas: ReadonlyArray<unknown>): string[] => [...new Set(areas.filter((area): area is string => typeof area === "string"))];
 
-/** The Area of a task the brain creates: its projects' shared one; with no project `own` (the meeting's or the question's); never a choice between Areas. */
-export function newTaskArea(workspace: Workspace, projects: readonly string[], own: unknown): { area?: string; differ: boolean } {
-  if (projects.length === 0) return { ...(typeof own === "string" ? { area: own } : {}), differ: false };
-  const areas = distinct(projects.map((id) => workspace.get(id)?.attributes.area));
-  return { ...(areas.length === 1 ? { area: areas[0]! } : {}), differ: areas.length > 1 };
+/**
+ * The Area of a task the brain creates: its projects' shared one; with no project `own` (the meeting's or the question's), else its Factories'
+ * shared one. Never a choice between Areas: `differ` says the projects are in several.
+ */
+export function newTaskArea(workspace: Workspace, projects: readonly string[], own?: unknown, factories: readonly Factory[] = []): { area?: string; differ: boolean } {
+  const areas = projects.length > 0 ? distinct(projects.map((id) => workspace.get(id)?.attributes.area))
+    : typeof own === "string" ? [own] : distinct(factories.map((factory) => factoryArea(workspace.config, factory)));
+  return { ...(areas.length === 1 ? { area: areas[0]! } : {}), differ: projects.length > 0 && areas.length > 1 };
 }
 
 /** The notes this plan creates from Notion rows, as the fill reads them. */

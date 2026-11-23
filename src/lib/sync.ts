@@ -30,7 +30,7 @@ import { chainOf, FOLLOW_UP } from "./extract.ts";
 import { wholeDocumentMarkdown } from "./whole-links.ts";
 import { FROM_THE_BRAIN_MARKER } from "./from-the-brain.ts";
 import { planTaskDocument, type TaskDocumentRequest } from "./task-documents.ts";
-import { byPage, newTaskArea, planTaskArea, type PlannedCreate, type TaskArea, type TaskAreaUnset } from "./task-areas.ts";
+import { byPage, factoriesOf, factoriesOn, newTaskArea, planTaskArea, type Factory, type PlannedCreate, type TaskArea, type TaskAreaUnset } from "./task-areas.ts";
 import { changeText, dayMonthYear, NOTION_PROPERTY, notionValueWords } from "./weekly-record.ts";
 import { readState, type RowSlot } from "./weekly-state.ts";
 
@@ -1246,6 +1246,7 @@ export function renderTasks(workspace: Workspace, targetId: string | undefined, 
   const followUps = new Set<string>(); const warnings: TaskPayloads["warnings"] = [];
   const tasks = input.items.map((item, index) => {
     if (!isRecord(item) || typeof item.title !== "string" || item.title === "") throw new BrainError("INPUT_INVALID", "each task needs a title");
+    if (item.factory !== undefined) throw new BrainError("INPUT_INVALID", "only a task from a chat names a Factory", [{ pointer: `/items/${index}/factory`, message: "is only allowed with --direct" }]);
     const followUp = item.follow_up;
     if (followUp !== undefined) checkFollowUp(workspace, target, item, index, followUps);
     const projects = taskProjects(workspace, sourceMode ? undefined : target, item.projects, index);
@@ -1307,7 +1308,7 @@ function checkFollowUp(workspace: Workspace, target: Note, item: Record<string, 
 
 /**
  * `sync tasks --direct` (0072, cli §5.14.5, assistant.md §7): no meeting or source, so no backlink and no Brain ID; an item may name
- * its Area; the owner is sent only on a Waiting On item. Nothing is recorded afterwards.
+ * its Area and, from 0.18.0, its Factory; the owner is sent only on a Waiting On item. Nothing is recorded afterwards.
  */
 function renderDirectTasks(workspace: Workspace, items: unknown[]): TaskPayloads {
   const config = tasksConfig(workspace); const warnings: TaskPayloads["warnings"] = [];
@@ -1325,6 +1326,7 @@ function renderDirectTasks(workspace: Workspace, items: unknown[]): TaskPayloads
       if (note.type !== "area") throw new BrainError("INPUT_INVALID", `${note.id} is not an Area`, [{ pointer: `/items/${index}/area`, message: `is a ${note.type}, not an Area` }]);
       area = note.id;
     }
+    const factory = item.factory === undefined ? undefined : taskFactory(workspace, config, item.factory, index);
     const projects = taskProjects(workspace, undefined, item.projects, index);
     const properties: Record<string, unknown> = {}; const pending_relations: Array<Record<string, unknown>> = [];
     const put = (key: string, type: string, value: unknown) => { const name = config.properties[key]; if (typeof name === "string" && name !== "") properties[name] = { type, value }; };
@@ -1337,10 +1339,21 @@ function renderDirectTasks(workspace: Workspace, items: unknown[]): TaskPayloads
       if (unpublished.length > 0) pending_relations.push({ property: projectProperty, ids: unpublished });
       put("project", "relation", publishedPages(projects, workspace));
     }
-    putArea(workspace, put, config, area !== undefined ? { area, differ: false } : newTaskArea(workspace, projects, undefined), warnings, index, item.title);
+    if (factory !== undefined) { if (typeof factory.notion === "string") put("factory", "relation", [factory.notion]); else pending_relations.push({ property: config.properties.factory, ids: [factory.id] }); }
+    putArea(workspace, put, config, area !== undefined ? { area, differ: false } : newTaskArea(workspace, projects, undefined, factory === undefined ? [] : [factory]), warnings, index, item.title);
     return { database_id: config.database, properties, pending_relations };
   });
   return { items: tasks, warnings };
+}
+
+/** The Factory a `--direct` item names (cli §5.14.5, 0113 §5): an entry that isn't archived, with the module on and the relation mapped. */
+function taskFactory(workspace: Workspace, config: { properties: Record<string, string> }, value: unknown, index: number): Factory {
+  const refuse = (message: string): never => { throw new BrainError("INPUT_INVALID", message, [{ pointer: `/items/${index}/factory`, message }]); };
+  if (!factoriesOn(workspace.config)) refuse("a task names a Factory only with the Factories module on");
+  if (typeof config.properties.factory !== "string" || config.properties.factory === "") refuse("notion.tasks.properties.factory has no mapping");
+  const factory = factoriesOf(workspace.config).find((entry) => entry.id === value && entry.archived !== true);
+  if (factory === undefined) throw new BrainError("UNKNOWN_ID", `No Factory with id ${String(value)}, or it is archived`, [{ pointer: `/items/${index}/factory`, message: "does not exist" }]);
+  return factory;
 }
 
 /** An open question (schema §4, 0099): no answer, not dropped, not archived. */
