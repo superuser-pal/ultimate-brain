@@ -119,7 +119,7 @@ test("a task source and a Document's question are checked: no row of its own, a 
 
 test("a ticked Document asked on a scheduled run: one task_documents item; kept, the box cleared and one From the brain question queued (0100 §4)", async (context) => {
   const dir = await setUp(context);
-  const row = (page: string, ticked: boolean) => ({ database: "tasks", page_id: page, last_edited: "2026-12-10T08:00:00Z", properties: { Name: "Check go-live with hosting", "Document asked": ticked, Project: [PROJECT_PAGE], Area: [] } });
+  const row = (page: string, ticked: boolean) => ({ database: "tasks", page_id: page, last_edited: "2026-12-10T08:00:00Z", properties: { Name: "Check go-live with hosting", "Document asked": ticked, Project: [PROJECT_PAGE], Area: ticked ? [] : ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"] } });
   const untracked = "b1000000-0000-4000-8000-000000000003";
   const plan = await ok(dir, ["sync", "plan"], { as_of: NOW, rows: [row(TASK_PAGE, true), row(OTHER_TASK, false), row(untracked, true)] });
   assert.deepEqual(plan.task_documents, [

@@ -109,7 +109,7 @@ A feature release, by explicit roadmap change after the cutoff ([0113](../decisi
 | CC-395 | Contracts for Factories | `spec/linked-repos.md`, `spec/connected-workflows.md`, `spec/cli.md`, `spec/schema.md`, the schemas, `docs/notion-space-design.md` | first; the author's answers to 0113's "To settle" lines of §1 to §6 | `todo` |
 | CC-396 | Contracts and Notion design for Domain homes | `spec/capture-and-review.md`, `spec/cli.md`, `docs/notion-space-design.md` | first, beside CC-395; the author's answers to §8 to §10 | `done` (#495) |
 | CC-397 | The CLI for Factories | `src/`, `tests/`, `templates/` | after CC-395 | `todo` |
-| CC-398 | The CLI fills a task's Area from its Project | `src/`, `tests/` | after CC-396 | `todo` |
+| CC-398 | The CLI fills a task's Area from its Project | `src/`, `tests/` | after CC-396 | `in progress` |
 | CC-399 | The release's Notion migration, prompts, views guide and template documents | `notion/` | after CC-395 and CC-396; CC-384's and CC-386's steps join it | `todo` |
 | CC-400 | The skills for 0.18.0, through the fork | the fork, then `.agents/skills/` | after CC-395 and CC-396; vendored after CC-397 and CC-398 | `todo` |
 | CC-401 | Guides and template text | the README, `docs/`, `templates/` | after CC-397 to CC-400 | `todo` |
@@ -225,7 +225,7 @@ A feature release, by explicit roadmap change after the cutoff ([0113](../decisi
 **Output:** the code and tests for CC-395's contracts, nothing the contracts don't define: the Factories module; a Factory row planned and rendered from a `repos` entry or a workflow's record; the kit's list of Projects; a Factory as a workflow's destination; reconcile for a task the user wrote; the overview's command, with its hash and its "written" record; the `AGENTS.md` block's new line in `brain link`; unlinking. Fixtures are synthetic.
 **Acceptance:** each contract rule has a test named in the PR; a brain and a kit from 0.17.0 load and behave as before, and with the module off the `Repo tasks · <name>` toggle's tests pass unchanged; reconcile's tests cover a task with a Factory and no Brain ID (no `UNKNOWN_TASK`), the user's status winning, and a task under a Project that is not the Factory's; the overview is not rewritten when only its date changed, and is when its content or state changed; a non-repo folder and a repo with uncommitted changes are covered; `brain link`'s block keeps the user's own lines; the Windows CI job passes; `npm test`, `npm run typecheck`, `npm run test:package`, `npm run test:scripts`, the leak and PR format checks pass.
 
-### CC-398 · The CLI fills a task's Area from its Project (0113 §9) · `todo`
+### CC-398 · The CLI fills a task's Area from its Project (0113 §9) · `in progress`
 **Release:** 0.18.0
 **Changelog:** A task with a Project and no Area gets the Project's Area, so it shows on its Domain's page.
 **Output:** the code and tests for CC-396's contract on the CLI's side: the Area set when the brain creates a task with a Project or, with no Project, a Factory (0114), the *if empty* fill list for the unfinished tasks the agent's read passes in, from the Project or else the Factory, and what the report counts. Fixtures are synthetic.
