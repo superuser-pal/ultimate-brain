@@ -106,7 +106,7 @@ A feature release, by explicit roadmap change after the cutoff ([0113](../decisi
 | Task | Work | Files | When | Status |
 |---|---|---|---|---|
 | CC-394 | Record 0113 and plan 0.18.0, 0.19.0 and 0.20.0 | decision and amendment pointers, this plan, vision, v2-ideas, AGENTS.md | the author's scope review of 2026-11-23 | `done` (#492) |
-| CC-395 | Contracts for Factories | `spec/linked-repos.md`, `spec/connected-workflows.md`, `spec/cli.md`, `spec/schema.md`, the schemas, `docs/notion-space-design.md` | first; the author's answers to 0113's "To settle" lines of §1 to §6 | `todo` |
+| CC-395 | Contracts for Factories | `spec/linked-repos.md`, `spec/connected-workflows.md`, `spec/cli.md`, `spec/schema.md`, the schemas, `docs/notion-space-design.md` | first; the author's answers to 0113's "To settle" lines of §1 to §6 | `review` |
 | CC-396 | Contracts and Notion design for Domain homes | `spec/capture-and-review.md`, `spec/cli.md`, `docs/notion-space-design.md` | first, beside CC-395; the author's answers to §8 to §10 | `todo` |
 | CC-397 | The CLI for Factories | `src/`, `tests/`, `templates/` | after CC-395 | `todo` |
 | CC-398 | The CLI fills a task's Area from its Project | `src/`, `tests/` | after CC-396 | `todo` |
