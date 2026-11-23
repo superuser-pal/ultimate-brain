@@ -69,8 +69,8 @@ test("the agent's page says the old name is the same agent, and its Instructions
 test("First things first, Start here and the Voice note template name Notion Brain Assistant", async () => {
   const design = await read("docs/notion-space-design.md");
   assert.match(design, /> - \[ \] \*\*Create your own Notion Brain Assistant\.\*\*[^\n]*named \*\*Notion Brain Assistant\*\*, with no triggers\. Already have one you created that answers in its chat, perhaps still named Brain Assistant\? Keep it, don't create a second one: rename it \*\*Notion Brain Assistant\*\*, check items 3 to 6, then do item 8\./);
-  assert.match(design, /Line 3[^\n]*"Then open First things first: create your own Notion Brain Assistant and select it in its buttons\."/);
-  assert.match(design, /Line 4[^\n]*"Notion Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits\."/);
+  assert.match(design, /\| \*\*Start here\*\* callout[^\n]*"Then open First things first: create your own Notion Brain Assistant and select it in its buttons\."/);
+  assert.match(design, /\| \*\*Start here\*\* callout[^\n]*"Notion Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits\."/);
   assert.match(design, /\*\*The agent's name changed in 0\.17\.0\*\*/);
   const pages = await read("notion/prompts/01-pages.md");
   assert.match(pages, /create your own Notion Brain Assistant and select it in its buttons/);
@@ -122,6 +122,28 @@ test("migration 0030's part B renames the agent by hand and replaces its name, e
   const design = await read("docs/notion-space-design.md");
   const item2 = "Already have one you created that answers in its chat, perhaps still named Brain Assistant? Keep it, don't create a second one: rename it **Notion Brain Assistant**, check items 3 to 6, then do item 8.";
   assert.ok(design.includes(item2) && partB.includes(item2), "B4 pastes First things first's new sentence");
+
+  // The name rule of B4, B5 and Verify (CC-391), in the same words, passes on the texts the product ships.
+  const rule = '"Brain Assistant" appears only after "Notion", in the database name "Brain Assistant Skills", or in item 2\'s sentence "perhaps still named Brain Assistant?"';
+  assert.equal(partB.split(rule).length - 1, 2, "B4 step 1 and B5 item 3");
+  assert.equal(migration.split("\n## Verify")[1].split(rule).length - 1, 2, "both Verify items");
+  assert.doesNotMatch(migration, /Notion Brain Assistant"? without "Notion" before it/);
+  const startHere = design.split("\n").find((l) => l.startsWith("| **Start here** callout"))!;
+  const sentences = [...startHere.matchAll(/: "([^"]*Brain Assistant[^"]*)"/g)].map((m) => m[1]);
+  assert.equal(sentences.length, 2);
+  const firstThings = design.split("\n").filter((l) => l.startsWith("> "));
+  assert.ok(firstThings.length >= 9);
+  for (const text of [...sentences, ...firstThings]) {
+    assert.doesNotMatch(text, /(?<!Notion )(?<!perhaps still named (?=Brain Assistant\?))Brain Assistant(?! Skills)/);
+  }
+
+  // B3 names both layouts, as A3 does (CC-391).
+  const a3 = migration.split("### A3 · ")[1].split("### A4")[0];
+  const b3 = partB.split("### B3 · ")[1].split("### B4")[0];
+  for (const layout of [
+    "- **The text is in the Description property and the page body is empty** (the template's layout, and every space duplicated from it):",
+    "- **The text is in the page body** (a Skills database built by hand from Prompt 9):",
+  ]) assert.ok(a3.includes(layout) && b3.includes(layout), layout);
 
   const readme = await read("notion/migrations/README.md");
   assert.match(readme, /\[0030\][^\n]*Notion Brain Assistant \(by hand, read back\)[^\n]*CC-352 \(release 0\.17\.0\)[^\n]*\|$/m);
