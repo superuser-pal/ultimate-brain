@@ -5,6 +5,7 @@
 **Release:** 0.9.0
 **Amends:** 0042 (the brain writes one file in a linked repo: its link kit)
 **Keeps:** 0001, 0003, 0014, 0015, 0022, 0055 (Domain follows the Area), 0059
+**Amended by:** [0113](0113-factories-and-domain-homes-in-0-18-0-the-fourteen-features-in-0-19-0-espanol-in-0-20-0.md) (2026-11-23; 0.18.0): with the Factories module on, a linked repo is a row of the Factories database, its kit's placement may name several Projects, and the overview on the Factory's page replaces the `Repo tasks · <name>` toggle. The hub and the one write, the kit, stand
 
 ## Context
 

@@ -2,6 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-10-28
+**Amended by:** [0113](0113-factories-and-domain-homes-in-0-18-0-the-fourteen-features-in-0-19-0-espanol-in-0-20-0.md) (2026-11-23; 0.18.0): each Domain page is that Domain's home, as each Area page is its area's; with the Domains module on, Home opens with one card per Domain and keeps what is due today across every Domain
 
 ## Context
 With one area, the Spaces work unfiltered. The agency brain and the product repo (0042) will bring at least three areas: the user's day-job area, the agency and Ultimate Brain. Every view would then need an area filter. On 2026-10-22 the user raised this and agreed a shape (docs/v2-ideas.md, "Area homes"): each Area page becomes that area's home. Two points stayed open, and the user decided them on 2026-10-28.

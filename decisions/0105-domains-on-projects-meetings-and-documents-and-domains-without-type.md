@@ -5,6 +5,7 @@
 **Release:** 0.16.1
 **Amends:** [0055](0055-domains-capture-and-review.md) (a Domain page lists its Projects, Meetings and Documents, not only its Areas and Org); [0065](0065-domains-database-in-every-space.md) (the Domains database loses Type, and Projects, Meetings and Documents gain a Domain rollup in every space); the 0.9.0 move of Type from Areas to Domains (CC-120, migration 0016), which had no decision of its own
 **Keeps:** [0061](0061-roadmap-and-launch-boundary.md)'s feature cutoff, changed explicitly here as by 0096 to 0103; [0103](0103-first-things-first-and-upgrades-with-unrelated-work.md)'s scope for 0.16.1; capture-and-review §1.3, "Domain grouping follows the Area": a Project or Document has no `domain` field
+**Amended by:** [0113](0113-factories-and-domain-homes-in-0-18-0-the-fourteen-features-in-0-19-0-espanol-in-0-20-0.md) (2026-11-23; 0.18.0): Tasks get the Domain rollup through their Area too, a task's Area is filled from its Project when empty, and a Domain page also lists its Areas, Tasks, Inbox rows, Goals and Factories
 
 ## Context
 
