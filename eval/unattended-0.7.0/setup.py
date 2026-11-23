@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the brains and the simulated Notion files for the unattended catch-up runs (CC-64, decision 0051).
+"""Build the brains and the simulated Notion files for the unattended catch-up runs (CC-64, decision 0051; the 0.17.0 model, CC-388).
 
     python3 eval/unattended-0.7.0/setup.py <scenario>      one scenario
     python3 eval/unattended-0.7.0/setup.py all             every scenario
@@ -13,8 +13,12 @@ import json, os, pathlib, shutil, subprocess, sys
 R = pathlib.Path(__file__).resolve().parents[2]
 B = pathlib.Path(os.environ.get("UB_EVAL_DIR", "/tmp/ub-eval-0.7.0"))
 NOW = "2026-12-14T09:00:00Z"
+WEEK = "2026-W51"  # the Weekly row's week: its Monday is the day of NOW
+WRITTEN = "2026-12-14T06:00:00Z"  # when that week's row was written
 # Page ids the fixture or this script gives Notion pages; built from parts so no literal UUID sits in the repo.
 def uid(n): return f"{0xe1000000:08x}-0000-4000-8000-{n:012d}"
+NOTE = "only the short name, and Mira now leads the copy team"  # the user's words on a Weekly item: an unattended run leaves them alone
+ACME_PAGE = "-".join(["2b3c4d5e", "6f7a", "4b9c", "8d1e", "2f3a4b5c6d7e"])  # the fixture's page id for the Acme website project
 MARIA_PAGE = "-".join(["7a8b9c0d", "1e2f", "4a3b", "8c4d", "5e6f7a8b9c0d"])  # the fixture's page id for Maria
 REPORT_BODY = "\n\n".join([
     "## Where it stands", "Launch is set for February, per [the auth decision](../knowledge/decisions/2026-12-03-use-supabase-for-auth.md).",
@@ -33,15 +37,23 @@ def prepare():
 
 
 def sh(*a, cwd=None, check=True):
-    return subprocess.run(a, cwd=cwd, check=check, capture_output=True, text=True).stdout
+    run = subprocess.run(a, cwd=cwd, capture_output=True, text=True)
+    if check and run.returncode != 0: sys.exit(f"{' '.join(a)}: exit {run.returncode}\n{run.stdout}{run.stderr}")
+    return run.stdout
 
 
 def git(d, *a, check=True):
     return sh("git", "-c", "user.name=Blind", "-c", "user.email=b@brain.example", *a, cwd=d, check=check)
 
 
-def brain(d, *args):
-    return json.loads(sh("brain", *args, "--brain", str(d), "--now", NOW, "--json"))["data"]
+def brain(d, *args, now=NOW):
+    return json.loads(sh("brain", *args, "--brain", str(d), "--now", now, "--json"))["data"]
+
+
+def given(d, data, *args, now=NOW):
+    """A brain command with its input file, kept beside the brain."""
+    f = B / f"{d.name}-input.json"; f.write_text(json.dumps(data))
+    return brain(d, *args, "--input", str(f), now=now)
 
 
 def make(name):
@@ -49,6 +61,8 @@ def make(name):
     shutil.rmtree(d, ignore_errors=True)
     shutil.rmtree(B / f"{name}-sim", ignore_errors=True)
     sh("node", "scripts/blind-brain.mjs", "brain-acme", str(d), cwd=R)
+    (d / ".claude/agents").mkdir(parents=True)
+    shutil.copy(R / "templates/brain/.claude/agents/ultimate-assistant.md", d / ".claude/agents")  # a product file blind-brain.mjs leaves out; brain lint wants it
     sh("brain", "proposal", "backlog", "--brain", str(d), "--json")  # the one-time backlog rows are not work for these runs
     git(d, "add", "-A"); git(d, "commit", "-qm", "setup: backlog done", check=False)
     return d
@@ -58,25 +72,27 @@ def config(d, fn):
     p = d / "brain.json"; c = json.loads(p.read_text()); fn(c); p.write_text(json.dumps(c, indent=2) + "\n")
 
 
-def connect(d, reports, publish, documents=False):
-    def apply(c):
-        for i, k in enumerate(c["notion"]["databases"]): c["notion"]["databases"][k] = uid(i + 1)
-        if documents:  # the fixture's brain.json predates these keys; a Promote request needs the Documents database to be set up
-            for i, k in enumerate(["inbox", "concepts", "documents"]): c["notion"]["databases"][k] = uid(50 + i)
-        c["settings"] = {"publish": publish, "push": "auto"}
-        c["modules"] = {"knowledge": True, "orgs": True, "documents": documents, "reports": reports, "tasks": False, "planning": False}
+DATABASES = ["areas", "goals", "key_results", "projects", "meetings", "people", "orgs", "inbox", "documents"]
+
+
+def connect(d, reports, publish):
+    def apply(c):  # the databases of a 0.17.0 brain: no Review, Decisions or Questions (0096, 0099)
+        c["notion"] = {"review_sections": True, "databases": {k: uid(i + 1) for i, k in enumerate(DATABASES)}, "tasks": c["notion"]["tasks"]}
+        c["settings"] = {"publish": publish, "push": "auto", "cleanup": {"auto": "off"}}  # off: the week's mechanical items are C items to tick
+        c["modules"] = {"domains": False, "orgs": True, "documents": True, "reports": reports, "tasks": False, "planning": False}
     config(d, apply)
 
 
-def sim_files(name, rows, meetings):
+def sim_files(name, rows, meetings, inbox=()):
     sim = B / f"{name}-sim"; sim.mkdir(parents=True, exist_ok=True)
     (sim / "snapshot.json").write_text(json.dumps({"as_of": NOW, "rows": rows}, indent=1))
     (sim / "meetings.json").write_text(json.dumps(meetings, indent=1))
+    (sim / "inbox.json").write_text(json.dumps(list(inbox), indent=1))
     (sim / "writes.md").write_text("")
 
 
 def mtg(n, title, date, body):
-    return {"page_id": uid(200 + n), "Name": title, "Date": date, "Brain Status": "Reviewed", "Project": "Acme website", "Attendees": ["Maria López", "Carlos Ruiz"], "page_text": body}
+    return {"page_id": uid(200 + n), "Name": title, "Date": date, "Brain Status": "Ready", "last_edited": "2026-12-13T18:00:00Z", "Project": "Acme website", "Attendees": ["Maria López", "Carlos Ruiz"], "page_text": body}
 
 
 def scenario_noop():
@@ -100,55 +116,84 @@ def scenario_budget():
     git(d, "add", "-A"); git(d, "commit", "-qm", "setup: drop folder")
 
 
-def mixed(name, reports, publish):
-    """Two clean meetings and one with no Date; a Review row set to Approve and one set to Fix with text; Maria's Role changed in Notion."""
-    d = make(name); connect(d, reports, publish)
-    (B / f"{name}-prop.json").write_text(json.dumps({"proposals": [
-        {"kind": "update_fact", "title": "Launch: March", "target": "prj-9x4t1b7e", "field": "launch_date", "after": "2027-03", "why": "Moved in the sync.", "source": "mtg-8c4n2p7w"},
-        {"kind": "update_fact", "title": "Budget: 95000", "target": "prj-9x4t1b7e", "field": "budget", "after": "95000 EUR", "why": "Licence added.", "source": "mtg-8c4n2p7w"}]}))
-    created = brain(d, "proposal", "new", "--input", str(B / f"{name}-prop.json"))["created"]
-    p1, p2 = created[0]["id"], created[1]["id"]
+def publish(d, note, page, now=NOW):
+    """Record the note as published on this page, as the run that wrote it would have."""
+    item = brain(d, "sync", "render", "--ids", note, now=now)["items"][0]
+    given(d, {"records": [{"id": note, "notion": page, "synced_at": now, "published": item["published"]}]}, "sync", "record", now=now)
+    return item
+
+
+def weekly_row(d, page):
+    """This week's row, written by the CLI from four repeated aliases, published and set Ready: one plain tick, one whose file changed since,
+    one with a note, one unticked. Returns the Inbox row."""
+    people = {"Ivo Brand": "per-8d4f2j6k", "Lena Hart": "per-4m7q2x9c", "Mira Lund": "per-5j8r3x6m", "Otto Kern": "per-6t3w8k2p"}
+    for name, pid in people.items():
+        first = name.split()[0]
+        (d / f"knowledge/people/{name.lower().replace(' ', '-')}.md").write_text(
+            f"---\nid: {pid}\ntype: person\ntitle: {name}\nsummary: {name} reviews page texts at Acme.\nlifecycle: reviewed\naliases: [{first}, {first}]\n"
+            f"sources: [mtg-8c4n2p7w]\ncreated: 2026-12-03\nupdated: 2026-12-03\n---\n\nReviews page texts.\n")
+    snap = B / f"{d.name}-weekly.json"
+    snap.write_text(json.dumps({"as_of": WRITTEN, "notion": "unreachable", "repos": []}))
+    os.environ["HOME"], home = str(B / "home"), os.environ["HOME"]  # the weekly commands' hand-off files stay out of the user's home
+    planned = brain(d, "weekly", "plan", "--snapshot", str(snap), now=WRITTEN)
+    selected = given(d, {"input_hash": planned["input_hash"], "judged": {"clusters": [], "findings": [], "corrections": []}}, "weekly", "select", now=WRITTEN)
+    proposals = [{"key": i["key"], "proposal": given(d, {"proposals": i["proposal_input"]}, "proposal", "new", now=WRITTEN)["created"][0]["id"]} for i in selected["items"] if i["write"]]
+    report = given(d, {"input_hash": planned["input_hash"], "proposals": proposals, "in_short": "A quiet week.", "highlights": ["- Nothing new this week."],
+                       "focus_first": ["- No overdue, stalled or blocked work."], "cleaned": [], "mode": "attended", "publish": False, "failures": [],
+                       "notes_read": 0, "seconds": 1}, "weekly", "record", now=WRITTEN)["id"]
+    os.environ["HOME"] = home
+    body = publish(d, report, page, WRITTEN)["body"]
+    labels = [l for l in ("C1", "C2", "C3", "C4") if f"- [ ] {l} · " in body]
+    assert len(labels) == 4, body
+    for label in labels[:3]: body = body.replace(f"- [ ] {label} · ", f"- [x] {label} · ")
+    parts = body.split("Your note:"); assert len(parts) == 5, body
+    parts[3] = f" {NOTE}" + parts[3]  # after the third item's line
+    stale = next(n for n in people if n in body.split("C2 · ")[1].split("\n")[0])
+    f = d / f"knowledge/people/{stale.lower().replace(' ', '-')}.md"; f.write_text(f.read_text() + "\nAlso checks the footer.\n")  # C2 is stale
+    return {"page_id": page, "Name": "Week of 14 Dec 2026", "Kind": "Weekly", "Brain Status": "Ready", "Brain ID": report, "last_edited": "2026-12-14T07:00:00Z", "body": "Your note:".join(parts)}
+
+
+def mixed(name, reports, publish_setting):
+    """Two clean meetings (one with a fact that conflicts) and one with no Date; a Ready Weekly row; Maria's Role changed in Notion, and a
+    learned Document's Project, which the brain can't take (NOT_CORRECTABLE)."""
+    d = make(name); connect(d, reports, publish_setting)
     mp = d / "knowledge/people/maria-lopez.md"; t = mp.read_text()
     assert f"notion: {MARIA_PAGE}" in t
     mp.write_text(t.replace("\n---\n", '\nnotion_published:\n  Name: Maria López\n  Role: Product Manager\n  "Brain ID": per-3h8w2n6c\n---\n', 1))
-    dp = d / "knowledge/decisions/2026-12-03-use-supabase-for-auth.md"; t = dp.read_text()
+    rp = d / "knowledge/references/row-level-security.md"; t = rp.read_text()
     assert "notion:" not in t
-    dp.write_text(t.replace("\n---\n", f'\nnotion: {uid(103)}\nnotion_published:\n  Name: Use Supabase for auth\n  Assessment: Accepted\n  "Brain ID": dec-7k2m9q4x\n---\n', 1))
-    git(d, "add", "-A"); git(d, "commit", "-qm", "setup: proposals, published baseline")
+    rp.write_text(t.replace("\n---\n", f'\nnotion: {uid(103)}\nnotion_published:\n  Name: Row-level security\n  Project: []\n  "Brain ID": con-1s6t8e2b\n---\n', 1))
+    week = weekly_row(d, uid(101))
+    git(d, "add", "-A"); git(d, "commit", "-qm", "setup: published baseline, this week's row")
     rows = [
-        {"database": "review", "page_id": uid(101), "last_edited": NOW, "properties": {"Name": "Launch: March", "Brain ID": p1, "Your call": "Approve", "What to fix": "", "State": "Pending"}},
-        {"database": "review", "page_id": uid(102), "last_edited": NOW, "properties": {"Name": "Budget: 95000", "Brain ID": p2, "Your call": "Fix", "What to fix": "a: 90000 EUR, not 95000", "State": "Pending"}},
+        {"database": "inbox", "page_id": uid(101), "last_edited": week["last_edited"], "properties": {"Brain ID": week["Brain ID"]}},
         {"database": "people", "page_id": MARIA_PAGE, "last_edited": "2026-12-13T18:00:00Z", "properties": {"Brain ID": "per-3h8w2n6c", "Role": "Product lead"}},
-        # A change the brain can't take: a decision's Assessment is not correctable (NOT_CORRECTABLE).
-        {"database": "decisions", "page_id": uid(103), "last_edited": NOW, "properties": {"Brain ID": "dec-7k2m9q4x", "Assessment": "Contested"}},
+        {"database": "documents", "page_id": uid(103), "last_edited": "2026-12-13T18:00:00Z", "properties": {"Brain ID": "con-1s6t8e2b", "Project": [ACME_PAGE]}},
     ]
     meetings = [
         mtg(1, "Acme design review", "2026-12-10", "## Attendees\nMaria López (Acme), Carlos Ruiz\n\n## Projects\nAcme website\n\n## Action Items\n- [ ] Carlos Ruiz sends the design tokens by 2026-12-17\n\n## Decisions\nUse the new grid for all pages.\n\n## Open Questions\nNone\n\n## Risks\nNone\n"),
-        mtg(2, "Acme content check-in", "2026-12-12", "## Attendees\nMaria López (Acme), Carlos Ruiz\n\n## Projects\nAcme website\n\n## Action Items\n- [ ] Maria López confirms the blog topics by 2026-12-19\n\n## Decisions\nPublish the case studies two weeks after launch.\n\n## Open Questions\nWho approves the German copy? Raised by Maria López.\n\n## Risks\nNone\n"),
+        mtg(2, "Acme content check-in", "2026-12-12", "## Attendees\nMaria López (Acme), Carlos Ruiz\n\n## Projects\nAcme website\n\n## Action Items\n- [ ] Maria López confirms the blog topics by 2026-12-19\n\n## Decisions\nThe launch moves from February 2027 to March 2027.\n\n## Open Questions\nWho approves the German copy? Raised by Maria López.\n\n## Risks\nNone\n"),
         mtg(3, "Acme budget call", None, "## Attendees\nMaria López (Acme), Carlos Ruiz\n\n## Projects\nAcme website\n\n## Action Items\nNone\n\n## Decisions\nKeep the budget as it is.\n\n## Open Questions\nNone\n\n## Risks\nNone\n"),
     ]
-    sim_files(name, rows, meetings)
+    sim_files(name, rows, meetings, [week])
 
 
 def scenario_requests():
-    """Reports and Documents on, publish auto: a report with a refresh and a What to fix waiting, and a decision with Promote asked on a page that also has a conflict."""
+    """Publish auto: a report with a refresh and a What to fix waiting, and a duplicated Inbox row with Document asked ticked, whose page is not
+    the one the brain recorded for its source (NOTION_ID_MISMATCH)."""
     name = "requests"
-    d = make(name); connect(d, reports=True, publish="auto", documents=True)
-    (B / f"{name}-report.json").write_text(json.dumps({"title": "Acme launch: where we stand", "question": "Everything about the Acme launch", "projects": ["prj-9x4t1b7e"], "body": REPORT_BODY}))
-    vw = brain(d, "report", "new", "--input", str(B / f"{name}-report.json"))["id"]
-    item = brain(d, "sync", "render", "--ids", vw)["items"][0]
-    report_page = uid(301)
-    (B / f"{name}-record.json").write_text(json.dumps({"records": [{"id": vw, "notion": report_page, "synced_at": NOW, "published": item["published"]}]}))
-    brain(d, "sync", "record", "--input", str(B / f"{name}-record.json"))
-    # The decision's Name changed on both sides since it was published: a BOTH_CHANGED conflict on the page that also has Promote asked.
-    dp = d / "knowledge/decisions/2026-12-03-use-supabase-for-auth.md"; t = dp.read_text()
-    assert "notion:" not in t
-    t = t.replace("\n---\n", f'\nnotion: {uid(302)}\nnotion_published:\n  Name: Use Supabase for auth\n  "Brain ID": dec-7k2m9q4x\n---\n', 1)
-    dp.write_text(t.replace("title: Use Supabase for auth\n", "title: Use Supabase for authentication\n", 1))
-    git(d, "add", "-A"); git(d, "commit", "-qm", "setup: published report, decision with a changed title")
+    d = make(name); connect(d, reports=True, publish="auto")
+    vw = given(d, {"title": "Acme launch: where we stand", "question": "Everything about the Acme launch", "projects": ["prj-9x4t1b7e"], "body": REPORT_BODY}, "report", "new")
+    text = (d / vw["path"]).read_text().split("\n---\n", 1)[1].removeprefix("\n"); vw = vw["id"]  # the page shows the brain's text: no wording waits
+    publish(d, vw, uid(301))
+    given(d, {"notes": [{"type": "source", "id": "src-4m9q2x7c", "title": "Hosting offer", "file_date": "2026-12-10", "frontmatter": {"source_key": "agent:eval/hosting-offer", "kind": "document"}, "body": "The hosting offer covers the Acme website.\n"}]}, "note", "new")
+    publish(d, "src-4m9q2x7c", uid(302))
+    git(d, "add", "-A"); git(d, "commit", "-qm", "setup: published report, published source")
     rows = [
-        {"database": "inbox", "page_id": report_page, "last_edited": NOW, "properties": {"Brain ID": vw, "Refresh asked": True, "What to fix": "Maria left Acme in June"}},
-        {"database": "decisions", "page_id": uid(302), "last_edited": NOW, "properties": {"Name": "Auth: Supabase", "Brain ID": "dec-7k2m9q4x", "Promote asked": True}},
+        {"database": "documents", "page_id": uid(301), "last_edited": "2026-12-13T18:00:00Z", "properties": {"Brain ID": vw, "Refresh asked": True, "What to fix": "Maria left Acme in June"},
+         "wording": {"accepted": False, "accepted_at": None, "page_edited_at": "2026-12-13T18:00:00Z", "body_markdown": text, "unconvertible": False, "pending_revision": False, "pending_refresh": False}},
+        {"database": "inbox", "page_id": uid(302), "last_edited": "2026-12-13T18:00:00Z", "properties": {"Brain ID": "src-4m9q2x7c"}},
+        {"database": "inbox", "page_id": uid(303), "last_edited": "2026-12-13T18:00:00Z", "properties": {"Brain ID": "src-4m9q2x7c", "Document asked": True, "Only keep": None}},
     ]
     sim_files(name, rows, [])
 
@@ -157,9 +202,9 @@ SCENARIOS = {
     "noop": scenario_noop,
     "noop-connected": scenario_noop_connected,
     "budget": scenario_budget,
-    "mixed-on": lambda: mixed("mixed-on", reports=True, publish="auto"),
-    "mixed-reports-off": lambda: mixed("mixed-reports-off", reports=False, publish="auto"),
-    "mixed-ask": lambda: mixed("mixed-ask", reports=True, publish="ask"),
+    "mixed-on": lambda: mixed("mixed-on", reports=True, publish_setting="auto"),
+    "mixed-reports-off": lambda: mixed("mixed-reports-off", reports=False, publish_setting="auto"),
+    "mixed-ask": lambda: mixed("mixed-ask", reports=True, publish_setting="ask"),
     "requests": scenario_requests,
 }
 
