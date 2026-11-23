@@ -1,9 +1,10 @@
-Catch-up (unattended) took in 10 of the 12 files in the drop folder. Two are left for the next run, and nothing was published or pushed.
+Done: 10 drop-folder files taken in, 2 left for the next run. The unattended catch-up ran with no Notion and no git remote.
 
-- **Drop folder:** `/tmp/ub-eval-0.7.0/budget-drop` held `note-01.md` to `note-12.md`. The unattended limit is 10 inputs per run (`settings.unattended.max_inputs`), so I took the 10 oldest and moved them to `processed/`. `note-11.md` and `note-12.md` are still in the queue.
-- **What was written:** 10 source notes, one per file (`sources/files/…supplier-note-N-document.md`), each with a summary and digest.
-- **What was not written:** no notes, proposals or tasks. Each file only says that Maria López (Acme) asked for update N on the website content plan and that Carlos Ruiz will reply by a date, and Carlos Ruiz isn't the brain owner. The sources carry no project link, since nothing said which project they belong to.
-- **Not done:** with no Notion and no remote, there was nothing to sync, publish or push. There were no linked repos or other inputs. 3 proposals were already pending and are left for your next session.
-- **Checks:** `brain lint` reported 0 errors and 0 warnings. It also showed an info note that the skills aren't pinned (`brain upgrade` pins them). The ingest is committed, and the run's log line is in its own commit.
-- **Next action:** run catch-up again to take in `note-11.md` and `note-12.md`.
-- **Log lines to fix:** the `catch-up` line recorded `seconds=300` as an estimate, not a measured time. I used `-` where `brain log` wants an id, and the line was stored with an empty target (`catch-up - ""`). The ingest line is attached to the first source's id, `src-64b27q5v`, because the log needs a real note id.
+- **Ingested:** `note-01.md` to `note-10.md`, supplier notes from Maria López at Acme. Each is now a source linked to the Clients area and the Acme website project, in commit a119b5c.
+- **Moved:** the 10 files are in `budget-drop/processed/`.
+- **Left:** `note-11.md` and `note-12.md` stay in the queue because the unattended input limit is 10.
+- **No other notes:** I wrote no other notes. The files are repeated update requests from Maria, each with a Carlos Ruiz reply date, and I judged that nothing durable to keep. I created no tasks, because the owner of the replies is unclear.
+- **Needs you:** 3 proposals are still pending for your next session. They are two sets of new notes to review (from Acme sync and Acme kickoff) and the Acme mobile app relaunch change.
+- **Not run:** Notion pull and publish, because Notion isn't configured. The setup check also shows no git remote.
+- **Lint:** `brain lint` reports 0 errors and 0 warnings. The log line is in commit ad756f6.
+- **Not pushed:** `git push` failed because no push destination is configured, so both commits are local only. Not backed up: no remote is configured. Say "fix my backup".

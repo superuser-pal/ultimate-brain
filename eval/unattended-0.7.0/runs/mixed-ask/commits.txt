@@ -1,3 +1,4 @@
 log: catch up (unattended)
-ingest: Acme design review 2026-12-10, Acme content check-in 2026-12-12 (6 new, 3 proposals); sync: 1 correction waiting
+ingest: Acme content check-in 2026-12-12 (3 new, 2 waiting)
+ingest: Acme design review 2026-12-10 (1 new, 1 waiting)
 catch-up: weekly ticks 2026-W51 (1 applied)

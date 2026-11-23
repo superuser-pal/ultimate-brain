@@ -1,15 +1,20 @@
-Update areas page <id 1> (area-2m7c4h8n): set Name, Summary, Brain ID, Last Synced + replace toggles Brief
-Update projects page <id 2> (prj-9x4t1b7e): set Name, Summary, Brain ID, Key Facts, Area, Client, People, Last Synced + replace toggles Brief/Decision log
-Update people page <id 3> (per-3h8w2n6c): set Summary, Lifecycle, Org, Last Synced
-Create people page for per-4m7q2x9c in database <id 4>: set Name, Summary, Lifecycle, Brain ID, Role, Org (simulation returned no page id, so not recorded; the next publish creates it again)
-Create people page for per-5j8r3x6m in database <id 4>: set Name, Summary, Lifecycle, Brain ID, Role, Org (simulation returned no page id, so not recorded; the next publish creates it again)
-Create people page for per-6t3w8k2p in database <id 4>: set Name, Summary, Lifecycle, Brain ID, Role, Org (simulation returned no page id, so not recorded; the next publish creates it again)
-Create people page for per-8d4f2j6k in database <id 4>: set Name, Summary, Lifecycle, Brain ID, Role, Org (simulation returned no page id, so not recorded; the next publish creates it again)
-Create people page for per-9t2c6m4a in database <id 4>: set Name, Summary, Lifecycle, Brain ID, Role, Org (simulation returned no page id, so not recorded; the next publish creates it again)
-Update orgs page <id 5> (org-6d1f9z3k): set Name, Summary, Brain ID, Last Synced
-Update documents page <id 6> (con-1s6t8e2b): set Summary, Lifecycle, Area, Origin, Last Synced + replace page body
-Update meetings page <id 7> (mtg-3fznaxc7): set Attendees, Project, Area, Brain Status, Ingested At, Brain ID
-Update meetings page <id 8> (mtg-5r2k8v3a): set Attendees, Project, Area, Brain Status, Ingested At, Brain ID
-Update meetings page <id 9> (mtg-8c4n2p7w): set Attendees, Project, Area, Brain Status, Ingested At, Brain ID
-Update meetings page <id 10> (mtg-vnmrb04b): set Attendees, Project, Area, Brain Status, Ingested At, Brain ID
-Pending (not written): Acme website People relation to per-9t2c6m4a and the meetings' Attendees to it wait until Carlos Ruiz's People page exists; a second render after the page ids come back sends them.
+update areas page <id 1> (area-2m7c4h8n): properties {"Name": "Clients", "Summary": "Paid client work for the consulting business.", "Brain ID": "area-2m7c4h8n", "Last Synced": {"start": "2026-11-23T13:05:59Z", "end": null}}; sections ['Brief']
+update projects page <id 2> (prj-9x4t1b7e): properties {"Name": "Acme website", "Summary": "Rebuild of Acme's marketing website, launching February 2027.", "Brain ID": "prj-9x4t1b7e", "Key Facts": "Budget: 80000 EUR · Launch date: 2027-02", "Area": ["<id 1>"], "Client": ["<id 3>"], "People": ["<id 4>"], "Last Synced": {"start": "2026-11-23T13:05:59Z", "end": null}}; sections ['Brief', 'Decision log']
+update people page <id 4> (per-3h8w2n6c): properties {"Summary": "Product manager at Acme since December 2026, previously designer.", "Lifecycle": "Reviewed", "Org": ["<id 3>"], "Last Synced": {"start": "2026-11-23T13:05:59Z", "end": null}}
+create people page <id 5> (per-4m7q2x9c): properties {"Name": "Lena Hart", "Summary": "Lena Hart reviews page texts at Acme.", "Lifecycle": "Reviewed", "Brain ID": "per-4m7q2x9c", "Role": null, "Org": []}
+create people page <id 6> (per-5j8r3x6m): properties {"Name": "Mira Lund", "Summary": "Mira Lund reviews page texts at Acme.", "Lifecycle": "Reviewed", "Brain ID": "per-5j8r3x6m", "Role": null, "Org": []}
+create people page <id 7> (per-6t3w8k2p): properties {"Name": "Otto Kern", "Summary": "Otto Kern reviews page texts at Acme.", "Lifecycle": "Reviewed", "Brain ID": "per-6t3w8k2p", "Role": null, "Org": []}
+create people page <id 8> (per-8d4f2j6k): properties {"Name": "Ivo Brand", "Summary": "Ivo Brand reviews page texts at Acme.", "Lifecycle": "Reviewed", "Brain ID": "per-8d4f2j6k", "Role": null, "Org": []}
+create people page <id 9> (per-9t2c6m4a): properties {"Name": "Carlos Ruiz", "Summary": "Developer at Acme working on the website rebuild.", "Lifecycle": "Draft", "Brain ID": "per-9t2c6m4a", "Role": "Developer", "Org": ["<id 3>"]}
+update orgs page <id 3> (org-6d1f9z3k): properties {"Name": "Acme", "Summary": "Client; mid-size retailer rebuilding its marketing website.", "Brain ID": "org-6d1f9z3k", "Last Synced": {"start": "2026-11-23T13:05:59Z", "end": null}}
+update documents page <id 10> (con-1s6t8e2b): properties {"Summary": "Database access rules evaluated per row; used by Supabase for auth-aware queries.", "Lifecycle": "Draft", "Area": [], "Origin": "Learned", "Last Synced": {"start": "2026-11-23T13:05:59Z", "end": null}}; body replaced
+update meetings page <id 11> (mtg-06ye95s9): properties {"Attendees": ["<id 4>"], "Project": ["<id 2>"], "Area": ["<id 1>"], "Brain Status": "Done", "Ingested At": {"start": "2026-11-23", "end": null}, "Brain ID": "mtg-06ye95s9"}
+update meetings page <id 12> (mtg-3fz5342d): properties {"Attendees": ["<id 4>"], "Project": ["<id 2>"], "Area": ["<id 1>"], "Brain Status": "Done", "Ingested At": {"start": "2026-11-23", "end": null}, "Brain ID": "mtg-3fz5342d"}
+update meetings page <id 13> (mtg-5r2k8v3a): properties {"Attendees": ["<id 4>"], "Project": ["<id 2>"], "Area": ["<id 1>"], "Brain Status": "Done", "Ingested At": {"start": "2026-10-01", "end": null}, "Brain ID": "mtg-5r2k8v3a"}
+update meetings page <id 14> (mtg-8c4n2p7w): properties {"Attendees": ["<id 4>"], "Project": ["<id 2>"], "Area": ["<id 1>"], "Brain Status": "Done", "Ingested At": {"start": "2026-12-03", "end": null}, "Brain ID": "mtg-8c4n2p7w"}
+update projects page <id 2> (prj-9x4t1b7e): properties {"People": ["<id 4>", "<id 9>"], "Last Synced": {"start": "2026-11-23T13:06:12Z", "end": null}}
+update meetings page <id 11> (mtg-06ye95s9): properties {"Attendees": ["<id 4>", "<id 9>"]}
+update meetings page <id 12> (mtg-3fz5342d): properties {"Attendees": ["<id 4>", "<id 9>"]}
+update meetings page <id 13> (mtg-5r2k8v3a): properties {"Attendees": ["<id 4>", "<id 9>"]}
+update meetings page <id 14> (mtg-8c4n2p7w): properties {"Attendees": ["<id 4>", "<id 9>"]}
+create inbox page <id 15>: Name "Catch-up 14 Dec: 2 in, 3 need you", Kind Catch-up, Brain Status Done, no Brain ID; body = the report (Done: 2 meetings in (Acme design review, Acme content check-in), 5 notes as draft, 3 proposals pending, weekly tick C1 applied · Needs you: "Acme budget call" skipped (no Date: set it in Notion, it stays Ready); Weekly row C3 has a note and waits for a session; C2 not applied (Mira Lund changed since the review); Maria López's Role edit in Notion (Product lead) waits as a correction; 7 decisions wait · Next: say "what needs my decision")

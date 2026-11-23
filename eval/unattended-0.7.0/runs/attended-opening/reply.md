@@ -1,39 +1,33 @@
-**Catch-up, read-only pass done.** Nothing was applied, ingested, published or committed. No Notion write was made, so `writes.md` is untouched. The working tree is clean.
+**Catch-up batch for 2026-12-14.** I wrote nothing, ingested nothing, published nothing and committed nothing. Notion answered from your files, and `settings.push` is `auto` but there is no remote.
 
-Since last time: 1 scheduled run, 2 inputs in, 1 skipped, 7 decisions waiting.
-This week's review is ready: 0 actions and 4 clean-up items to tick, 0 cleaned (`reports/2026-12-14-weekly-review.md`).
-Ready now: 3 meetings and 1 Weekly row. The Inbox holds no capture or Ask row, and the pull plan found no sync conflicts.
+**What's waiting**
+- 3 Ready meetings. Two (Acme design review and Acme content check-in) are already in the brain from earlier runs.
+- 1 Ready Weekly row (2026-W51) with 3 ticks and 1 note.
+- 7 decisions waiting. I'll ask them in rounds at the end of the run, not here.
+- No Inbox captures or Ask rows, no drop folder, no linked repos, and no documents or reports asked for.
 
-**Questions** (reply "go" to take every default):
+**Questions** (reply "go" to take every default)
 
-**Acme budget call** (Ready meeting)
-1. The Date is empty. Which date should the minutes carry? Default: leave the meeting Ready and skip it, then name it under Needs you. The only decision in it ("Keep the budget as it is") would also need to pass the decision gate. As written it is probably a dated line in the project, not a decision note.
+1. **Acme budget call has no Date.** The row is Ready, but a meeting note needs a date.
+   - Options: give me the date, or skip it.
+   - Default: skip it. It stays Ready and goes on the report's Needs you line. Nothing is written for it.
+2. **Acme design review (2026-12-10) and Acme content check-in (2026-12-12) are Ready in Notion but already in the brain** (`mtg-x5d59zkh`, `mtg-2pvm5tr9`). Did you edit them on purpose to have them read again?
+   - Default: no. I won't read them again or create duplicates, and I'll report that the rows are still Ready. I'd set them to Done at the end, if you say so.
+3. **Weekly row, item C3** ("Remove a repeated value from aliases of Otto Kern"). Your note says: "only the short name, and Mira now leads the copy team".
+   - My reading: "only the short name" is the alias clean-up as shown (`["Otto","Otto"]` → `["Otto"]`). The second half is a new fact about Mira, not about Otto.
+   - Default: apply C3 as shown. For the Mira fact, I'd leave a pending proposal on Mira Lund for you to decide in the session, and I wouldn't change her note. (Options: propose it / drop it.)
+   - C1 and C2 are plain ticks, so I'll apply them. C4 isn't ticked, so I'll leave it alone.
+4. **Your identities.** `brain.json` has no `owner.person`. Which person note is you?
+   - Default: skip for now and ask again next catch-up.
+5. **Publish to Notion at the end?** `settings.publish` is `ask`.
+   - Default: yes. The only things to publish would be the C1–C3 changes to the person notes, and a Weekly row update that keeps your ticks and notes.
 
-**Acme design review** and **Acme content check-in** (both Ready again)
-- Both were ingested already. Their minutes match the stored sources exactly (`DUPLICATE_SOURCE`: `src-3xpy4aqa` and `src-xgffqhqt`). Nothing changed, so there is no re-read.
-- Default: take nothing in. The only step left is setting both back to **Done** in Notion.
+**Decisions waiting for the end of the run (7)**
+- Maria López's Role was changed in Notion to "Product lead". Before: "Product Manager".
+- The Acme website launch date moves from 2027-02 to 2027-03, from the 2026-12-12 content check-in.
+- 4 batches of new notes to review. These come from the Acme sync, the Acme design review, the Acme content check-in and the Acme kickoff.
+- Add to Acme's note: "mobile app relaunch planned for 2027".
 
-**Week of 14 Dec 2026** (Weekly row)
-- Applying what you ticked: C1 is already applied.
-- Dropping C2: its proposal went stale and was closed earlier. I'll name it under Check.
-- Declining C4, which is unticked, once nothing else in the row waits.
-2. **C3**: remove the repeated alias from "Otto Kern" (`["Otto","Otto"]` → `["Otto"]`). Your note says "only the short name, and Mira now leads the copy team".
-   - I read it as: apply C3 as shown, since it leaves only the short name "Otto".
-   - The remark about Mira is a new fact about Mira Lund and is not part of C3. I won't write it unless you say so.
-   - Default: apply C3 as shown and write nothing about Mira. The other option is a proposal on Mira Lund's note for the leadership change.
+**Not run:** the sync plan itself. `brain sync plan` rejected `--snapshot`, and I didn't look for another way to feed it the snapshot. The people and documents rows in the snapshot (Maria's Role and a Project link on `con-1s6t8e2b`) are therefore not checked. Maria's Role edit is already one of the 7 waiting decisions.
 
-**Other**
-3. Your identities: `brain.json` has no `owner.person`. Which person note are you, and which aliases do you use? Default: skip for now and ask again next catch-up.
-4. Publish to Notion at the end? That would mark the two meetings and the Weekly row Done. Default: yes.
-
-**Decisions waiting.** I'll ask these at the end, in rounds:
-- Maria López's role: Product Manager → Product lead. You edited it in Notion, so it waits as a correction.
-- Acme website launch date: 2027-02 → 2027-03.
-- The new notes from the content check-in, design review, sync and kickoff (4 sets).
-- The Acme mobile app relaunch fact.
-
-Two more proposals are also pending (the C3 and C4 clean-ups).
-
-**Checked:** `brain status`, `sync plan`, `proposal list --waiting`, `proposal backlog --dry-run` (nothing to list) and duplicate dry runs on two meetings. `brain lint` was not run, since nothing was written.
-
-**Next action:** say "go", or answer 1 to 4.
+**Next action:** reply "go", or answer 1–5.

@@ -5,7 +5,7 @@ A	_proposals/2026-11-23-maria-lopez-role-product-lead.md
 M	_proposals/2026-12-14-remove-a-repeated-value-from-aliases-of-lena-hart.md
 M	_proposals/2026-12-14-remove-a-repeated-value-from-aliases-of-mira-lund.md
 M	areas/briefs/clients.md
-A	knowledge/decisions/2026-12-12-move-the-acme-launch-to-march-2027.md
+A	knowledge/decisions/2026-12-12-move-the-acme-website-launch-to-march-2027.md
 A	knowledge/meetings/2026-12-10-acme-design-review.md
 A	knowledge/meetings/2026-12-12-acme-content-check-in.md
 M	knowledge/people/lena-hart.md

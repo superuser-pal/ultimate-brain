@@ -1,3 +1,4 @@
 log: catch up (unattended)
 publish: catch up
-catch-up: sync apply, weekly ticks W51 (1 applied), ingest 2 meetings (4 new, 3 proposals)
+ingest: Acme design review 2026-12-10, Acme content check-in 2026-12-12 (5 new, 3 proposals)
+catch-up: weekly ticks 2026-W51 (1 applied)
