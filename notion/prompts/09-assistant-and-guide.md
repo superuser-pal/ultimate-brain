@@ -15,12 +15,12 @@ On the page "System", create one full-page database named "Skills" with exactly 
 ## 2 · The skills (your agent, or by hand)
 
 Ask your agent: "publish Notion Brain Assistant's skills to Notion". With your yes, it creates one page in the Skills database per skill under "Skills" in [../brain-assistant.md](../brain-assistant.md), through the Notion MCP, for each skill that has no page there yet; it changes no page that is there:
-- **Title:** the skill's name.
+- **Title:** the skill's name, in the database's title property (Name; Skill name in a space made from the template).
 - **Description:** the skill's whole text block, word for word. Notion Brain Assistant runs what Description holds. The short **Description:** line above the block isn't copied.
 - **Body:** empty.
 - **Write minutes** is the one exception. Its Description is its **Description:** line. Write minutes has no text block there: its body is the text block of [../minutes-format.md](../minutes-format.md), the minutes prompt, word for word, so the prompt has one source.
 
-**Through the MCP,** a Notion text property takes at most 2000 characters per item, and several skills are longer: write Description as a list of `rich_text` items, each at most 2000 characters, cut at line ends with every line break kept (100 items at most). Each `[@Brain Data]` and `[@How it works]` is an item of its own, a page mention (`{"type": "mention", "mention": {"page": {"id": "<that page>"}}}`) of the page under your top page. Then read each page back: the items joined in order are the block, and the body is empty.
+**Through the MCP,** a Notion text property takes at most 2000 characters per item, and several skills are longer: write Description, and the block of Write minutes' body, as a list of `rich_text` items, each at most 2000 characters, cut at line ends with every line break kept (100 items at most). Each `[@Brain Data]` and `[@How it works]` is an item of its own, a page mention (`{"type": "mention", "mention": {"page": {"id": "<that page>"}}}`) of the page under your top page. Then read each page back: the items joined in order are the block, and the body is empty (Write minutes: Description is its short line, and the body joined is the minutes prompt).
 
 Or create the eleven pages by hand from the same files: paste each text block into Description, and replace *[@…]* with a real @mention of that page under your top page.
 
