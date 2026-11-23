@@ -195,6 +195,12 @@ Document asked (a checkbox) and the **Keep as document** button that ticks it ar
 
 Neither needs the Documents module to be mapped, but a task is kept only with Documents on (capture-and-review §13.2).
 
+#### 6.2.3 Domain on Tasks (Domains module; 0113 §9, 0114, from 0.18.0)
+
+**Domain** on Tasks is a read-only rollup (Area → Domain, Show original): the Tasks views of a Domain home filter on it (docs/notion-space-design.md §4.1). The brain never reads or writes it, so `brain.json` maps nothing for it. brain-connect-notion looks at it with Tasks and Domains on: in step 4 when Domains is on already, otherwise when Domains is turned on (seeding §8.2, or "turn on domains"):
+- **The default Tasks database** is expected to have it. Missing → the skill names the 0.18.0 Notion migration that adds it; nothing is held back, since the brain doesn't use it.
+- **A database you mapped yourself** is offered it, once, when its mapped `area` is a relation to the brain's Areas database: "Add a Domain to your tasks database, so each Domain page can list its tasks? a) yes, add it (recommended) b) no". On a), the skill adds the rollup through the MCP with your yes and reads it back. A database that has the rollup already is not asked about. On b), or when the write fails, nothing is added, the Tasks views are left off the Domain homes, and everything else works. Asked again only when you ask to change the mapping. With no such `area` relation it isn't offered: the skill says in one line that Domain pages won't list tasks.
+
 ### 6.3 The minutes prompt (step 4a; 0078 §2, 0079)
 
 Walked through: the skill gives the prompt's text (from `<product.path>/notion/`, the file CC-197 names) and how it runs, as `notion/pasting-the-minutes-prompt.md` says (CC-258, capture-and-review §3.4). The user opens the meeting page, with the transcript on it, and opens the Notion AI chat there. They paste the prompt, then the line **"Write the minutes on this page, below the transcript, and nothing else."**, and send it. The transcript stays on the page: in the meeting-notes block's Transcript when Notion recorded the meeting, or in the page body above the minutes when it was pasted. Checked:
@@ -375,6 +381,7 @@ The new style applies from the agent's next reply. A request made in a linked fo
 - **The description is a source.** The user's description and the preview's answers, verbatim, are kept as one owner-ruling source note (0031, as brain-connect-notion's identities step does): `title` `Setup: my work (owner ruling)`, `source_key` `agent:<agent>/<date>-setup-seeding`. Every seeded note lists it in `sources`, and each role is a `facts.role` with a timeline entry citing it (schema §5).
 - **Order:** Orgs, Domains (and `brain modules on domains` when there are any), Areas, Projects, People, so each relation names an existing id. Each with `brain note new`; `lifecycle: reviewed` for Domains, Areas, Projects and Orgs (0070). People are written `draft`, like every new person (cli.md §5.5): they are published as Draft, so the first meeting matches them, and the user marks them Reviewed in Notion when they like (the user's choice of 2026-11-11, asked through the coordinator during CC-191).
 - Then `brain index`, `brain views`, `brain lint`, one commit (`setup: seed my work`), and **one publish** of every seeded note (`brain sync render --ids …`, the MCP, `brain sync record`, commit): the preview's yes covers this publish, whatever `settings.publish` says.
+- **Home in a duplicate of the template (0.18.0, 0113 §10).** The template's Home holds the tabs of both cases (docs/notion-space-design.md §5), so seeding's report ends with one by-hand line. Domains on: "On Home, delete the tabs Areas and Projects: your Domains tab replaces them." Domains off: "On Home, ignore or delete the Domains tab." "Turn on domains" later says the first line too, when Home has those tabs. Nothing checks it.
 - `brain log setup - step=seeding result=done notes=<n> documents=<n>`.
 
 ### 8.3 Key documents
