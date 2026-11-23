@@ -1,0 +1,4 @@
+review_notes  · From Acme kickoff: 1 new note
+review_notes  · From Acme sync: 3 new notes
+add_to_note  · Acme: mobile app relaunch planned for 2027
+{'waiting': 3, 'held': 0, 'in_weekly_row': 0}

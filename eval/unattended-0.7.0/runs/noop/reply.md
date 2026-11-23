@@ -1,9 +1,9 @@
-I ran the unattended catch-up and nothing was waiting, so it stopped without writing anything. There's no commit, log line or report, and the working tree is still clean at `aa51017`. That's what the skill says to do so scheduled runs don't add noise.
+Nothing is waiting, so I stopped without writing or committing anything.
 
-What the read-only pass found:
-- **Notion:** no databases are set up, so there were no meetings, Inbox rows, Review decisions or reports to pull, and nothing to publish.
-- **Linked repos:** none. **Drop folder:** none set.
-- **Backlog:** nothing to write.
-- **Left for your next attended catch-up:** 3 pending proposals and the question about which names and emails are you. Unattended runs never decide these.
+- **Branch:** the brain is on its working branch, `main`.
+- **Inputs:** none. Notion isn't configured, so there are no Ready meetings, Inbox rows, Weekly rows or reports to read. No drop folder is set, and no repos are linked.
+- **Pending proposals:** 3. An unattended run never decides these, so they wait for your next attended session ("what needs my decision").
+- **Index:** `index.md` is stale. I left it alone because a run that finds nothing writes nothing, and the next write will rebuild it.
+- **Not run:** publish, push and lint, since nothing was written. There is no git remote, so nothing would have pushed.
 
-When you're back, say "what needs my decision" to go through the 3 proposals in chat, or "connect the brain to Notion" to set up Notion.
+Next action: run `brain-apply` in a session to decide the 3 pending proposals.

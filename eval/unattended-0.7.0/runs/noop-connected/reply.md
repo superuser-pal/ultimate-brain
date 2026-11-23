@@ -1,15 +1,14 @@
-The unattended catch-up found nothing to do, so it stopped without writing anything. A scheduled run with no work and no failures is meant to leave no trace.
+Nothing is waiting, so this unattended catch-up wrote nothing. That means no commit, no Notion write, no log line and no Inbox row.
 
-What it checked:
-- **Status:** the index and views are up to date, and settings are `publish: auto`, `push: auto`, with a limit of 10 inputs per run. No linked repos, and no scheduled runs recorded since the last attended catch-up.
-- **Notion pull:** `snapshot.json` has no rows, so the sync plan was empty. There were no edits, decisions on Review rows, conflicts, refresh requests or fixes to reports.
-- **Meetings:** `meetings.json` is empty, so no meetings are marked Reviewed.
-- **Inbox:** no Ready rows and no Ask rows, as you said.
-- **Drop folder:** none is set, so there was nothing to read.
-- **Older drafts:** the dry run found no Review notes rows to write for notes from before 0.4.0.
+- **Branch:** the brain is on `main`, its working branch.
+- **Notion:** `sync plan` on the snapshot returned no imports, corrections, conflicts, document requests, report refreshes or accepted wording. The Meetings and Inbox files are empty, so no meeting, capture, Ask row or Weekly row is Ready.
+- **Linked repos and drop folder:** no repos are linked, and the drop folder isn't set. That isn't a reason to do anything this run.
+- **Backlog:** the dry run found nothing to list.
+- **Decisions waiting:** 3 proposals are still pending, and an unattended run decides none of them.
+  - `prp-0n1nzasv`: the notes from Acme kickoff.
+  - `prp-x5mqqkz1`: the notes from Acme sync.
+  - `prp-9d3f7h2k`: Acme's mobile app relaunch planned for 2027.
+- **`brain lint`:** not run, because nothing was written.
+- **Push:** nothing was committed, and there is no git remote, so there was nothing to push.
 
-Nothing was committed, logged or published, and nothing was added to `writes.md`. The working tree is still clean at `aca0dc4`.
-
-Two things to look at when you're back:
-- **Concepts isn't set up:** the Knowledge module is on, but its Concepts database has no id, so concepts aren't synced. Say "connect the brain to Notion" to set it up.
-- **Three proposals are still pending:** they wait for your decision in the Notion Review queue. An unattended run never decides them.
+Next action: say "what needs my decision" in a session to decide those 3 proposals.

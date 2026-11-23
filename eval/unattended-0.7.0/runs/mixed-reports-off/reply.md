@@ -1,28 +1,28 @@
-Done: 1 review applied · 1 Notion edit taken in · 2 meetings ingested · 3 new notes · 22 pages published to Notion (recorded in the simulated `writes.md`)
-Needs you: 1 Fix waiting (Budget: 95000) · 1 meeting skipped (Acme budget call has no Date) · Knowledge is on but its Concepts database isn't set up: say "set up concepts" · 4 Review rows to decide · 2 action items didn't become tasks (Tasks is off)
-Next: decide in Notion, then "catch up". The push failed because there's no remote, but all the work is committed.
-
-**Unattended run:** 2 inputs taken in, 0 left for the next run, 1 skipped, 1 waiting, 0 failed. Reports is off, so no report row was written in the Inbox.
+Done: 2 meetings ingested (Acme design review, Acme content check-in) · 5 new notes, all `draft` · 1 weekly tick applied · 19 Notion page writes logged to `writes.md`
+Needs you: 7 decisions waiting · 1 meeting skipped · 1 weekly item waiting on your note · Not backed up: there is no git remote. Say "fix my backup".
+Next: say "what needs my decision" in a session.
 
 **What came in**
-- **Acme design review (2026-12-10):** a design review for the Acme website. It decided to use the new grid for all pages. I kept this as a line in the meeting note, not a separate decision note, because it's a smaller choice than one that needs its own note.
-- **Acme content check-in (2026-12-12):** it decided to publish the case studies two weeks after launch (also kept as a line in the meeting note). New open question: "Who approves the German copy?", raised by Maria López.
+- **Acme design review (10 Dec):** a draft meeting note. The decision "use the new grid for all pages" is a small choice, so it waits as a dated project line instead of a decision note.
+- **Acme content check-in (12 Dec):** a draft meeting note and a draft question, "Who approves the German copy?". The launch moving from 2027-02 to 2027-03 waits as a launch-date change on Acme website.
+- **Action items:** the commitments by Carlos Ruiz and Maria López stay as text in the notes. Tasks is off, so no tasks were made.
 
 **What changed**
-- Acme website launch date: 2027-02 → 2027-03. You approved this in Review.
-- Maria López's role: Product Manager → Product lead. You edited this in Notion.
-
-**Fixes:** "Budget: 95000" is set to Fix with the note "a: 90000 EUR, not 95000". It waits for an attended run because unattended runs don't interpret What to fix text. The budget stays at 80000 EUR until then.
+- **Pull:** one edit made in Notion, Role "Product lead" for Maria López, is queued as a pending correction and not applied. The Project edit on a Document was ignored (`NOT_CORRECTABLE`).
+- **Weekly row, week 51:**
+  - C1 (Lena Hart's repeated alias) was applied.
+  - C2 (Mira Lund) was not applied because her note changed since the review, so its proposal is closed.
+  - C3 (Otto Kern) waits: you wrote a note on it, and an unattended run doesn't act on your words.
+  - C4 was left unticked and stays open, since C3 still waits.
+- **Notion writes (not sent):** none of the 19 writes in `writes.md` reached Notion. They cover the people, the project, Area, Org and Document updates, both meeting pages (set to Done), and the attendee links. The weekly row has nothing new to write and stays Ready.
 
 **Check**
-- **Acme budget call skipped:** its Date is empty in Notion. Set the date and it gets ingested on the next run. Its minutes say "Keep the budget as it is."
-- **Decision Assessment edit:** you changed the Assessment of *Use Supabase for auth* to Contested in Notion. Editing that field in Notion can't change it in the brain, so the note still says accepted. Use a proposal or tell me what's wrong.
-- **Stale summaries:**
-  - Maria López's summary still says "Product manager at Acme since December 2026".
-  - The Acme website project summary still says "launching February 2027".
-- **Action items with no task** (Tasks is off):
-  - Carlos Ruiz sends the design tokens by 2026-12-17.
-  - Maria López confirms the blog topics by 2026-12-19.
-- **Drop folder not set:** say where it is if you want to use one.
-- **Review rows waiting for your decision:** the two new meetings, plus the older Acme kickoff and Acme sync rows. The Acme mobile app proposal is still pending too.
-- **Meeting dates:** both meetings are dated from their Notion Date property. Their source snapshots don't record when the Notion pages were last edited, because the simulated meetings file didn't include that.
+- **Skipped:** Acme budget call has no Date, so it stays Ready until a date is set.
+- **Redone ingest:** my first ingest left out the Notion page id on the meeting notes, so I reset that unpushed commit and wrote the notes again with it.
+- **Lint:** 0 errors, 4 warnings, all orphan people notes.
+- **Not run:**
+  - Reports, Tasks and Planning are off, so those steps were skipped.
+  - There are no linked repos.
+  - The drop folder isn't set up.
+  - Skills are unpinned.
+- **Log line:** the catch-up log records `seconds=600`, an estimate, because I couldn't time the run.

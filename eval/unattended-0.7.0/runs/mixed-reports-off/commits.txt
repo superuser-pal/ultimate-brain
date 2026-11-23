@@ -1,5 +1,4 @@
 log: catch up (unattended)
 publish: catch up
-ingest: Acme content check-in 2026-12-12 (3 new, 1 proposal)
-ingest: Acme design review 2026-12-10 (2 new, 1 proposal)
-sync: 0 new, 1 correction, 1 decision from Notion
+ingest: Acme design review 2026-12-10, Acme content check-in 2026-12-12 (5 new, 3 proposals)
+catch-up: pull (1 correction waits), weekly ticks 2026-W51 (1 applied)

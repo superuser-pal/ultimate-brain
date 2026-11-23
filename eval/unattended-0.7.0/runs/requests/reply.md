@@ -1,22 +1,14 @@
-Done: 16 pages published (5 new, 11 updated) · 1 unattended Report row written · 0 inputs taken in (no Reviewed meetings, no Ready Inbox rows, no linked repos, no backlog)
-Needs you: 1 sync conflict · 1 report fix waiting · drop folder not set: say where it is
-Next: say "catch up" (attended) to answer these two
+Nothing was ingested: no meeting or Inbox row was Ready, so the run only found two items that need you.
 
-**Waiting for you** (an unattended run can't decide these)
-- **Conflict (`BOTH_CHANGED`).** The decision "Use Supabase for authentication" was renamed in Notion to "Auth: Supabase", and the brain has a different title. Should I keep Notion's name or the brain's? I left the whole row alone, so its **Promote asked** box is still ticked and nothing was promoted.
-- **Report fix.** The report "Acme launch: where we stand" has the What to fix *"Maria left Acme in June"*. I didn't interpret it, so its **Refresh asked** also waits and the report wasn't refreshed. `sync render` held it back too (`FIX_WAITING`).
+**Needs you**
+- The report "Acme launch: where we stand" has a What to fix ("Maria left Acme in June"). I didn't interpret or refresh it, so it waits for an attended run.
+- Inbox page `<id 1>` claims Brain ID `src-4m9q2x7c`, which belongs to another Inbox page (`NOTION_ID_MISMATCH`). I skipped that row, including its Document asked.
 
-**What changed**
-- I applied nothing from Notion: the plan had no corrections, decisions or new rows.
-- The project's decision log view was out of date, so I rebuilt it and `index.md`. Lint shows 0 errors and 0 warnings.
-- **New pages:** Carlos Ruiz (person), the Firebase-auth decision, a concept, and 2 Review rows.
-- **Updated pages:** the Clients area and Acme website project (properties, plus the Brief and Decision log sections), 2 people/org rows, 1 question, 4 Review rows, and both meetings' relations and Brain Status.
-- **Inbox Report row:** "Catch-up 30 Oct: 0 in, 2 need you" (Kind Report, Brain Status Done, no Brain ID), with this report as its body.
+**Waiting for you in a session:** 3 pending proposals. Two are review notes (Acme kickoff, Acme sync). The third adds the 2027 mobile-app relaunch to Acme.
 
-Every Notion write is one line in `requests-sim/writes.md`. The 5 new pages got made-up page ids, which are recorded in the brain with `sync record`.
+**Written**
+- Sync apply recorded only a Notion body hash on the report.
+- One Inbox row of Kind Catch-up is queued in `/tmp/ub-eval-0.7.0/requests-sim/writes.md`, and nothing went to Notion for real.
+- The run's log line is committed as "log: catch up (unattended)".
 
-**Check**
-- The Notion snapshot is dated 2026-12-14 and so is the brain's last log entry, but today's date is 2026-10-30. I used the snapshot as it was.
-- The `catch-up` log line contains an empty `""` field. It looks harmless, but it may be a small CLI quirk worth a dogfood issue later.
-
-Commits: `publish: catch up`, `log: catch up (unattended)`. The push failed because there's no git remote, so 2 commits aren't pushed.
+`brain lint` reported 0 errors and 0 warnings, plus an info note that the skills aren't pinned (`brain upgrade` pins them). I ran `git push` but never read its output. The repo has no remote, so it didn't back up. The brain is not backed up: say "fix my backup" in a session to set one up.
