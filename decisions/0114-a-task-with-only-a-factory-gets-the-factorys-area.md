@@ -22,7 +22,9 @@ A task linked to a Factory says what you want built next (0113 §3), and most ca
 
 ## Consequences
 
-CC-396 writes the contract, CC-398 the CLI, CC-399 the migration and CC-400 the skills. 0113 gets an "Amended by" line.
+- 0113 §9 as written changes one thing at creation: a meeting's task takes its Projects' Area, and none when they differ. The meeting's own Area, which its tasks took until 0.17.0, is used only for a task with no Project.
+- CC-396 writes the contract, CC-398 the CLI, CC-399 the migration and CC-400 the skills.
+- 0113 gets an "Amended by" line.
 
 ## Evidence
 
