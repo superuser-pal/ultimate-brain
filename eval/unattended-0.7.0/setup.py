@@ -67,8 +67,6 @@ def make(name):
     shutil.rmtree(d, ignore_errors=True)
     shutil.rmtree(B / f"{name}-sim", ignore_errors=True)
     sh("node", "scripts/blind-brain.mjs", "brain-acme", str(d), cwd=R)
-    (d / ".claude/agents").mkdir(parents=True)
-    shutil.copy(R / "templates/brain/.claude/agents/ultimate-assistant.md", d / ".claude/agents")  # a product file blind-brain.mjs leaves out; brain lint wants it
     sh("brain", "proposal", "backlog", "--brain", str(d), "--json")  # the one-time backlog rows are not work for these runs
     commit(d, "setup: backlog done")
     return d
