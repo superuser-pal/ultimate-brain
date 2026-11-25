@@ -4,7 +4,7 @@ The README's [Get started](../README.md#get-started) gives the steps. This page 
 
 ## The two templates
 
-- **The Notion template** is a ready-made Notion space: every database, view, button and page, plus fifteen example rows, one or more in every database on Brain Data ([notion/template-examples.md](../notion/template-examples.md) lists them). You duplicate it into your own workspace. Its link and version are in [notion/TEMPLATE.md](../notion/TEMPLATE.md).
+- **The Notion template** is a ready-made Notion space: every database, view, button and page, plus example rows, one or more in every database on Brain Data ([notion/template-examples.md](../notion/template-examples.md) lists them). You duplicate it into your own workspace. Its link and version are in [notion/TEMPLATE.md](../notion/TEMPLATE.md).
 - **The brain folder** is the Git repository `brain init` creates. Your notes live here, as Markdown files.
 
 The brain folder is where your knowledge is kept. Notion is where you read it, review what the brain proposes and capture new things. The brain publishes its notes to Notion, and reads back what you capture and review there.
@@ -68,7 +68,7 @@ Step 2 shows one screen with every setting filled in. Change any of them later b
 3. **Backup.** A private copy of your brain on GitHub, so nothing is lost and another machine can use it. The screen shows `Backup: a private GitHub repository, created for you`: setup creates it with `gh`, named after your brain folder, unless your brain already has one, which it keeps. It must be private, since your notes are about real people and real work: setup checks that it is, and stops if it isn't (see [Your backup is public](#your-backup-is-public-remote-public)).
 4. **Drop folder.** Default `~/Documents/brain-dropbox/`, created for you. The next catch-up reads the files you drop here: documents, exports, notes. Each brain has its own: when another brain on this computer already reads `~/Documents/brain-dropbox/`, setup proposes a folder named after the new brain, such as `~/Documents/client-brain-dropbox/`, and says why.
 5. **The language your notes are written in.** Default: the language you write to your agent in. The brain writes every note in this language, whatever the language of the source, so search and answers stay consistent.
-6. **Modules.** Default: Knowledge, Orgs, Documents, Reports and Tasks on, Planning off, and Domains decided when you describe your work (on when you name two or more contexts, such as work and personal). These are the parts of your Notion space the brain uses. The template holds every part, so turning a module on later needs no work in Notion.
+6. **Modules.** Default: Orgs, Documents, Reports and Tasks on, Planning off, and Domains decided when you describe your work (on when you name two or more contexts, such as work and personal). Factories is off and isn't asked here: linking your first repo, or connecting your first folder, offers it ([Factories and Domain homes](#factories-and-domain-homes)). These are the parts of your Notion space the brain uses. The template holds every part, so turning a module on later needs no work in Notion, except on Home with Domains.
 7. **Publish.** Default `ask`: the brain asks before it publishes to Notion. With `auto`, it publishes after each run.
 8. **Back up after each run.** Default `on`: the brain backs up after each run, so your backup stays current. With `remind me`, it reminds you instead, and the last line of each report says how many changes aren't backed up yet. Change it by saying "back up: remind me".
 9. **Opening recall in linked repos.** Default `off`. When you link a project's repository to the brain, agents working there can load what the brain remembers about that project when a session opens.
@@ -342,6 +342,34 @@ Checked on 2026-11-20 against Notion's pages: [AI Meeting Notes](https://www.not
 
 **How-to questions** go to your agent, with or without Notion Brain Assistant.
 
+## Factories and Domain homes
+
+Two parts of your Notion space, from 0.18.0 (decision [0113](../decisions/0113-factories-and-domain-homes-in-0-18-0-the-fourteen-features-in-0-19-0-espanol-in-0-20-0.md)). How to use them day by day is in the guides your agent answers from: ask "how do Factories work?" or "what is on a Domain's page?".
+
+### Factories
+
+A **Factory** is a working folder where agents build: a repo you linked, or any other folder you connected. Each has one row in Notion.
+
+- **Turn it on** by linking or connecting. In your brain folder, say "link the repo at ~/code/acme-api". In any other folder, say "connect this work to Notion" in a session there. The first time, the message offers Factories. Say "turn on factories" to add the repos you linked before. Nothing connects by itself.
+- **What you answer.** Linking shows the file it would write, `brain-kit.json`, and one message in parts: link it, show it in Notion, connect its work. Answer "all", "1", "1, 2" or "no".
+- **What is written in your folder,** after your yes: `brain-kit.json` in a linked repo; and when you connect its work, `.brain-workflow.json`, `.brain`, the brain's skills and a block in `AGENTS.md`, which tells a session there to start from your tasks. You commit them. `brain upgrade` refreshes the block and the skills, and leaves every other line of yours as it is.
+- **What you want next** is a Task in Notion with that Factory. Example: a task *Speed up login* with the Factory *acme-api*. The next session in the folder lists it, agrees with you how to do it, and builds. The folder's detailed plan stays in the folder: none of its items becomes a task in Notion.
+- **The overview** opens the Factory's page: the plan, what is being built, what is next, what was done lately. It is as fresh as the last session or catch-up, and its first line says which and when. A scheduled catch-up writes it only with Publish on `auto` (setting 7).
+- **It needs** the Tasks module to connect work. It works the same on a Mac and on Windows, with Claude Code and with Codex. In Codex you may be asked to approve a save in the brain, which is outside the folder it works in.
+- **Off again:** "unlink acme-api" archives its row, and "turn off factories" deletes nothing.
+
+### Domain homes
+
+With the **Domains** module on, each Domain's page in Notion is that Domain's home: what needs you, its areas, tasks, projects, goals, factories, meetings and documents, each part when its module is on. Say "turn on domains", or let setup decide from how you describe your work.
+
+- **Home** then opens with one card per Domain. Today's tasks, today's meetings and the Inbox stay on Home, with every Domain together.
+- **One thing by hand in a duplicate of the template:** Home has the tabs of both cases. With Domains on, delete the tabs **Areas** and **Projects**. With Domains off, ignore or delete **Domains**.
+- **What is on a Domain's home** is what has an Area in that Domain. Example: a task in the Area *Clients*, in the Domain *Studio*, is on Studio's home. The brain fills an unfinished task's empty Area from its Project, or with no Project from its Factory, when it creates the task and at each catch-up that publishes. It never changes an Area you set, and it doesn't ask: the report counts them ("Areas set on tasks: 2").
+
+### A space from before 0.18.0
+
+`brain upgrade` names the Notion change of 0.18.0, migration 0031, and your agent applies it when you ask. Its parts for Domain homes, Home and Factories are skipped while their module is off, and "turn on factories" does the Factories part later. Some steps are done by you in Notion; your agent says which and what you should see.
+
 ## Building the Notion space yourself
 
 The template is the quick way, and needs no Notion AI. If you prefer to build the space yourself from Notion AI prompts (which needs Notion AI), tell your agent at step 3. It gives you the text of [notion/CHECKLIST.md](../notion/CHECKLIST.md), one step at a time, adapted to the modules you chose.
@@ -380,7 +408,7 @@ Setup put things in these places outside your brain folder. Remove the ones you 
 | The drop folder | The folder you chose in setup, by default `~/Documents/brain-dropbox/` | Move out any file you still want, then delete it. |
 | The backup | A private repository on GitHub | Delete it on github.com (the repository's Settings, Danger Zone), or keep it as an archive. |
 | The Notion space | Your workspace | Delete the duplicated space. In Notion's Settings, under Connections, remove your agent's connection. Delete Notion Brain Assistant, or its text in your personal Instructions. |
-| Linked repositories | Each repository you linked with `brain link` | Unlinking only removes the brain's record of the repository. In the repository itself, delete `.brain`, `brain-kit.json`, the Ultimate Brain block in `AGENTS.md` and `CLAUDE.md`, and the brain's skills under `.agents/skills/` and `.claude/skills/`. |
+| Linked repositories | Each repository you linked with `brain link` | Unlinking only removes the brain's record of the repository. In the repository itself, delete `.brain`, `brain-kit.json`, `.brain-workflow.json`, the Ultimate Brain block in `AGENTS.md` and `CLAUDE.md`, and the brain's skills under `.agents/skills/` and `.claude/skills/`. |
 
 Setup may also have set your Git name and email for every repository on this computer, when they were missing. Leave them unless you want them gone: `git config --global --unset user.name` and `git config --global --unset user.email`.
 

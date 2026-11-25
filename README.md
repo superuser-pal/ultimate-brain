@@ -208,6 +208,13 @@ Your agent walks you through the rest, one step at a time: your settings, connec
 - **A first check that passed:** tasks that are really yours, a report on your main project, notes in the right place, and an answer that cites its source.
 - **A schedule, if you keep it:** on a Mac or on Windows, your computer starts your agent (Claude Code or Codex) for the weekly review every Monday at 08:00 and a catch-up every day at 07:30, or at the times you choose. The weekly review is a row in your Notion Inbox: tick what you agree with, set it Ready, and the next catch-up does it.
 
+### Later: your folders and your Domains
+
+Two parts you turn on when you need them, by saying so in your agent. Each with an example, and what it doesn't do: [docs/setup.md](docs/setup.md#factories-and-domain-homes).
+
+- **Factories.** A Factory is a working folder where agents build. Say "link the repo at ~/code/acme-api" in your brain folder, or "connect this work to Notion" in any other folder, and answer one message part by part. In Notion it has your tasks for it and an overview of what is being built, as fresh as the last session or catch-up. Write a task *Speed up login* with that Factory: the next session in the folder lists it, agrees with you how, and builds. The folder's detailed plan stays in the folder.
+- **Domain homes.** Say "turn on domains" to group your areas by part of your life or work. Home then opens with one card per Domain, and a card opens that Domain's page: what needs you there, its tasks, projects, meetings and documents.
+
 Why each step is there, every setting, and what to do when something fails: [docs/setup.md](docs/setup.md).
 
 Where your data goes, and what the review rules do and don't protect: [PRIVACY.md](PRIVACY.md). To report a security problem: [SECURITY.md](SECURITY.md).

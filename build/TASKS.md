@@ -300,7 +300,7 @@ In the block read the rich text item of the date is `{"type":"mention","mention"
 **From CC-386 (2026-11-23):** the exact text for brain-setup's item 3 and check 5, and where each goes, is in CC-386's row under "Text for CC-400's fork release".
 **From CC-385 (2026-11-23):** brain-setup's `references/notion.md`, check 4, says it reads the mentions in each page's Description and in its body (spec/setup.md §6.4 check 5).
 
-### CC-401 · Guides and template text for 0.18.0 (0113 §1 to §10) · `todo`
+### CC-401 · Guides and template text for 0.18.0 (0113 §1 to §10) · `in progress`
 **Release:** 0.18.0
 **Changelog:** The guides explain Factories and Domain homes: linking a folder, writing what you want next, how a session starts, the overview, and your Domain pages.
 **Output:** words only: the README, `docs/setup.md`, the Everyday Guide and How it works gain what a user needs for Factories and Domain homes, by their trigger words and one example each; the guides say that the overview is as fresh as the last session or catch-up, and that the detailed plan stays in the folder; the generic starter's `AGENTS.md` (`templates/repo/generic/`) and the linked folder's block agree with CC-397's line; `docs/design-principles.md` §3's evidence for the new database points to 0113 §1. English only: 0.20.0 translates.
