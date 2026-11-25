@@ -121,7 +121,7 @@ A feature release, by explicit roadmap change after the cutoff ([0113](../decisi
 | CC-388 | eval/unattended-0.7.0 is rewritten for the 0.17.0 model or retired (moved from 1.0.0's section) | `eval/unattended-0.7.0` | the author's choice of (a) or (b) first | `done` (#497) |
 | CC-391 | Migration 0030 and the template's documents say what the template holds | migration 0030, Notion design §10, TEMPLATE.md | any order | `done` (#500) |
 | CC-392 | The template's skill pages are checked against the product's text at every release | `docs/releasing.md`, TEMPLATE.md, `scripts/skills-pages-check.mjs`, its tests | any order; either layout until CC-385 | `todo` |
-| CC-402 | A date mention in a page reads as one text | `spec/cli.md` §5.14.7, `spec/capture-and-review.md`, `tests/`, the fork | before CC-400's fork release | `todo` |
+| CC-402 | A date mention in a page reads as one text | `spec/cli.md` §5.14.7, `spec/capture-and-review.md`, `tests/`, the fork | before CC-400's fork release | `in progress` |
 | CC-375 | Record 0112 and plan 0.18.0 and 0.19.0 | decision and amendment pointers, this plan, vision, v2-ideas, AGENTS.md | the author's selection of 2026-11-22 | `done` (#487) |
 | CC-389 | The smoke-run scorer reads Nothing records and Neither records as abstaining | `eval/memory-0.12/score.mjs`, its tests and README | any time; merged after 0.17.0 is released | `done` (#490) |
 | CC-390 | Close 0.17.0: its section and 0.16.2's to HISTORY.md, U-45 and U-46 closed, releases for CC-384 to CC-388, rows CC-391 to CC-393 | this plan, HISTORY.md | the author's answers of 2026-11-22 | `done` (#491) |
@@ -287,7 +287,7 @@ In the block read the rich text item of the date is `{"type":"mention","mention"
 **Output:** words only: the README, `docs/setup.md`, the Everyday Guide and How it works gain what a user needs for Factories and Domain homes, by their trigger words and one example each; the guides say that the overview is as fresh as the last session or catch-up, and that the detailed plan stays in the folder; the generic starter's `AGENTS.md` (`templates/repo/generic/`) and the linked folder's block agree with CC-397's line; `docs/design-principles.md` §3's evidence for the new database points to 0113 §1. English only: 0.20.0 translates.
 **Acceptance:** each rule a user meets in 0113 §1 to §10 is findable in the guides by its trigger words; no guide promises what the contracts don't define; a template change reaches an existing brain or folder through `brain upgrade` without touching the user's own lines (a test or the upgrade's dry run in the PR); relative links resolve; the leak and PR format checks pass.
 
-### CC-402 · A date mention in a page reads as one text · `todo`
+### CC-402 · A date mention in a page reads as one text · `in progress`
 **Release:** 0.18.0
 **Changelog:** A date you or Notion's agent mention in a page (@14 November) is always read as the same text, so a page nobody edited never looks edited.
 **Output:** from CC-387's evidence and answer (the author's, 2026-11-23). **Contract first:** spec/cli.md §5.14.7's "Blocks to Markdown" says how a date mention is written, the same from both replies of the Notion MCP: the block's `plain_text`, as CC-387's table gives it.
