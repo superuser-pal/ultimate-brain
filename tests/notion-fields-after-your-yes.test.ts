@@ -87,7 +87,7 @@ test("the Notion design and the views guide say what it may set, and no shipped 
 
 test("migration 0030 is 0.17.0's one migration: part A by hand with read-backs, the other tasks' parts marked, version 0030", async () => {
   const files = (await readdir(join(root, "notion/migrations"))).filter((f) => /^\d{4}-/.test(f)).sort();
-  assert.equal(files.at(-1), MIGRATION.split("/").at(-1));
+  assert.ok(files.includes(MIGRATION.split("/").at(-1) ?? ""));
   assert.equal(files.filter((f) => f.startsWith("0030-")).length, 1);
   const migration = await read(MIGRATION);
   assert.match(migration, /It is 0\.17\.0's one Notion migration/);
@@ -116,5 +116,7 @@ test("migration 0030 is 0.17.0's one migration: part A by hand with read-backs, 
   const readme = await read("notion/migrations/README.md");
   assert.match(readme, /\[0030\][^\n]*0\.17\.0's one migration[^\n]*CC-325 \(release 0\.17\.0\)[^\n]*\|$/m);
   const template = await read("notion/TEMPLATE.md");
-  assert.match(template, /\| \*\*Template version\*\* \| `0030` \|/);
+  // The template includes 0030; a later release's migration moves the version on (0031 in 0.18.0).
+  const version = template.match(/\| \*\*Template version\*\* \| `(\d{4})` \|/)?.[1];
+  assert.ok(version && version >= "0030");
 });
