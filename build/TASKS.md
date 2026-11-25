@@ -111,7 +111,7 @@ A feature release, by explicit roadmap change after the cutoff ([0113](../decisi
 | CC-396 | Contracts and Notion design for Domain homes | `spec/capture-and-review.md`, `spec/cli.md`, `docs/notion-space-design.md` | first, beside CC-395; the author's answers to §8 to §10 | `done` (#495) |
 | CC-397 | The CLI for Factories | `src/`, `tests/`, `templates/` | after CC-395 | `todo` |
 | CC-398 | The CLI fills a task's Area from its Project | `src/`, `tests/` | after CC-396 | `todo` |
-| CC-399 | The release's Notion migration, prompts, views guide and template documents | `notion/` | after CC-395 and CC-396; CC-384's and CC-386's steps join it | `todo` |
+| CC-399 | The release's Notion migration, prompts, views guide and template documents | `notion/` | after CC-395 and CC-396; CC-384's and CC-386's steps join it | `in progress` |
 | CC-400 | The skills for 0.18.0, through the fork | the fork, then `.agents/skills/` | after CC-395 and CC-396; vendored after CC-397 and CC-398 | `todo` |
 | CC-401 | Guides and template text | the README, `docs/`, `templates/` | after CC-397 to CC-400 | `todo` |
 | CC-384 | Weekly review's answer line names only the task options (moved from 1.0.0's section) | brain-assistant.md, the release's migration | any order; one migration with CC-386 | `done` (#499) |
@@ -269,11 +269,24 @@ In the block read the rich text item of the date is `{"type":"mention","mention"
 **Output:** the code and tests for CC-396's contract on the CLI's side: the Area set when the brain creates a task with a Project or, with no Project, a Factory (0114), the *if empty* fill list for the unfinished tasks the agent's read passes in, from the Project or else the Factory, and what the report counts. Fixtures are synthetic.
 **Acceptance:** each contract rule has a test named in the PR; an Area the user set is never changed (a test); Projects in different Areas set none and are reported, also when the task has a Factory; a task with a Factory and no Project gets the Factory's Area, one with both the Project's, and with the Factories module off the Factory is not read (0114); a Done or Won't Do task is untouched, also by a mapped status name (0114); a task with neither a Project nor a Factory is untouched; a second run changes nothing; the brain's program opens no connection to Notion; the Windows CI job passes; `npm test`, `npm run typecheck`, `npm run test:scripts`, the leak and PR format checks pass.
 
-### CC-399 · The release's Notion migration, prompts, views guide and template documents: Factories, the Factory on Tasks, the Domain on Tasks, Domain homes and Home's cards (0113 §1, §3, §6, §8 to §10) · `todo`
+### CC-399 · The release's Notion migration, prompts, views guide and template documents: Factories, the Factory on Tasks, the Domain on Tasks, Domain homes and Home's cards (0113 §1, §3, §6, §8 to §10) · `in progress`
 **Release:** 0.18.0
 **Changelog:** A Notion migration adds the Factories database, a Factory and a Domain on Tasks, turns each Domain page into that Domain's home and puts one card per Domain on Home.
 **Output:** `notion/` only, from CC-395's and CC-396's design. The release's one migration, numbered from `notion/migrations/` when it is written, in parts a space runs or skips by module: the Domain rollup on Tasks, Inbox and Goals (0114); the Domains page template's new views and how an existing Domain page gets them; Home's card per Domain, and the template's Home with both sets of tabs; with the Factories module, the Factories database, Tasks · Factory and the Factory page's layout; the Template version line. CC-384's and CC-386's steps are parts of the same migration, written by those tasks or here from their rows, whichever merges first. CC-384's step is in full in its row, under "Step for CC-399's migration". Each step has its "Already done?" check and says whether the API or a person does it. The build prompts for a new space (`notion/prompts/`), `notion/modules/` for the Factories module, `notion/views-guide.md` (§1 Home, §9a the Domains page template, a Factories section), `notion/templates.md`, `notion/TEMPLATE.md` and `notion/template-examples.md` (one example Factory, 0087) say the same.
 **Acceptance:** each migration step names its module, its "Already done?" check and who does it; agents run the API steps on a disposable duplicate of the template with synthetic rows, and the PR holds the read-back: the Factories database with its properties, Tasks · Factory, Tasks, Inbox and Goals · Domain showing the Area's Domain; the by-hand steps (a page template's views, Home's cards) are listed for U-47 and U-48, each with what the person should see; a space with Domains off and Factories off is unchanged by the parts it skips; the prompts, the views guide and the migration describe the same space; no real space's ids or text are committed; relative links resolve; the leak and PR format checks pass.
+**By hand, with what the person should see (for U-47 and U-48; the full text is in migration 0031 and notion/modules/factories.md, CC-399):**
+| Step | U-47 (the template's copy) | U-48 (your space) | What you should see |
+|---|---|---|---|
+| B1 · the Domains page template | yes | Domains on | a Domain made from it shows views-guide §9a's headings in order, each view empty and without a warning; link an Area and its rows appear |
+| B2 · the old views of a Domain page | `Example · Work` | each Domain page, after the agent's read back | the page opens with "What needs me here?", only that Domain's rows, your notes still there |
+| B3 · Domain in the layouts of Tasks, Inbox and Goals | yes | yes (hidden with Domains off) | a task shows its Domain in the panel, not in the heading |
+| Part C · Home | add the tab Domains, first, and keep both sets | add it and delete Areas and Projects | one card per Domain; a click opens its home; the Areas with no Domain below |
+| D3 · the limits | yes | Factories on | a second Area on a Factory replaces the first |
+| D5 · the Factory page's template | yes | Factories on | a new Factory opens with Overview, the board and My notes; the board holds only its tasks |
+| D6, D7 · layouts, and the Factories tab of Projects | yes | Factories on | Workflow, Area and Projects under the name, no Brain ID; the tab lists the open Factories |
+| E1 · Weekly review's text | yes | yes | neither Description nor body holds the old step 8 |
+| E3 · Tools and access | no | yes | one Skills database, the one under your top page |
+| Hand check: a row added on an Area's page, in its task list | on the copy, then deleted | yes | note whether its Area is filled; nothing depends on it |
 
 ### CC-400 · The skills for 0.18.0, through the fork (0113 §1 to §10) · `todo`
 **Release:** 0.18.0
