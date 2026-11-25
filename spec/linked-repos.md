@@ -1,6 +1,6 @@
 # Linked repos and the link kit (contract, decision 0066)
 
-**Status:** contract for release 0.9.0. Written by Claude Code in CC-99.
+**Status:** contract for release 0.9.0. Written by Claude Code in CC-99. Amended for 0.18.0 by CC-395: a linked repo is a Factory (§1.1), decision [0113](../decisions/0113-factories-and-domain-homes-in-0-18-0-the-fourteen-features-in-0-19-0-espanol-in-0-20-0.md).
 
 How this file fits: [cli.md §5.29](cli.md) holds the commands, [schema.md §12](schema.md) the `repos` entry of `brain.json`, and [schemas/link-kit.schema.json](schemas/link-kit.schema.json) the kit's shape. This file holds the model, the kit's meaning, the rollup, the health check and the starter. Connected task tracking is [connected-workflows.md](connected-workflows.md). When this file and the JSON Schema disagree, the JSON Schema wins and this file is fixed.
 
@@ -12,6 +12,14 @@ How this file fits: [cli.md §5.29](cli.md) holds the commands, [schema.md §12]
 5. Narrowing the patterns or adding a never-read path deletes nothing. The health check lists the knowledge that came from paths the kit now excludes (§6, `NEVER_READ_INGESTED`).
 6. The hub writes no kit in the product repo, as `brain link` doesn't (§3). A product repo linked before 0.9.0 keeps working without a kit.
 7. The rollup is a derived view. It is written into a brain-owned toggle on the Project or Area page, `Repo tasks · <name>`, and is never stored in Git (§4).
+
+**Choices of 0.18.0 that the user may veto.** Each one is the simplest reading of 0113 and of the author's answers of 2026-11-23 (recorded in CC-395's row):
+
+8. The kit names its plan files in a new optional key, `plan` (§2.2), so a repo whose tasks are in Notion, or that tracks none, still has a plan the overview can read. Nothing is guessed: a kit that names no plan shows "Plan: not found".
+9. A repo that serves several Projects: its rollup (module off) goes on the Area page, `brain link` gets no `--project`, and each note the ingest takes from it is linked to the Projects it is about, not to all of them (§2.3).
+10. A Project in another Area than the repo's is allowed (§2.2). 0.9.0 to 0.17.0 refused it.
+11. With Factories on, the three-part message of §1.2 replaces §8's question. After an answer without the last part, the link back stays available on request.
+12. `modules.factories` absent means "never asked". A link, or a folder connected, without it writes `false`, so the module is offered once; refusing the link itself ("no") leaves it absent, since nothing was linked (§1.2, schema §12).
 
 ---
 
@@ -30,13 +38,59 @@ How this file fits: [cli.md §5.29](cli.md) holds the commands, [schema.md §12]
 
 - **Legacy link:** a `repos` entry without `kit` (0042, made with `repo add --pattern`). It keeps working as it does today, and the health check reports `NO_KIT` (info). Once a kit is written in its repo (§3), `repo refresh` adopts it and keeps the entry's `commit` (cli.md §5.29, CC-118).
 
+### 1.1 A linked repo is a Factory (0.18.0, 0113 §1, §2, §4, §7)
+
+A **Factory** is a working folder where agents build: a linked repo, or any other folder connected to the brain. Notion shows each one as a row of the **Factories** database (docs/notion-space-design.md §3.20).
+
+- **One row per working folder.** Each linked repo, legacy links included, is one Factory. A folder that is not a linked repo becomes one when it is connected (connected-workflows.md §3.5). A linked repo and its workflow are one Factory, never two.
+- **The record** is one entry of `brain.json` `factories` (schema §12) with a permanent `fac-` id. For a linked repo it names the `repos` entry, and its Area and Projects are read from there, where the kit put them (§2.3). A plain folder's entry holds them itself. There is no new note type.
+- **The same id for life.** A folder linked first and connected later, connected first and linked later, or unlinked and linked again, keeps its entry, its id and its row (cli.md §5.39).
+- **The brain owns the row.** Name, Area, Projects, Overview as of and Archived are written from Git and never read back. The user changes a Factory by changing the link, in the session. Workflow is the user's (connected-workflows.md §4.1).
+- **One Area, several Projects.** A Factory has one Area, and its Domain follows that Area (0055). It may serve several Projects, in any Area, and a Project may be served by several Factories.
+- **A module** (0048), `factories`, off in a new space. The first link, or the first folder connected, offers it, once (§1.2; connected-workflows.md §3.5). **With it off, linked repos behave as in 0.17.0:** no row, no overview, no Factory paragraph in the instruction block, and §4's toggle.
+- **Turning it on** gives each `repos` entry that has no Factory an entry, in `repos` order (`brain modules on factories`, cli.md §5.20). The next publish creates the rows. A 0.17.0 `brain.json`, with `project` and no `factories`, stays valid and is read as it was.
+- **Turning it off** deletes nothing: entries, rows and tasks stay, and nothing of them is read or written until it is on again (schema §12). A workflow whose destination is a Factory works locally meanwhile (connected-workflows.md §3.5).
+- **The task mode says only where the detailed plan is tracked.** A `tracked-in-repo` repo is still a Factory: it has the overview, and the user may write tasks for it and connect it, with no change to its kit.
+- **Never a Factory:** the brain's own repo. `repo add` and `factory add` refuse it (`REPO_IS_BRAIN`).
+- **No new write in the folder** (0113 §7). The brain writes the kit (§3) and, when the user accepts the link back (§8), `.brain`, the instruction block and the skills. A connected folder also holds its pointer (connected-workflows.md §3.2), as since 0.9.0.
+
+### 1.2 One message at linking (0.18.0, 0113 §4)
+
+Linking a repo asks one message, with the kit's whole content above it (§3), and the user answers part by part:
+
+```text
+1. Link acme-api: the brain reads the files named above and writes brain-kit.json there.
+2. Show it in Notion: turn on Factories. Each linked folder gets a row with your tasks for it and an overview of what is being built.
+3. Connect its work: sessions in acme-api start from the tasks you write for it. Level: Tasks only. Work type: Software. Statuses: To Do, Doing, Waiting On, Done, Won't Do. It also writes .brain, a block in AGENTS.md and the brain skills there.
+Answer: all / 1 / 1, 2 / no
+```
+
+- **Part 2 is shown only the first time,** while `modules.factories` is absent. With Factories on, the message has parts 1 and 3, numbered 1 and 2 (`all / 1 / no`), and part 1 ends "and its row in Notion". With `modules.factories` `false`, the module isn't offered again, and linking is 0.17.0's, §8's question included.
+- **Parts run in order,** each after the one before it succeeded. An answer with 3 and without 2 is asked once more: "3 needs 2. All three?" A yes to 1 without 2 records that no with `brain modules off factories`, which is how "once" is kept.
+- **Part 1** is §3 and `repo add --kit`. **Part 2** is `brain modules on factories`, the Notion steps of `notion/modules/factories.md`, and the publish of the rows (cli.md §5.14.4). **Part 3** is the setup of connected-workflows.md §3.5 with the Factory as its destination; its last step is the link back of §8.
+- **Its effect on the kit.** None: connecting a Factory doesn't change `tasks`.
+- **What fails stays undone,** and what succeeded before it stays: the report says which part is missing and the words that do it later ("connect acme-api").
+- **A no to all** writes nothing: no repo was linked and the module wasn't answered, so the next link shows part 2 again. Only a link without part 2 is a no to the module.
+
+The text is normative in its parts, order and answers; the words in part 1 to 3 name the repo, the level, the work type and the statuses the setup found.
+
+### 1.3 The same outcome everywhere (0104 §7)
+
+| Difference | How it is closed |
+|---|---|
+| Paths: `/…` and `~/…`, or `C:\…` on Windows | `repos` and `factories` accept the same forms (schema §12). Two paths name one folder when their real paths are equal, compared without case on Windows |
+| Line endings of a file on disk (CRLF on Windows) | A plan file's text has each CRLF turned into LF before it is parsed or hashed (cli.md §5.39) |
+| The scheduled catch-up: launchd, or Task Scheduler | 0.17.0's (cli.md §5.21). Its one named gap (a Mac that is off at a slot skips that run, weekly-review.md §11.1) leaves an overview one catch-up older, and "As of" says so: not a capability gap of this contract |
+| Claude Code reads `CLAUDE.md`, Codex reads `AGENTS.md` | `brain link` writes the block in `AGENTS.md` and makes `CLAUDE.md` read it (cli.md §5.12) |
+| Codex's sandbox can refuse a write outside the working folder, and the brain is outside it | As for every `brain workflow` command since 0.9.0: the user approves the command, or adds the brain's folder to Codex's writable roots. A refused write is reported as not saved, never as done |
+
 ## 2. The kit file
 
 ### 2.1 Location and format
 - `<repo root>/brain-kit.json`: UTF-8 JSON with a 2-space indent and a trailing newline.
 - **Key order when the hub writes it:**
-  - top level: `kit_version`, `name`, `placement`, `knowledge`, `tasks`, `methodology`, `starter`;
-  - `placement`: `area`, `domain`, `project`;
+  - top level: `kit_version`, `name`, `placement`, `knowledge`, `plan`, `tasks`, `methodology`, `starter`;
+  - `placement`: `area`, `domain`, `project`, `projects`;
   - `knowledge`: `patterns`, `never_read`;
   - `tasks`: `mode`, `source`, `status_map`;
   - `source`: `kind`, then `path`, `format`, `pattern` (markdown), `repo` (GitHub) or `project` (GitLab);
@@ -93,9 +147,11 @@ Where the CLI matches without Git (a recorded `repo_path` for `NEVER_READ_INGEST
 | `name` | ✔ | The repo's name in the hub: lowercase kebab-case, the `name` of its `brain.json` `repos` entry. Sources record it as `repo` (schema §4). |
 | `placement.area` | ✔ | The `area-` id that the repo's knowledge belongs to (as 0042's `area`). |
 | `placement.domain` | — | A `dom-` id. It is a check, never an assignment (§2.3). |
-| `placement.project` | — | A `prj-` id. The rollup and the summary go on this Project instead of the Area, and catch-up passes it as the project of the notes it ingests from the repo. |
+| `placement.projects` | — | From 0.18.0: a non-empty list of `prj-` ids without repeats, the Projects the repo serves (0113 §2). What a list changes is in §2.3. |
+| `placement.project` | — | One `prj-` id, as kits were written until 0.17.0. Read everywhere as `projects` with that one id. The hub writes `projects` in every kit it writes from 0.18.0. `project` and `projects` together are `KIT_INVALID` (the schema). |
 | `knowledge.patterns` | ✔ | A non-empty list of Git glob pathspecs, relative to the repo root (0042's `patterns`). |
-| `knowledge.never_read` | — | Git glob pathspecs that the hub never reads, **even when a pattern matches them**. They apply to ingest, the rollup and the methodology files. Absent means an empty list. |
+| `knowledge.never_read` | — | Git glob pathspecs that the hub never reads, **even when a pattern matches them**. They apply to ingest, the rollup, the overview and the methodology files. Absent means an empty list. |
+| `plan` | — | From 0.18.0: repo-relative paths of the files that say what the plan is (`["docs/roadmap.md"]`), without repeats. The overview reads them at `HEAD` (cli.md §5.39), with the Markdown task source when there is one. They are not ingested unless a pattern also matches them. Absent means an empty list. |
 | `tasks` | — | Absent: knowledge only (§1). |
 | `tasks.mode` | ✔ with `tasks` | `connected` or `tracked-in-repo`. |
 | `tasks.source` | ✔ with `tasks` | Where the tasks live (§2.4). `connected` takes `{ "kind": "notion" }` only. |
@@ -106,20 +162,24 @@ Where the CLI matches without Git (a recorded `repo_path` for `NEVER_READ_INGEST
 
 **Checks beyond the JSON Schema.** `brain repo kit check` reports them as problems, and every other command that reads a kit refuses with `KIT_INVALID`. Each one has a JSON Pointer:
 - `/tasks/source/pattern`: the pattern doesn't compile as a JavaScript regular expression with the flag `u`, or has no named group `title`;
-- `/placement/area`, `/placement/project`, `/placement/domain`: the id doesn't exist in the hub;
-- `/placement/project`: the project belongs to an Area other than `placement.area`;
+- `/placement/area`, `/placement/project`, `/placement/projects/<n>`, `/placement/domain`: the id doesn't exist in the hub;
 - `/placement/domain`: Domains is on and the id isn't the Area's `domain`, or the Area has no Domain;
-- `/methodology/files/<n>`, `/tasks/source/path`: the path matches `never_read`;
+- `/methodology/files/<n>`, `/plan/<n>`, `/tasks/source/path`: the path matches `never_read`;
 - `/name`, when the kit is read for an existing `repos` entry: the name differs from that entry's;
 - `/name`, when the kit is written or added for a path: an entry with this name exists for another path.
 
 The JSON Schema and the pattern check need no brain. The others need one: they run whenever a brain resolves (cli.md §4), and are skipped by `kit check` when none does.
 
-With Domains off, `placement.domain` is ignored and not checked.
+With Domains off, `placement.domain` is ignored and not checked. Until 0.17.0 a project of another Area was refused too; from 0.18.0 a Factory may serve Projects of any Area (0113 §2).
+
+**Old kits.** A kit written before 0.18.0 keeps working: `kit_version` stays `1`, and no key is required that wasn't. A brain older than 0.18.0 refuses a kit with `projects` or `plan` (an unknown key), so the repo is linked again from an upgraded brain.
 
 ### 2.3 Placement follows the hub's rules
 - **Domain follows the Area (0055).** A repo can't be placed in a Domain other than its Area's. The kit's `domain` exists so that a reader of the repo can see where it sits; the hub never writes a Domain from it.
-- **Moving a repo** (a new Area or Project) is a change of the kit (§3) and then `repo refresh` (cli.md §5.29). Notes already ingested keep their `area` and `projects`; only new ingests use the new placement. `repo refresh` reports the change as `placement_changed`.
+- **Several Projects (0.18.0).** The kit's `placement.projects` (or `project`, read as a list of one) is the Factory's Projects.
+  - With **one** Project, everything is as in 0.17.0: the rollup goes on it, `brain link` gets it as `--project`, and catch-up passes it as the project of each note it ingests from the repo.
+  - With **several**, the rollup (module off) goes on the Area page; `brain link` gets only `--area`; and the ingest links each note to those of the listed Projects that the file is about, judged as for any document, and to none when it can't tell. The note's `area` is the repo's Area. The row lists them all.
+- **Moving a repo** (a new Area or Project) is a change of the kit (§3) and then `repo refresh` (cli.md §5.29). Notes already ingested keep their `area` and `projects`; only new ingests use the new placement. `repo refresh` reports the change as `placement_changed`, and with Factories on the next publish updates the row's Area and Projects. The tasks of the Factory are untouched.
 
 ### 2.4 Task sources and their raw statuses
 
@@ -170,8 +230,10 @@ With Domains off, `placement.domain` is ignored and not checked.
 
 ## 4. The read-only rollup (tracked-in-repo)
 
+**Only with the Factories module off (0.18.0, 0113 §6).** With it on, no `Repo tasks · <name>` toggle is written: its counts are a line of the Factory's overview (connected-workflows.md §9.1). When the skill writes a Factory's overview the first time, it removes that repo's toggle, found by its exact name, from the page of §4's placement: the yes to turning Factories on covers it, and the message or the module's steps say so. Turning Factories off brings the toggle back at the next catch-up. `brain repo tasks` works in both cases, because Ultimate Assistant and adoption read it.
+
 - **What it is.** A short, dated summary of the repo's tasks, built by `brain repo tasks <name>` (cli.md §5.29).
-- **Where it goes.** The skill writes it into the brain-owned toggle heading **`Repo tasks · <name>`** on the placement's Project page, or on the Area page when the kit has no project. Several repos placed on one page get one toggle each.
+- **Where it goes.** The skill writes it into the brain-owned toggle heading **`Repo tasks · <name>`** on the Project page when the placement names exactly one Project, else on the Area page. Several repos placed on one page get one toggle each.
 - **How it is written.** By the toggle rule of connected-workflows.md §6.1: found by its exact name, or appended at the end of the page. `sync render` never sends it and never touches it, so render code doesn't change.
 - **Notion design (CC-103).** CC-103 documents it in docs/notion-space-design.md §2, as "toggle headings named `Repo tasks · <repo>`". The migration creates nothing on existing pages.
 - **When.** It is rebuilt in each catch-up that reads the repo, and whenever the user asks ("show the repo's tasks"). It isn't stored in Git: it is a view of data the brain doesn't own, like a Notion formula.
@@ -215,10 +277,13 @@ The skill fetches all issues, open and closed, and passes them to the CLI unchan
 
 ## 5. `brain.json` `repos` (schema §12)
 
-A kit adds three optional keys to a `repos` entry. Legacy entries don't change.
-- `kit`: `{ "sha256": "sha256:<64 hex>" }`, the hash of the kit that was last applied by `repo add --kit` or `repo refresh`. When it is present, `area`, `patterns`, `never_read` and `project` are **copies taken from the kit** and are changed only by `repo refresh`.
+A kit adds three optional keys to a `repos` entry, and 0.18.0 a fourth. Legacy entries don't change.
+- `kit`: `{ "sha256": "sha256:<64 hex>" }`, the hash of the kit that was last applied by `repo add --kit` or `repo refresh`. When it is present, `area`, `patterns`, `never_read` and `projects` (or, in an entry not rewritten since 0.17.0, `project`) are **copies taken from the kit** and are changed only by `repo refresh`.
 - `never_read`: a list of Git glob pathspecs (absent means none). `repo changes` (cli.md §5.16) leaves out the files that match it, in a legacy entry too.
-- `project`: a `prj-` id (absent means none).
+- `projects` (0.18.0): the kit's Projects, as a list of `prj-` ids in the kit's order (absent means none).
+- `project`: one `prj-` id, written until 0.17.0 and read as `projects` with that one id. An entry holds one of the two; the next `repo refresh` that writes the entry replaces `project` with `projects`.
+
+The Factory of a repo is a separate list (§1.1; schema §12 `factories`): a `repos` entry doesn't change when the module is turned on.
 
 The machine's `path` and the ingest state in `commit` stay in `brain.json` only; the kit holds neither. `repo refresh --path` changes `path` when the repo moved, and no `refresh` changes `commit` (cli.md §5.29).
 
@@ -234,23 +299,24 @@ The machine's `path` and the ingest state in `commit` stay in `brain.json` only;
 | `KIT_CHANGED` | warning | the kit's hash differs from `kit.sha256`: run `repo refresh` |
 | `KIT_UNCOMMITTED` | info | the kit isn't tracked, or differs from `HEAD` |
 | `NO_KIT` | info | a legacy entry: the skill offers to write a kit, which `repo refresh` then applies |
-| `PLACEMENT_ARCHIVED` | warning | the Area or Project is `archived` |
+| `PLACEMENT_ARCHIVED` | warning | the Area or a Project is `archived` (one check per note) |
 | `COMMIT_UNKNOWN` | error | the recorded `commit` isn't an ancestor of `HEAD` (rewritten history): the fix is `repo record --reset` |
 | `CHANGES_WAITING` | info | files that `repo changes` would list (never-read paths and the kit left out), with their count; skipped after `COMMIT_UNKNOWN` |
 | `PATTERN_MATCHES_NOTHING` | warning | a pattern matches no file at `HEAD` other than the kit (one check per pattern) |
 | `NEVER_READ_INGESTED` | warning | a source of this repo has a `repo_path` that `never_read` now matches. Nothing is removed; the user can ask to archive its notes |
 | `METHODOLOGY_FILE_MISSING` | warning | a `methodology.files` path doesn't exist at `HEAD` |
+| `PLAN_FILE_MISSING` | warning | a `plan` path doesn't exist at `HEAD` (0.18.0) |
 | `TASK_SOURCE_MISSING` | error | the markdown source path doesn't exist at `HEAD` |
 | `STATUS_UNMAPPED` | warning | only with `--input` issue data, or with a markdown source: a raw status that nothing maps, with its count |
 | `CONNECTED_WITHOUT_WORKFLOW` | warning | `tasks.mode` is `connected`, and no connected workflow record names this repo (connected-workflows.md §3) |
-| `WORKFLOW_WITHOUT_CONNECTED` | warning | a connected workflow names this repo, and the kit's mode isn't `connected` |
-| `BRAIN_LINK_STALE` | info | the repo has a `.brain` (§8) whose `project` or `area` differs from the placement |
-| `ROLLUP_STALE` | warning | tracked-in-repo, with `--rollup-as-of <timestamp>` (the toggle's "As of", which the skill reads from Notion): for a markdown source, the committer time of the newest commit touching the source file is after that time; for issues, the time is more than 24 hours before `--now`. Without the option, the check is skipped |
+| `WORKFLOW_WITHOUT_CONNECTED` | warning | a connected workflow whose destination is a Project or an Area names this repo, and the kit's mode isn't `connected`. One whose destination is the repo's Factory never gives it (0.18.0, §1.1) |
+| `BRAIN_LINK_STALE` | info | the repo has a `.brain` (§8) whose `area` differs from the placement, or whose `project` is not one of its Projects |
+| `ROLLUP_STALE` | warning | tracked-in-repo, with `--rollup-as-of <timestamp>` (the toggle's "As of", which the skill reads from Notion): for a markdown source, the committer time of the newest commit touching the source file is after that time; for issues, the time is more than 24 hours before `--now`. Without the option, and with Factories on (there is no toggle, §4), the check is skipped |
 
 **Which checks run.**
 - **The path.** `PATH_MISSING` stops the repo's checks: only it is reported.
-- **Legacy entries** (no `kit`) get `NO_KIT`. The checks that need a kit are skipped: `KIT_*`, `PLACEMENT_ARCHIVED`, `METHODOLOGY_FILE_MISSING`, `TASK_SOURCE_MISSING`, `STATUS_UNMAPPED`, `CONNECTED_WITHOUT_WORKFLOW`, `WORKFLOW_WITHOUT_CONNECTED` and `BRAIN_LINK_STALE`. The Git checks use the entry's own `patterns` and `never_read`.
-- **`KIT_MISSING` or `KIT_INVALID`** skips the checks that read the kit's content: `KIT_CHANGED`, `KIT_UNCOMMITTED`, `PLACEMENT_ARCHIVED`, `METHODOLOGY_FILE_MISSING`, `TASK_SOURCE_MISSING`, `STATUS_UNMAPPED`, `CONNECTED_WITHOUT_WORKFLOW`, `WORKFLOW_WITHOUT_CONNECTED` and `BRAIN_LINK_STALE`. The Git checks still run on the `brain.json` copies.
+- **Legacy entries** (no `kit`) get `NO_KIT`. The checks that need a kit are skipped: `KIT_*`, `PLACEMENT_ARCHIVED`, `METHODOLOGY_FILE_MISSING`, `PLAN_FILE_MISSING`, `TASK_SOURCE_MISSING`, `STATUS_UNMAPPED`, `CONNECTED_WITHOUT_WORKFLOW`, `WORKFLOW_WITHOUT_CONNECTED` and `BRAIN_LINK_STALE`. The Git checks use the entry's own `patterns` and `never_read`.
+- **`KIT_MISSING` or `KIT_INVALID`** skips the checks that read the kit's content: `KIT_CHANGED`, `KIT_UNCOMMITTED`, `PLACEMENT_ARCHIVED`, `METHODOLOGY_FILE_MISSING`, `PLAN_FILE_MISSING`, `TASK_SOURCE_MISSING`, `STATUS_UNMAPPED`, `CONNECTED_WITHOUT_WORKFLOW`, `WORKFLOW_WITHOUT_CONNECTED` and `BRAIN_LINK_STALE`. The Git checks still run on the `brain.json` copies.
 - **`STATUS_UNMAPPED`** runs only for a markdown source, or with `--input` issue data.
 - **The three cases CC-102 tests:** the repo moved or missing is `PATH_MISSING`; the kit out of date is `KIT_CHANGED`; a stale rollup is `ROLLUP_STALE`.
 - **The workflow checks** count workflows in state `connected` or `paused` whose `folder.repo` is the repo's name. `ended` workflows don't count.
@@ -330,20 +396,25 @@ secrets/
 
 After a link (or `repo new`), the skill asks once: "Let this repo read the brain too? It adds `.brain`, a block in AGENTS.md, and the brain-query, brain-workflow and brain-workflow-adopt skills there." (The skills are those the brain's snapshot links, skills-delivery §9.7; before 0.9.2 the offer names brain-query only.) On yes, it runs `brain link <path> --repo-name <name> --area <area>` (with `--project <project>` when the kit has one). This is the existing §5.12 command, a separate write with its own yes; it doesn't pass through the kit. On no, nothing is written, and it isn't asked again for this link. The answer goes in the skill's report.
 
+**With Factories (0.18.0).** When the message of §1.2 is shown, its last part is this offer together with the connection, and this question isn't asked on its own. The user can still ask for the link back alone ("let acme-api read the brain too"). A repo linked back and not connected gets no Factory paragraph.
+
+**The Factory paragraph** of the instruction block (cli.md §5.12) is the line that starts a session from the Factory's tasks (0113 §5; connected-workflows.md §15). `brain link` writes it when the folder's Factory has an open workflow whose destination is that Factory, and removes it when it no longer has. `--project` is given when the placement names exactly one Project.
+
 ## 9. Unlinking
 
 `brain repo unlink <name>` (cli.md §5.29) removes the entry from `brain.json`.
 - **The knowledge stays.** Sources keep `repo`, `repo_path` and `commit`; notes, Inbox rows and Documents are untouched.
 - **The repo isn't touched.** `brain-kit.json` and any `.brain` stay. The skill tells the user they can delete them there.
 - **The rollup goes.** The skill removes the `Repo tasks · <name>` toggle from the Project or Area page, with the same yes as the unlink.
-- **A connected workflow isn't ended by an unlink.** The workflow runs in the repo, not in the link. The report names the workflow, and the user ends it separately (connected-workflows.md §3.4).
-- **Linking again** under the same name starts with `commit: ""`. Files ingested before are found as duplicates by `note new` (cli.md §5.16, `--reset`). A moved repo and a legacy link taking a kit don't need it: `repo refresh` keeps `commit`.
+- **The Factory's row is archived (0.18.0, 0113 §1).** The `factories` entry gets `archived: true` and keeps its id, with its Area and Projects copied in, and the next publish ticks Archived on the row. The row's tasks stay as they are, and so does its overview: the text, its "As of" and Overview as of stay at their last state, and nothing refreshes them again. With the module off only the entry changes. The unlink's question says it: "Stop reading acme-api? Its row in Factories is archived; its tasks and what the brain learned stay."
+- **A connected workflow isn't ended by an unlink.** The workflow runs in the repo, not in the link. The report names the workflow, and the user ends it separately (connected-workflows.md §3.4). One whose destination is the archived Factory is paused by its next reconcile (connected-workflows.md §8.4).
+- **Linking again** under the same name starts with `commit: ""`. Files ingested before are found as duplicates by `note new` (cli.md §5.16, `--reset`). Its archived Factory, if any, is the same entry again: `archived` is removed, with the copied Area and Projects, and the row is unticked at the next publish. A moved repo and a legacy link taking a kit don't need it: `repo refresh` keeps `commit`.
 
 ## 10. The skill (CC-104)
 
 **`brain-repos`**, one of CC-104's three skills. It is written in the ultimate-brain-skills fork's `brain/` since CC-105 (0059, skills-delivery §9.1). These are what the skill must do; the skill decides how it is worded. Every write is preceded by the content and the user's yes.
-- **Link:** inspect the repo (top-level layout, instructions, plans, issue tracker), propose a kit (placement from the hub's Areas and Projects; patterns and never-read paths; mode and source; status mapping; methodology summary), show it, and on yes `repo kit write --confirm <its sha256>`, `repo add --kit`, offer §8, and, with tracked-in-repo, the first rollup. The first ingest stays attended (0042).
-- **Show:** `repo show` and `repo health` (with `--rollup-as-of` read from the toggle), in two lines (skill-report rule).
+- **Link:** inspect the repo (top-level layout, instructions, plans, issue tracker), propose a kit (placement from the hub's Areas and Projects; patterns and never-read paths; mode and source; status mapping; methodology summary), show it with the message of §1.2 (with Factories declined, or before 0.18.0, the yes to the kit alone), and on yes `repo kit write --confirm <its sha256>`, `repo add --kit`, then the other parts the user said yes to (§1.2; §8 when the message wasn't shown), and, with tracked-in-repo, the first rollup, or with Factories on the first overview. The first ingest stays attended (0042).
+- **Show:** `repo show` and `repo health` (with `--rollup-as-of` read from the toggle while Factories is off), in two lines (skill-report rule). "Show my factories" is `factory list`, one line each: its name, whether its work is connected, and its overview's date.
 - **Change:** propose the new kit as a diff, and on yes `repo kit write --replace <old> --confirm <new>`, `repo refresh`; when `reingest` is true, `repo record --reset` and a catch-up.
 - **A legacy link's first kit:** propose one from the entry, and on yes `repo kit write --confirm <its sha256>`, then `repo refresh` (CC-118).
 - **A moved repo:** ask for the new path, and `repo refresh --path <new path>` (CC-118).

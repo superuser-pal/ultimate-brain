@@ -1,5 +1,5 @@
-// CC-329: the path without Notion AI (decision 0101 §7, §8): First things first's item 1 and Start here's plan table in
-// migration 0030's part C, the plan table in the guides, and no shipped text requiring Notion AI. Text checks only.
+// CC-329: the path without Notion AI (decision 0101 §7, §8): First things first's item 1 in migration 0030's part C, the
+// plan table in the guides and not in Start here (CC-391), and no shipped text requiring Notion AI. Text checks only.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -23,7 +23,7 @@ function section(text: string, heading: string, next: string): string {
   return text.slice(start, end < 0 ? undefined : end);
 }
 
-test("migration 0030's part C sets item 1 to the design's text and adds the plan table, each with its check", async () => {
+test("migration 0030's part C sets item 1 to the design's text, with its check, and Start here holds no plan table (CC-391)", async () => {
   const migration = await read(MIGRATION);
   const design = await read("docs/notion-space-design.md");
   assert.ok(design.includes(`**Check your plan.** ${ITEM_1}`), "§10.1 item 1");
@@ -31,21 +31,21 @@ test("migration 0030's part C sets item 1 to the design's text and adds the plan
   assert.ok(partC.includes(`\`${ITEM_1}\``), "C1 gives item 1's exact text");
   assert.match(partC, /\*\*Already done\?\*\* The item says "ask Claude Code or Codex for a skill by its name"\. Then change nothing\./);
   assert.match(partC, /"personal Notion Agent" nowhere on the page/);
-  for (const row of ROWS) assert.ok(partC.includes(row), row);
-  assert.match(partC, /\*\*Already there\?\*\* The callout holds a table whose first column starts "Your Notion"/);
+  assert.match(partC, /\n### C2 · No plan table in Start here \(nothing to do\)\n\nStart here holds no plan table:[^\n]*nothing checks it\.\n/);
   const verify = section(migration, "## Verify", "\nThe last steps:");
   assert.match(verify, /Part C, the path without Notion AI/);
   assert.match(verify, /\*\(API\)\* First things first's item \*\*Check your plan\.\*\* says "ask Claude Code or Codex/);
-  assert.match(verify, /\*\(API\)\* The Start here callout holds the plan table once/);
+  assert.doesNotMatch(verify, /plan table|The table shows inside the callout/);
+  for (const path of [MIGRATION, "docs/notion-space-design.md", "notion/TEMPLATE.md", "notion/prompts/01-pages.md"]) {
+    const text = await read(path);
+    for (const row of ROWS) assert.ok(!text.includes(row.slice(2, 45)), `${path}: ${row}`);
+  }
 });
 
-test("the plan table is the same in the README, the setup guide and the migration, each with its vendor links", async () => {
-  for (const path of ["README.md", "docs/setup.md", MIGRATION]) {
-    const text = await read(path);
-    for (const row of ROWS) assert.ok(text.includes(row), `${path}: ${row}`);
-  }
+test("the plan table is the same in the README and the setup guide, each with its vendor links", async () => {
   for (const path of ["README.md", "docs/setup.md"]) {
     const text = await read(path);
+    for (const row of ROWS) assert.ok(text.includes(row), `${path}: ${row}`);
     assert.match(text, /https:\/\/www\.notion\.com\/help\/ai-meeting-notes/);
     assert.match(text, /https:\/\/www\.notion\.com\/help\/notion-ai-faqs/);
     assert.match(text, /https:\/\/www\.notion\.com\/help\/buy-and-track-notion-credits-for-custom-agents/);
