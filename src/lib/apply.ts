@@ -272,7 +272,7 @@ function applyDecision(workspace: Workspace, input: DecisionInput, today: string
       p.decision = decision; p.status = decision.action === "approve" ? "approved" : "edited"; p.updated = today;
       workspace.save(proposal.path, document);
     }
-    return { result: "awaiting_notion", action, write: createTaskWrite(workspace, proposal.id, title, page) };
+    return { result: "awaiting_notion", action, write: createTaskWrite(workspace, proposal.id, title, project!) };
   }
   // A notion_change is written by the skill, not here: apply records the decision and hands back the write (spec/cli.md §5.7).
   if (p.kind === "notion_change" && decision.action !== "reject") {

@@ -48,6 +48,19 @@ test("Tools and access give edit access on the four databases, Areas view only, 
   assert.match(design, /\*\*Item 3's wording changed in 0\.17\.0\*\*/);
 });
 
+test("setup and First things first say which Skills database the agent runs, in one sentence (CC-386)", async () => {
+  const sentence = "The agent runs the skills of whichever Skills database is in its Tools and access, so keep exactly one there: the one under your top page.";
+  const spec = await read("spec/setup.md");
+  const places = {
+    "§10.1 item 3": section(await read("docs/notion-space-design.md"), "> - [ ] **Give it access.**", "\n"),
+    "brain-assistant.md Setup step 2": section(await read("notion/brain-assistant.md"), "2. **Tools and access:**", "\n"),
+    "setup §6.4, the walk-through": section(spec, "Walked through: the skill gives the steps of", "\n"),
+    "setup §6.4.1 item 3": section(spec, "3. **Give it access.**", "\n"),
+  };
+  for (const [place, text] of Object.entries(places)) assert.equal(text.split(sentence).length, 2, place);
+  assert.match(section(spec, "6. **The access and the Instructions**", "\n"), /A second Skills database in Tools and access is one only the user can see, and removes by hand: setup can't read Tools and access/);
+});
+
 test("Weekly review asks the task items in numbered options and sets only what was picked, after the answer", async () => {
   const assistant = await read("notion/brain-assistant.md");
   const weekly = section(assistant, "### Weekly review\n");
