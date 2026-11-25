@@ -1,4 +1,0 @@
-log: catch up (unattended)
-ingest: Acme content check-in 2026-12-12 (3 new, 2 waiting)
-ingest: Acme design review 2026-12-10 (1 new, 1 waiting)
-catch-up: weekly ticks 2026-W51 (1 applied)

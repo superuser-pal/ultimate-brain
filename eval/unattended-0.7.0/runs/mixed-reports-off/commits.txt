@@ -1,3 +1,0 @@
-log: catch up (unattended)
-publish: catch up
-ingest: Acme design review 2026-12-10, Acme content check-in 2026-12-12 (6 new, 3 proposals); weekly ticks W51; Notion corrections queued

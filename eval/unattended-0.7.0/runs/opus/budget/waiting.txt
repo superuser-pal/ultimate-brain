@@ -1,0 +1,14 @@
+review_notes  · From Acme sync: 3 new notes
+review_notes  · From Supplier note 3 (document), Acme website: 1 change
+review_notes  · From Supplier note 6 (document), Acme website: 1 change
+review_notes  · From Supplier note 1 (document), Acme website: 1 change
+review_notes  · From Supplier note 8 (document), Acme website: 1 change
+review_notes  · From Supplier note 4 (document), Acme website: 1 change
+review_notes  · From Supplier note 7 (document), Acme website: 1 change
+review_notes  · From Supplier note 10 (document), Acme website: 1 change
+review_notes  · From Supplier note 2 (document), Acme website: 1 change
+review_notes  · From Acme kickoff: 1 new note
+review_notes  · From Supplier note 5 (document), Acme website: 1 change
+review_notes  · From Supplier note 9 (document), Acme website: 1 change
+add_to_note  · Acme: mobile app relaunch planned for 2027
+{'waiting': 13, 'held': 0, 'in_weekly_row': 0}

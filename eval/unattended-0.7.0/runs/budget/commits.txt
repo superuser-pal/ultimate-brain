@@ -1,2 +1,0 @@
-log: catch up (unattended)
-ingest: drop folder supplier notes 1-10 (10 sources)
