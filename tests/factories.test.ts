@@ -275,17 +275,16 @@ test("with several Projects the rollup's target is the Area; a kit from 0.17.0 w
   assert.equal(link.kit.placement.project, PROJECT);
 });
 
-test("repo health: PLAN_FILE_MISSING for a plan file that isn't at HEAD, and ROLLUP_STALE never with Factories on", async (context) => {
+test("repo health: PLAN_FILE_MISSING for a plan file that isn't at HEAD; ROLLUP_STALE is skipped with Factories on, and as in 0.17.0 with it off", async (context) => {
   const c = await setup(context);
-  await linkedRepo(context, c, { kit: kitOf({ plan: ["docs/roadmap.md"] }) });
-  const checks = (await c.ok(["repo", "health", "acme-api"])).repos[0].checks;
-  assert.ok(checks.some((check: any) => check.code === "PLAN_FILE_MISSING" && check.path === "docs/roadmap.md"), JSON.stringify(checks));
-  assert.equal(checks.some((check: { code: string }) => check.code === "ROLLUP_STALE"), false);
-  const off = await setup(context, { modules: { factories: false } });
-  const { repo } = await linkedRepo(context, off);
+  const { repo } = await linkedRepo(context, c, { kit: kitOf({ plan: ["docs/roadmap.md"] }) });
   await repo.commit("2026-12-09T10:00:00Z", { "TASKS.md": "- [x] Ship it\n" });
-  const before = (await off.ok(["repo", "health", "acme-api"])).repos[0].checks.map((check: { code: string }) => check.code);
-  assert.ok(before.includes("ROLLUP_STALE") || before.includes("ROLLUP_MISSING") || before.length >= 0);
+  const checks = async () => (await c.ok(["repo", "health", "acme-api", "--rollup-as-of", "2026-11-04T00:00:00Z"])).repos[0].checks;
+  const on = await checks();
+  assert.ok(on.some((check: any) => check.code === "PLAN_FILE_MISSING" && check.path === "docs/roadmap.md"), JSON.stringify(on));
+  assert.equal(on.some((check: { code: string }) => check.code === "ROLLUP_STALE"), false);
+  await c.ok(["modules", "off", "factories"]);
+  assert.equal((await checks()).some((check: { code: string }) => check.code === "ROLLUP_STALE"), true);
 });
 
 test("repo show names the Factory and its workflow", async (context) => {
