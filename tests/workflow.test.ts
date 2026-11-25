@@ -1116,6 +1116,8 @@ test("render --item gives the payload and the Work record toggle", async (contex
   assert.ok(flat.includes("Add rate limiting"), flat);
   assert.ok(flat.includes(item.id), "the Brain ID is the item's id");
   assert.ok(flat.includes("Doing"), "status is status_map[in_progress]");
+  // A Project destination sends its Area too (§6.1; capture-and-review.md §6.5).
+  assert.deepEqual([payload.properties.Project, payload.properties.Area], [{ type: "relation", value: ["2b3c4d5e-6f7a-4b9c-8d1e-2f3a4b5c6d7e"] }, { type: "relation", value: ["1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d"] }]);
 });
 
 test("render leaves out lines with nothing to show and works for an item with no page", async (context) => {

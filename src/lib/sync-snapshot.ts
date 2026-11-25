@@ -19,6 +19,8 @@ export interface SnapshotConfig {
   databases: Record<string, string>;
   /** `notion.tasks.properties`: the mapped names (empty = unmapped). */
   taskProperties: Record<string, string>;
+  /** The Factories module is on: a task's Factory is read (0114). */
+  factories: boolean;
 }
 
 export interface BuiltSnapshot {
@@ -108,10 +110,14 @@ function shape(database: string, properties: Record<string, unknown>, config: Sn
   }
   if (database === "documents") return isReport ? reportRow(properties) : properties;
   if (database === "tasks") {
-    const asked = config.taskProperties.document_asked ?? "";
-    if (asked === "" || properties[asked] !== true) return undefined;
-    const names = ["title", "document_asked", "project", "area"].map((key) => config.taskProperties[key] ?? "");
-    return pick(properties, names);
+    const name = (key: string): string => config.taskProperties[key] ?? "";
+    const filled = (key: string): boolean => { const value = properties[name(key)]; return Array.isArray(value) && value.length > 0; };
+    const area = properties[name("area")];
+    const keys: string[] = [];
+    if (name("document_asked") !== "" && properties[name("document_asked")] === true) keys.push("title", "document_asked", "project", "area");
+    // A task with no Area and a Project or a Factory (0.18.0, 0113 §9, 0114).
+    if (name("area") !== "" && Array.isArray(area) && area.length === 0 && (filled("project") || (config.factories && filled("factory")))) keys.push("title", "status", "area", "project", ...(config.factories ? ["factory"] : []));
+    return keys.length === 0 ? undefined : pick(properties, [...new Set(keys)].map(name));
   }
   return properties;
 }
