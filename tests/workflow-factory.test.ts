@@ -212,11 +212,11 @@ test("reconcile: open_tasks lists To Do, Doing and empty, in progress first, wit
   const id = (await c.show(wf)).items[0].id;
   await c.ok(["workflow", "item", "claim", wf, id, "--by", "Claude Code"]);
   const data = await c.reconcileOk(wf, [
-    task(1, "To choose"), taken, task(3, "No status", null), task(4, "Some day", "Someday"), task(5, "Waiting", "Waiting On"), task(6, "Finished", "Done"),
+    task(1, "To choose"), taken, task(3, "No status", null), task(11, "Empty status", ""), task(4, "Some day", "Someday"), task(5, "Waiting", "Waiting On"), task(6, "Finished", "Done"),
     task(7, "Archived", "To Do", { archived: true }), task(8, "In the trash", "To Do", { in_trash: true }), task(9, "Elsewhere", "doing", { brain_id: "wi-7k2m9q4x" }), task(10, "Left the Factory", "To Do", { factory: undefined }),
   ]);
   assert.deepEqual(data.open_tasks.map((entry: any) => [entry.title, entry.meaning, entry.item, entry.claim === null, entry.elsewhere]), [
-    ["Taken here", "in_progress", id, false, false], ["Elsewhere", "in_progress", null, true, true], ["To choose", "todo", null, true, false], ["No status", "todo", null, true, false],
+    ["Taken here", "in_progress", id, false, false], ["Elsewhere", "in_progress", null, true, true], ["To choose", "todo", null, true, false], ["No status", "todo", null, true, false], ["Empty status", "todo", null, true, false],
   ]);
   assert.equal(data.open_tasks[0].claim.by, "Claude Code");
   assert.deepEqual(Object.keys(data.open_tasks[0]), ["page", "title", "meaning", "item", "claim", "elsewhere"]);
@@ -289,6 +289,9 @@ test("TASK_TAKEN: an item of any open workflow has the page, or the Brain ID is 
   assert.equal((await c.take(other, task(3, "A meeting's", "To Do", { brain_id: "mtg-5r2k8v3a" }))).code, 0, "another kind of Brain ID holds nothing");
   // The workflow ended: its task is free again.
   assert.equal((await c.set(wf, { state: "ended" })).code, 0);
+  // But a Brain ID that is one of its items' still holds it, whatever the page (§8.4).
+  const held = await c.take(other, { ...mine, page: page(4), brain_id: id });
+  assert.deepEqual([code(held), held.json.error.details.workflow, held.json.error.details.item], ["TASK_TAKEN", wf, id]);
   assert.equal((await c.take(other, mine)).code, 0);
 });
 
