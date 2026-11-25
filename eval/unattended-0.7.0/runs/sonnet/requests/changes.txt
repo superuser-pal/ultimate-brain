@@ -1,8 +1,0 @@
-M	areas/clients.md
-M	knowledge/meetings/2026-10-01-acme-kickoff.md
-M	knowledge/meetings/2026-12-03-acme-sync.md
-M	knowledge/orgs/acme.md
-M	knowledge/people/carlos-ruiz.md
-M	knowledge/people/maria-lopez.md
-M	projects/acme-website/project.md
-M	reports/2026-12-14-acme-launch-where-we-stand.md

@@ -1,2 +1,0 @@
-projects/acme-website/project.md:  launch_date: 2027-02
-knowledge/people/maria-lopez.md:  role: Product Manager

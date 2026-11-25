@@ -1,8 +1,0 @@
-notion_correction facts.role · Maria López: Role → Product lead
-update_fact launch_date · Acme website launch_date: 2027-02 → 2027-03
-review_notes  · From Acme kickoff: 1 new note
-review_notes  · From Acme sync: 3 new notes
-review_notes  · From Acme design review, Acme website: 1 new note
-review_notes  · From Acme content check-in, Acme website: 3 new notes
-add_to_note  · Acme: mobile app relaunch planned for 2027
-{'waiting': 7, 'held': 0, 'in_weekly_row': 2}
