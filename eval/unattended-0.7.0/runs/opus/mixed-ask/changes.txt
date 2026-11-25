@@ -9,7 +9,7 @@ A	knowledge/decisions/2026-12-12-move-the-acme-website-launch-to-march-2027.md
 A	knowledge/meetings/2026-12-10-acme-design-review.md
 A	knowledge/meetings/2026-12-12-acme-content-check-in.md
 M	knowledge/people/lena-hart.md
-A	knowledge/questions/who-approves-the-german-copy.md
+A	knowledge/questions/who-approves-the-german-copy-for-the-acme-website.md
 M	projects/acme-website/brief.md
 M	projects/acme-website/decision-log.md
 A	sources/notion/2026-12-10-acme-design-review-minutes.md

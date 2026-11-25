@@ -1,11 +1,8 @@
-Nothing waiting and nothing failed, so the run stopped after the read-only pass. It wrote nothing: no commit, log line, Notion write or Catch-up row.
+Nothing was waiting for this run and nothing failed, so it stopped after the read-only pass. The brain is unchanged: no commit, log line, Catch-up row or line in `writes.md`.
 
-- **Checked:** the brain is on its working branch, and there are no Notion edits or new rows, conflicts, Ready meetings, Inbox rows, backlog, linked repos or reports asked for. `brain lint` reports 0 errors and 0 warnings. Notion was read from the files you gave, not live.
-- **Drop folder:** not read, because none is set.
-- **Decisions for you:** 3 older proposals still wait, and an unattended run can't decide them:
-  - From Acme kickoff: 1 new note
-  - From Acme sync: 3 new notes
-  - Acme: mobile app relaunch planned for 2027
-- **Not yet in Notion:** `sync render` has 7 pages to publish (6 updates and 1 new person). They date from earlier work. I didn't count them as waiting work, so they go out with the next run that has work.
+- **Checked, nothing found:** your Notion edits and new rows, meetings, Inbox rows, Documents and report requests, weekly ticks, linked repos and the backlog.
+- **Not checked:** the drop folder, because your rules have no `Drop folder:` line. `brain lint` wasn't run either, because nothing was written.
+- **Three older decisions still wait for you:** the notes from Acme kickoff, the notes from Acme sync, and "Acme: mobile app relaunch planned for 2027". A run with no new work leaves them pending, and adds no row for them.
+- **Seven items are still unpublished:** 6 page updates and a new page for Carlos Ruiz. I read the rules as not counting these as waiting work, so the next run that has something to do will publish them.
 
 Next: say "what needs my decision" in a session.

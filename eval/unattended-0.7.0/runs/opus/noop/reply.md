@@ -1,10 +1,13 @@
-Nothing was waiting to be taken in, so the run wrote nothing: no note, commit, log line or push.
+Done: there was nothing for an unattended run to take in, so I wrote nothing: no commit, no log line, and the working tree is clean on `main`.
 
-- **Checked:** the brain is on `main`. There is no drop folder, no linked repo, no older notes to list (`brain proposal backlog --dry-run`) and no stale index or view. `brain lint` reported 0 errors and 0 warnings.
-- **Not checked:** Notion (meetings, Inbox rows, weekly ticks and your edits). It isn't connected in this session, and no Notion database is configured in this brain.
-- **Needs you:** three proposals that were already pending are untouched:
-  - From Acme sync: 3 new notes
-  - From Acme kickoff: 1 new note
-  - Acme: mobile app relaunch planned for 2027
+**What I checked**
+- **Inputs:** there are no linked repos and no older notes to list. The brain has no drop folder set, so I skipped that step.
+- **Notion:** I read nothing, since no Notion databases are configured here. I can't say whether meetings, Inbox rows or edits are waiting there.
+- **Not run:** `brain lint` (nothing was written), publish and push.
 
-**Next:** say "what needs my decision" in a session to settle the three proposals.
+**Waiting for you:** 3 decisions, all from before this run and left pending:
+- **Acme kickoff:** 1 new draft note to review.
+- **Acme sync:** 3 new draft notes to review.
+- **Acme mobile app:** whether to add "Acme plans to relaunch its mobile app in 2027." to the Acme org note.
+
+Next: in a session in this brain, say "what needs my decision".

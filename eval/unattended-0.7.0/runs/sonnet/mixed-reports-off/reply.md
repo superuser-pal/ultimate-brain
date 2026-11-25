@@ -1,27 +1,29 @@
-Done: 2 meetings ingested (4 new draft notes, 2 source snapshots) · 14 pages published · Week of 14 Dec 2026: 1 tick applied (C1, Lena Hart's repeated alias)
-Needs you: 7 decisions waiting, plus C3 in the weekly row · 1 meeting skipped (no date) · drop folder not set: say where it is
-Next: say "what needs my decision"
-
-Notion isn't connected, so the Notion writes are 14 lines in `writes.md`, and I treated them as done.
+Done: 2 meetings ingested (4 new notes and 2 source copies) · 1 weekly tick applied · 14 Notion pages published
+Needs you: 7 decisions waiting · Acme budget call skipped (no date) · C3 in Week of 14 Dec 2026 waits because you wrote a note
+Next: add the date to Acme budget call in Notion and leave it Ready.
 
 **What came in**
-- **Acme design review (10 Dec):** the meeting note. "Use the new grid for all pages" stays a line in that note. I didn't think it needed its own decision note. Tasks is off, so Carlos Ruiz's design tokens action (due 17 Dec) is only listed in the note.
-- **Acme content check-in (12 Dec):** the meeting note, a draft decision to move the launch to March 2027, and the open question "Who approves the German copy?". Maria López's blog topics action (due 19 Dec) is listed in the meeting note.
+- **Acme design review (10 Dec):** one meeting note. "Use the new grid for all pages" is a line in that note, not a separate decision note. Carlos Ruiz's action (design tokens by 2026-12-17) is listed there.
+- **Acme content check-in (12 Dec):** a meeting note, a decision that the launch moves to March 2027, and the question "Who approves the German copy?". Maria López's action (blog topics by 2026-12-19) is listed in the meeting note.
+- All the new notes are drafts. The launch date is still 2027-02 until you approve the change to 2027-03.
+- Tasks are turned off, so I created none.
 
 **What changed**
-- **Waiting for your decision:**
-  - The Acme website launch date, 2027-02 → 2027-03. It still reads 2027-02 until you approve it.
-  - Your Notion edit to Maria López's role, "Product Manager" → "Product lead". Publishing left the Role field in Notion as you wrote it.
-- **Also waiting:** the new notes from both meetings, plus three older items: notes from the Acme kickoff and Acme sync, and an addition to the Acme note about a 2027 mobile app relaunch.
+- **Your Role edit:** changing Maria López from "Product Manager" to "Product lead" waits for your yes. I didn't write Role back to Notion.
+- **C1:** I removed the repeated alias on Lena Hart.
+- **Notion:** the updates include the project and area Briefs, the project's Decision log and meeting properties. They also include new pages for Lena Hart, Mira Lund, Otto Kern, Ivo Brand and Carlos Ruiz (Carlos as a draft). I set both ingested meetings to Done.
+- **How Notion was simulated:** each write is a line in `writes.md` and was treated as successful. Some pages have a second line to add links to newly created people. I couldn't check the existing page blocks before logging the Brief and Decision log updates.
 
 **Check**
-- **Skipped meeting:** Acme budget call has no Date. Add it in Notion; the meeting stays Ready for the next catch-up.
-- **C2 not applied:** Mira Lund's note changed since the weekly review, so that item is now closed.
-- **C3 waits:** it's the Otto Kern alias item, and your note says "only the short name, and Mira now leads the copy team". I didn't act on either part of the note. It mentions Mira although the item is about Otto, so check that it's on the right line.
-- **C4 stays open:** you didn't tick this Ivo Brand item. It won't be declined while C3 is waiting. The weekly row had nothing new to publish, so it stays Ready.
-- **Row-level security:** you changed the Project of Row-level security in Notion; that can't be changed by editing. Tell me what's wrong and I'll propose it.
-- **Outdated summary:** the Acme website summary says "launching February 2027". Approving the new launch date won't rewrite that summary.
+- You changed the Project of Row-level security in Notion; that can't be changed by editing. Tell me what's wrong and I'll propose it.
+- C2 not applied: Mira Lund's note changed since the review, so its proposal is closed.
+- C3 (Otto Kern) has your note, "only the short name, and Mira now leads the copy team". I didn't interpret or apply it.
+- C4 (Ivo Brand) is unticked. It stays open while C3 waits. The weekly row stays Ready, and I didn't rewrite it.
+- Acme budget call is still Ready, and nothing from it was taken in.
+- The Acme website summary says it launches in February 2027. Approving the date change won't update that sentence.
+- The drop folder isn't set: say where it is if you want to use it.
+- `brain lint` showed 0 errors and 4 warnings, all for people notes with no links, project or area. It also noted that the skills aren't pinned.
 
-`brain lint` found no errors and 4 warnings that nothing links to the notes for Ivo Brand, Lena Hart, Mira Lund and Otto Kern. It also noted that skills aren't pinned. Everything is committed on `main`. There was no Catch-up row to create because Reports is off. The push failed because no remote is set up.
+I committed everything locally. I didn't create a Catch-up row because Reports is turned off.
 
-Not backed up: no remote is configured. Say "fix my backup".
+Not backed up: there is no Git remote. Say "fix my backup".

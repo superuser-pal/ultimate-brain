@@ -1,30 +1,31 @@
-Done: 2 meetings ingested · 4 notes in as drafts · Week of 14 Dec: 1 applied.
-
-Needs you: 7 decisions waiting · C3 (Week of 14 Dec) waits: you wrote a note; say "catch up" in a session · 1 meeting skipped (Acme budget call: no date) · nothing published to Notion (publishing is set to ask)
-
+```
+Done: 2 meetings ingested · 4 new notes waiting as drafts · 1 edit from Notion noted as a question · Week of 14 Dec: 1 applied
+Needs you: 7 decisions waiting (4 from this run) · Acme budget call skipped (no date) · C3 (Week of 14 Dec) waits: you wrote a note; say "catch up" in a session · nothing published to Notion (your setting is to ask first)
 Next: say "what needs my decision"
+```
 
 **What came in**
-- **Acme design review, 10 Dec:** the new grid is used for all pages, kept as a line in the meeting. It has no new decision note, question or person.
-- **Acme content check-in, 12 Dec:**
-  - New decision: Move the Acme website launch to March 2027.
-  - New open question: Who approves the German copy? (raised by Maria López)
-  - Waiting for your yes: Acme website launch date, 2027-02 → 2027-03.
-
-**What changed**
-- C1 applied: Lena Hart's aliases, `["Lena","Lena"]` → `["Lena"]`.
-- Your Notion edit of Maria López's Role, Product Manager → Product lead, waits for your decision. The brain still says Product Manager.
+- **Acme design review, 10 Dec:** the meeting note. "Use the new grid for all pages" is a line in it, since it's too small for a decision note.
+- **Acme content check-in, 12 Dec:** the meeting note and two more:
+  - Decision: "Move the Acme website launch to March 2027".
+  - Open question: "Who approves the German copy for the Acme website?", raised by Maria López.
+  - Proposed change: Acme website launch date 2027-02 → 2027-03.
+- **Your edit in Notion:** Maria López, Role, Product Manager → Product lead. It waits for your yes; the brain still says Product Manager.
+- **Week of 14 Dec:** C1 is applied, so Lena Hart's repeated alias is gone.
 
 **Check**
-- C2 not applied: Mira Lund changed since the review. Its proposal is closed.
-- C4 was not ticked. It stays open while C3 waits.
-- Week of 14 Dec stays Ready in Notion, and so do both ingested meetings until a publish.
+- C2 not applied: Mira Lund's note changed since the review, so the item is closed and the repeated alias is still there.
+- C4 isn't ticked, so it stays open until C3 is settled. The row stays Ready.
 - You changed the Project of Row-level security in Notion; that can't be changed by editing. Tell me what's wrong and I'll propose it.
-- Acme budget call has no date. Set its Date in Notion and leave it Ready.
-- The Acme website summary still says "launching February 2027", which will be out of date if you accept March. The minutes give no reason for the move and name nobody as having decided it.
-- Action items that aren't tasks (Tasks is off): Carlos Ruiz sends the design tokens by 2026-12-17; Maria López confirms the blog topics by 2026-12-19.
+- Acme budget call has no Date, so nothing was taken from it. Fill in the Date; it stays Ready for the next run.
+- The content check-in gives no reason for the launch move and doesn't say who decided it.
+- If you accept the March launch, the Acme website summary will still say "launching February 2027".
+- Both ingested meetings still show Ready in Notion until a run publishes them.
 - Drop folder not set: say where it is.
-- `brain lint`: 0 errors. Its 4 warnings were there before the run: nothing links to Ivo Brand, Lena Hart, Mira Lund or Otto Kern.
-- The Notion comparison ran on the computer's clock; everything that wrote to the brain used 2026-12-14T09:05:00Z.
+- `brain lint` reported 0 errors and 4 warnings. The warnings were there before: nothing links to the notes for Ivo Brand, Lena Hart, Mira Lund and Otto Kern.
+
+**Action items with no task** (both belong to other people; Tasks is off)
+- Carlos Ruiz sends the design tokens by 2026-12-17.
+- Maria López confirms the blog topics by 2026-12-19.
 
 Not backed up: no backup is set up. Say "fix my backup".
