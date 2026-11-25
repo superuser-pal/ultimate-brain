@@ -101,6 +101,22 @@ Then it sets the version, writes the CHANGELOG section from the task rows (`- <i
 - **A candidate:** `node scripts/release.mjs 0.3.0-rc.1` publishes on the `next` tag, never `latest`.
 - **Flags:** `node scripts/release.mjs <version> [--dry-run] [--allow-partial "<reason>"]`, in any order. `--dry-run` runs every check and prints the CHANGELOG section, and changes nothing.
 
+**4. Compare the template's skill pages**, after a full release (not a candidate) is published. A migration names only the skill pages its release changes, so an earlier miss stays until every page is compared (CC-392). Do it when the release has a Notion migration, or when this prints anything, with the previous full release's tag and this one's:
+
+```sh
+git diff --stat v0.17.0..v0.18.0 -- notion/brain-assistant.md notion/minutes-format.md
+```
+
+With the author's yes to read it, the agent reads **every** page of the template's Skills database through the Notion MCP, after the release's migration is applied there, and writes one entry per page to a JSON file outside this repository (it is never committed), in the form the script's usage line gives. The page's title goes under `name`, whatever the property is called: **Skill name** in the template and its duplicates (a database of Notion's own skills type), **Name** in a space built by Prompt 9. Then, on macOS or Windows:
+
+```sh
+node scripts/skills-pages-check.mjs <pages.json>
+```
+
+It compares them with "Skills" of [notion/brain-assistant.md](../notion/brain-assistant.md) (Write minutes' body with [notion/minutes-format.md](../notion/minutes-format.md)), in either layout ([notion-space-design.md](notion-space-design.md) §5), and prints `same`, `differs`, `missing` or `extra` per skill. It reads no Notion: `same` is about the text in the file, and a mention counts by its page's name, so whether it opens the right page is First things first's check (spec/setup.md §6.4). Fix each with the author's yes, in the place that page keeps its text: replace a page that `differs`, publish a `missing` one ([Prompt 9](../notion/prompts/09-assistant-and-guide.md) §2), and move an `extra` page to the trash when brain-assistant.md no longer has its skill. (In a user's own Skills database, a skill they wrote themselves is `extra` too, and stays.) Read again until every skill is `same` and the script exits 0.
+
+**The release's U rows say so.** The row that publishes the release's template always carries the sentence "compare every skill page with notion/brain-assistant.md and trash a retired one", and the row for the author's own space says the same for their Skills database.
+
 ## Windows acceptance follow-up
 
 Under [0104](../decisions/0104-product-design-principles.md), review the release's changed behavior and platform impact to identify manual Windows checks that still need a person. Reuse existing automated coverage and recorded acceptance evidence when sufficient. Record why no manual run is needed when none applies.
