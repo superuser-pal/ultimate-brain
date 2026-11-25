@@ -120,7 +120,7 @@ A feature release, by explicit roadmap change after the cutoff ([0113](../decisi
 | CC-387 | Decide whether Notion Brain Assistant's skills ask for plain dates (moved from 1.0.0's section) | this plan; a decision if the answer changes what a skill may write | the author's answer | `done` (#493) |
 | CC-388 | eval/unattended-0.7.0 is rewritten for the 0.17.0 model or retired (moved from 1.0.0's section) | `eval/unattended-0.7.0` | the author's choice of (a) or (b) first | `done` (#497) |
 | CC-391 | Migration 0030 and the template's documents say what the template holds | migration 0030, Notion design §10, TEMPLATE.md | any order | `done` (#500) |
-| CC-392 | The template's skill pages are checked against the product's text at every release | `docs/releasing.md`, TEMPLATE.md, `scripts/skills-pages-check.mjs`, its tests | any order; either layout until CC-385 | `todo` |
+| CC-392 | The template's skill pages are checked against the product's text at every release | `docs/releasing.md`, TEMPLATE.md, `scripts/skills-pages-check.mjs`, its tests | any order; either layout until CC-385 | `review` |
 | CC-402 | A date mention in a page reads as one text | `spec/cli.md` §5.14.7, `spec/capture-and-review.md`, `tests/`, the fork | before CC-400's fork release | `done` (#504) |
 | CC-375 | Record 0112 and plan 0.18.0 and 0.19.0 | decision and amendment pointers, this plan, vision, v2-ideas, AGENTS.md | the author's selection of 2026-11-22 | `done` (#487) |
 | CC-389 | The smoke-run scorer reads Nothing records and Neither records as abstaining | `eval/memory-0.12/score.mjs`, its tests and README | any time; merged after 0.17.0 is released | `done` (#490) |
