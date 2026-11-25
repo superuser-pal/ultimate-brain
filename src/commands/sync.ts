@@ -11,7 +11,6 @@ import { lintWarnings } from "../lib/warnings.ts";
 import { applyQuestionStatus, buildQuestionsPlan, questionsSnapshotProblems, splitQuestionStatus } from "../lib/questions-transition.ts";
 import { trackedQuestions } from "../lib/tracked-tasks.ts";
 import { buildSnapshot, type SnapshotInput } from "../lib/sync-snapshot.ts";
-import { factoriesOn } from "../lib/task-areas.ts";
 import { formatTimestamp } from "../lib/time.ts";
 import { readdir, stat, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";

@@ -15,7 +15,7 @@ import { loadSchemas } from "./schemas.ts";
 import { formatDate, formatTimestamp, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 import type { LogEntry } from "./log.ts";
-import { factoriesOf, factoryArea, factoryById, factoryProjects, orderedFactory, type Factory } from "./factories.ts";
+import { factoriesOf, factoriesOn, factoryArea, factoryById, factoryProjects, orderedFactory, type Factory } from "./factories.ts";
 import { databaseId, moduleForDatabase, modulesOf, typeIsOn } from "./modules.ts";
 import { applyReviewDecisions } from "./review-apply.ts";
 import { recordRevisionRequests } from "./review-revision.ts";
@@ -31,7 +31,7 @@ import { chainOf, FOLLOW_UP } from "./extract.ts";
 import { wholeDocumentMarkdown } from "./whole-links.ts";
 import { FROM_THE_BRAIN_MARKER } from "./from-the-brain.ts";
 import { planTaskDocument, type TaskDocumentRequest } from "./task-documents.ts";
-import { byPage, factoriesOf, factoriesOn, newTaskArea, planTaskArea, type Factory, type PlannedCreate, type TaskArea, type TaskAreaUnset } from "./task-areas.ts";
+import { byPage, newTaskArea, planTaskArea, type PlannedCreate, type TaskArea, type TaskAreaUnset } from "./task-areas.ts";
 import { changeText, dayMonthYear, NOTION_PROPERTY, notionValueWords } from "./weekly-record.ts";
 import { readState, type RowSlot } from "./weekly-state.ts";
 

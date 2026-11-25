@@ -15,6 +15,8 @@ import { loadSchemas } from "../lib/schemas.ts";
 import { adoptApply, adoptPreview, assertAdoptionRev, checkAdoptionInput } from "../lib/workflow-adopt.ts";
 import { approveArtifact, assertDoneAllowed, decidePublication, itemCounts, moveOp, openTasks, progress, publishHistory, reconcile, resolve, setStatus, summaryOf, ts, workRecord, type OpError } from "../lib/workflow-model.ts";
 import { generateId } from "../lib/ids.ts";
+import { newTaskArea } from "../lib/task-areas.ts";
+import { Workspace } from "../lib/workspace.ts";
 import { compare, isOpen, listWorkflows, recordIds, Records, serialize, taskHolder, type Json } from "../lib/workflow-store.ts";
 
 // `brain workflow …` (spec/connected-workflows.md §12): the durable records of connected workflows, in the brain.
@@ -503,24 +505,36 @@ export const workflowRenderCommand: Command = {
     if (wi === undefined) throw new BrainError("USAGE", "brain workflow render needs --item <wi>");
     const item = records.items.get(wi);
     if (item === undefined) throw new BrainError("UNKNOWN_ID", `No item ${wi} in ${records.id}`);
-    const notes = await notesById(brain!);
+    const workspace = await Workspace.open(brain!);
+    const notes = new Map(workspace.notes.map((note) => [note.id, note]));
     const tasks = (brain!.config.notion as Json | undefined)?.tasks as Json | undefined;
     const names = (tasks?.properties ?? {}) as Record<string, string>;
     const properties: Json = {};
     const pending: Json[] = [];
-    const put = (key: string, type: string, value: unknown) => { const name = names[key]; if (typeof name === "string" && name !== "") properties[name] = { type, value }; };
+    const put = (key: string, type: string, value: unknown, mode?: "if_empty") => { const name = names[key]; if (typeof name === "string" && name !== "") properties[name] = { type, value, ...(mode === undefined ? {} : { mode }) }; };
     put("title", "title", item.title);
     put("status", tasks?.status_type === "status" ? "status" : "select", records.workflow.status_map[item.status]);
     // The destination, and the area of a Project destination, each when mapped; one not yet in Notion is held back as in sync tasks.
-    const relate = (key: string, id: string | undefined) => {
+    const relate = (key: string, id: string | undefined, page: unknown, mode?: "if_empty") => {
       if (id === undefined || typeof names[key] !== "string" || names[key] === "") return;
-      const page = notes.get(id)?.attributes.notion;
-      if (typeof page === "string") put(key, "relation", [page]); else pending.push({ property: names[key], ids: [id] });
+      if (typeof page === "string") put(key, "relation", [page], mode); else pending.push({ property: names[key], ids: [id] });
     };
+    const pageOf = (id: string | undefined) => (id === undefined ? undefined : notes.get(id)?.attributes.notion);
     const destination = records.workflow.destination as Json;
-    relate("project", destination.project);
-    relate("area", destination.area ?? (destination.project === undefined ? undefined : notes.get(destination.project)?.attributes.area as string | undefined));
-    put("brain_id", "rich_text", item.id);
+    // A task the user wrote keeps every property but these three (§6.1, §8.4); its Brain ID is sent when empty.
+    const taken = isFactory(records) && item.origin?.kind === "notion" && item.origin.ref === "tasks";
+    if (isFactory(records) && !taken) {
+      // A task the brain creates for a Factory has no Project: its Area is the Factory's, never over one the page has (0113 §9, 0114).
+      const factory = factoryById(brain!.config, destination.factory);
+      relate("factory", destination.factory, factory?.notion);
+      const { area } = newTaskArea(workspace, [], undefined, factory === undefined ? [] : [factory]);
+      relate("area", area, pageOf(area), item.notion === null ? undefined : "if_empty");
+    } else if (!taken) {
+      relate("project", destination.project, pageOf(destination.project));
+      const area = destination.area ?? (destination.project === undefined ? undefined : notes.get(destination.project)?.attributes.area as string | undefined);
+      relate("area", area, pageOf(area));
+    }
+    put("brain_id", "rich_text", item.id, taken ? "if_empty" : undefined);
     return {
       data: { payload: { database_id: tasks?.database ?? "", page_id: item.notion?.page ?? null, properties, pending_relations: pending }, toggle: { heading: "Work record", markdown: workRecord(records, item, notes) } },
       human: `Work record\n${workRecord(records, item, notes)}`,
