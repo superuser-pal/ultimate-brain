@@ -42,6 +42,8 @@ test("migration 0031 is 0.18.0's one migration: parts by module, and every step 
   }
   for (const [part, , skip] of rows(between(migration, "| Part | For |", "\nRun it after"))) assert.ok(skip.length > 0, `${part}: says when a space skips it`);
   assert.match(migration, /change it to `Template version: 0031`/);
+  const sentence = "The agent runs the skills of whichever Skills database is in its Tools and access, so keep exactly one there: the one under your top page.";
+  for (const path of [MIGRATION, "docs/notion-space-design.md", "notion/brain-assistant.md"]) assert.ok((await read(path)).includes(sentence), `${path} has CC-386's sentence`);
   const readme = await read("notion/migrations/README.md");
   assert.match(readme, /\[0031\][^\n]*0\.18\.0's one migration[^\n]*CC-399 \(release 0\.18\.0\)[^\n]*CC-384[^\n]*CC-386[^\n]*\|$/m);
   const version = (await read("notion/TEMPLATE.md")).match(/\| \*\*Template version\*\* \| `(\d{4})` \|/)?.[1];
