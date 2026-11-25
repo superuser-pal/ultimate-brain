@@ -287,6 +287,25 @@ test("repo health: PLAN_FILE_MISSING for a plan file that isn't at HEAD; ROLLUP_
   assert.equal((await checks()).some((check: { code: string }) => check.code === "ROLLUP_STALE"), true);
 });
 
+test("repo health: an archived Project of the list is named; .brain is stale only when its Project isn't one of the kit's; a Factory's workflow asks for no mode", async (context) => {
+  const c = await setup(context);
+  await c.addProject(SECOND);
+  const { repo, data } = await linkedRepo(context, c, { kit: kitOf({ placement: { area: AREA, projects: [PROJECT, SECOND] } }) });
+  const codes = async () => (await c.ok(["repo", "health", "acme-api"])).repos[0].checks.filter((check: { code: string }) => ["PLACEMENT_ARCHIVED", "BRAIN_LINK_STALE", "WORKFLOW_WITHOUT_CONNECTED"].includes(check.code));
+  const brainLink = (value: unknown) => writeFile(join(repo.root, ".brain"), `${JSON.stringify(value, null, 2)}\n`);
+  for (const [value, stale] of [[{ repo: "acme-api", area: AREA }, false], [{ repo: "acme-api", area: AREA, project: SECOND }, false], [{ repo: "acme-api", area: AREA, project: "prj-00000000" }, true], [{ repo: "acme-api", area: "area-00000000" }, true]] as const) {
+    await brainLink(value);
+    assert.equal((await codes()).some((check: { code: string }) => check.code === "BRAIN_LINK_STALE"), stale, JSON.stringify(value));
+  }
+  await brainLink({ repo: "acme-api", area: AREA });
+  const path = join(c.dir, "projects", SECOND, "project.md");
+  await writeFile(path, (await readFile(path, "utf8")).replace("lifecycle: reviewed", "lifecycle: archived"));
+  await connect(c, data.factory, repo.root);
+  const checks = await codes();
+  assert.deepEqual(checks.map((check: { code: string }) => check.code), ["PLACEMENT_ARCHIVED"]);
+  assert.ok(checks[0].message.includes(SECOND));
+});
+
 test("repo show names the Factory and its workflow", async (context) => {
   const c = await setup(context);
   const { repo, data } = await linkedRepo(context, c);

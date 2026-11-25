@@ -35,7 +35,7 @@ const hash = (text: string | Uint8Array) => `sha256:${sha(text)}`;
 // ---- kit helpers -----------------------------------------------------------------------------------------------
 
 const ORDER = {
-  top: ["kit_version", "name", "placement", "knowledge", "tasks", "methodology", "plan", "starter"],
+  top: ["kit_version", "name", "placement", "knowledge", "plan", "tasks", "methodology", "starter"],
   placement: ["area", "domain", "projects"],
   knowledge: ["patterns", "never_read"],
   tasks: ["mode", "source", "status_map"],
@@ -351,6 +351,20 @@ test("repo kit write: writes the canonical bytes (2 spaces, §2.1 key order, tra
   assert.equal(result.json.data.action, "created");
   assert.equal(result.json.data.sha256, confirm);
   assert.ok([repo.root, await realpath(repo.root)].some((path) => join(path, "brain-kit.json") === result.json.data.path_abs || path === result.json.data.path_abs), result.json.data.path_abs);
+});
+
+test("repo kit write: a kit with `project` is written with `projects`, and `plan` in its place (§2.1, §2.2); a plan path in never_read or repeated is a problem", async (context) => {
+  const kit = makeKit({ plan: ["docs/roadmap.md"] });
+  const { dir, write, file } = await writeCase(context, kit);
+  assert.equal((await write(["--confirm", hash(canon(kit))])).code, 0);
+  const written = JSON.parse(await readFile(file, "utf8"));
+  assert.deepEqual(written.placement, { area: AREA, projects: [PROJECT] });
+  assert.deepEqual(Object.keys(written), ["kit_version", "name", "placement", "knowledge", "plan", "tasks", "methodology"]);
+  const pointers = async (draft: any) => (await run(dir, ["repo", "kit", "check", "--input", await inputFile(dir, JSON.stringify(draft))])).json.data.problems.map((problem: { pointer: string }) => problem.pointer);
+  assert.deepEqual(await pointers(makeKit({ plan: ["docs/roadmap.md", "secrets/plan.md"] })), ["/plan/1"]);
+  assert.notDeepEqual(await pointers(makeKit({ plan: ["a.md", "a.md"] })), []);
+  assert.notDeepEqual(await pointers(makeKit({ placement: { area: AREA, project: PROJECT, projects: [PROJECT] } })), [], "one of the two");
+  assert.notDeepEqual(await pointers(makeKit({ placement: { area: AREA, projects: [] } })), []);
 });
 
 test("repo kit write: never stages or commits; the only change is the untracked kit; logs repo-kit with 12 hex", async (context) => {

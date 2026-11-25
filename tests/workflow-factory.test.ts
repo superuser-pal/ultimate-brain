@@ -14,6 +14,7 @@ const exec = promisify(execFile);
 const NOW = "2026-12-10T09:00:00Z";
 const AREA = "area-2m7c4h8n";
 const PROJECT = "prj-9x4t1b7e";
+const AREA_PAGE = "1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d";
 const ROW = "6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1aff";
 const STATUS_MAP = { todo: "To Do", in_progress: "Doing", waiting: "Waiting On", review: "Review", done: "Done", dropped: "Won't Do" };
 const page = (n: number) => `6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a${n.toString(16).padStart(2, "0")}`;
@@ -341,4 +342,51 @@ test("workflow summary refuses a Factory's workflow and names factory overview",
   const result = await c.call(["workflow", "summary", wf]);
   assert.equal(code(result), "USAGE");
   assert.ok(result.json.error.message.includes("factory overview"));
+});
+
+// ---------------------------------------------------------------- render (§6.1, §12; 0113 §9, 0114)
+
+test("workflow render: a new item's task gets the Factory and the Factory's Area, and no Project; one not published waits", async (context) => {
+  const c = await setup(context);
+  const wf = await c.connect({ folder_path: c.repo, destination: { factory: "fac-7k2m9q4x" } });
+  assert.equal((await c.put(wf, { title: "Agreed here", scope: "x", acceptance: [], approve: true })).code, 0);
+  const [item] = (await c.show(wf)).items;
+  const render = async () => (await c.ok(["workflow", "render", wf, "--item", item.id])).payload;
+  const before = await render();
+  assert.deepEqual(Object.keys(before.properties), ["Name", "Status", "Area", "Brain ID"]);
+  assert.ok(before.pending_relations.some((entry: any) => entry.property === "Factory" && entry.ids[0] === "fac-7k2m9q4x"), JSON.stringify(before));
+  await c.ok(["sync", "record", "--input", await c.file({ records: [{ id: "fac-7k2m9q4x", notion: ROW, synced_at: NOW, published: {} }] })]);
+  await c.git("commit", "-q", "-a", "-m", "row");
+  const after = await render();
+  assert.deepEqual(after.properties.Factory, { type: "relation", value: [ROW] });
+  assert.deepEqual(after.properties.Area, { type: "relation", value: [AREA_PAGE] });
+  assert.equal(Object.hasOwn(after.properties, "Project"), false);
+  assert.deepEqual(after.properties["Brain ID"], { type: "rich_text", value: item.id });
+});
+
+test("workflow render: a taken task gets its Brain ID when empty, its status and its title, and nothing else", async (context) => {
+  const c = await setup(context);
+  const wf = await c.connect();
+  const mine = task(1, "Speed up login");
+  await c.take(wf, mine);
+  const [item] = (await c.show(wf)).items;
+  const { payload } = await c.ok(["workflow", "render", wf, "--item", item.id]);
+  assert.deepEqual([payload.page_id, payload.properties, payload.pending_relations], [mine.page, {
+    Name: { type: "title", value: "Speed up login" }, Status: { type: "select", value: "Doing" }, "Brain ID": { type: "rich_text", value: item.id, mode: "if_empty" },
+  }, []]);
+});
+
+test("workflow render: an item moved with its workflow keeps its page's Area", async (context) => {
+  const c = await setup(context, (config) => { config.factories[0].notion = ROW; });
+  const wf = await c.connect({ folder_path: c.repo, folder: { repo: "acme-api" }, destination: { project: PROJECT } });
+  assert.equal((await c.put(wf, { title: "From before", scope: "x", acceptance: [], approve: true })).code, 0);
+  await c.reconcileOk(wf, [], FULL);
+  const { ops, items } = await c.show(wf);
+  await c.ok(["workflow", "op", "state", wf, ops[0].id, "--state", "in_flight"]);
+  await c.ok(["workflow", "op", "state", wf, ops[0].id, "--state", "done", "--page", page(1)]);
+  assert.equal((await c.set(wf, { destination: { factory: "fac-7k2m9q4x" } })).code, 0);
+  const { payload } = await c.ok(["workflow", "render", wf, "--item", items[0].id]);
+  assert.deepEqual(payload.properties.Factory, { type: "relation", value: [ROW] });
+  assert.equal(Object.hasOwn(payload.properties, "Project"), false);
+  assert.deepEqual(payload.properties.Area, { type: "relation", value: [AREA_PAGE], mode: "if_empty" });
 });
