@@ -2,6 +2,7 @@ import { DAY_MS, DISMISS_DAYS, type Dismissal } from "./assistant-dismissals.ts"
 import { isRecord } from "./input.ts";
 import { modulesOf } from "./modules.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
+import { linkedRepos, projectsOf } from "./repos.ts";
 
 // The deterministic half of Ultimate Assistant: signals, recommendations, scope, ranking and the cap (spec/assistant.md §2.1, §3).
 
@@ -261,26 +262,28 @@ export function computeFindings(input: FindingsInput): FindingsResult {
     const counts = repo.rollup?.counts ?? {};
     return (counts.todo ?? 0) + (counts.in_progress ?? 0) + (counts.waiting ?? 0) + (counts.review ?? 0) > 0;
   });
+  // A repo that serves several Projects targets them, in any Area (§2.2, 0113 §2); with one or none, the rollup's own target.
+  const repoProjects = new Map(linkedRepos(config).map((repo) => [repo.name, projectsOf(repo)]));
+  const several = (name: string): string[] => { const ids = repoProjects.get(name) ?? []; return ids.length > 1 ? ids : []; };
   const rollupTargetsProject = (project: Project) => openRollups.some((repo) => {
+    if (several(repo.name).length > 0) return several(repo.name).includes(project.id);
     const target = repo.rollup?.target ?? {};
     return target.project !== undefined ? target.project === project.id : target.area !== undefined && target.area === project.area;
   });
   const rollupTargetsArea = (area: Area) => openRollups.some((repo) => {
     const target = repo.rollup?.target ?? {};
-    return target.project !== undefined ? projects.get(target.project)?.area === area.id : target.area === area.id;
+    return target.project !== undefined ? projects.get(target.project)?.area === area.id
+      : target.area === area.id || several(repo.name).some((id) => projects.get(id)?.area === area.id);
   });
 
   // ---- mentions (§3.1)
-  const repoProject = new Map<string, string>();
-  for (const repo of Array.isArray(config.repos) ? config.repos : []) if (isRecord(repo) && typeof repo.name === "string" && typeof repo.project === "string") repoProject.set(repo.name, repo.project);
   interface Mention { note: Note; date: string; kind: ActivityKind }
   const mentions = new Map<string, Mention[]>();
   for (const note of notes) {
     if (["view", "proposal", "memory"].includes(note.type)) continue;
     const listed = new Set(list(note.attributes.projects));
     if (note.type === "source") {
-      const repo = typeof note.attributes.repo === "string" ? repoProject.get(note.attributes.repo) : undefined;
-      if (repo !== undefined) listed.add(repo);
+      for (const id of typeof note.attributes.repo === "string" ? repoProjects.get(note.attributes.repo) ?? [] : []) listed.add(id);
     }
     for (const projectId of listed) {
       if (projectId === note.id || !projects.has(projectId)) continue;

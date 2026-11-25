@@ -4,6 +4,7 @@ import type { RenderItem, RowStates } from "../lib/sync.ts";
 import type { Command } from "../lib/command.ts";
 import { Workspace } from "../lib/workspace.ts";
 import { commitJournaled } from "../lib/journal.ts";
+import { factoriesOn, factoryById, readFactories } from "../lib/factories.ts";
 import { modulesOf } from "../lib/modules.ts";
 import { BrainError } from "../lib/errors.ts";
 import { lintWarnings } from "../lib/warnings.ts";
@@ -113,7 +114,7 @@ function parseRowStates(value: unknown): RowStates {
 
 export const syncRenderCommand: Command = {
   name: "sync render", usage: "brain sync render (--changed | --ids <id>[,<id>…]) [--plan <plan.json> [--skip-conflicted]] [--row-state <file>] | --unpublish-drafts [--json]", summary: "Render Notion payloads without writing.", options: { changed: "boolean", ids: "string", plan: "string", "skip-conflicted": "boolean", "unpublish-drafts": "boolean", "row-state": "string" }, maxPositionals: 0, needsBrain: true,
-  async run({ args, brain, now }) {
+  async run({ args, brain, now, environment }) {
     const changed = args.options.changed === true; const idsText = args.options.ids as string | undefined;
     // The Draft pages from before 0.9.1, moved to the trash after a yes (cli §5.14.4, migration 0020).
     if (args.options["unpublish-drafts"] === true) {
@@ -123,7 +124,8 @@ export const syncRenderCommand: Command = {
     }
     if (changed === (idsText !== undefined)) throw new BrainError("USAGE", "provide exactly one of --changed or --ids");
     const workspace = await Workspace.open(brain!); const ids = idsText === undefined ? undefined : idsText.split(",").map((id) => id.trim()).filter(Boolean);
-    if (ids !== undefined) for (const id of ids) if (workspace.get(id) === undefined) throw new BrainError("UNKNOWN_ID", `No note with id ${id}`);
+    if (ids !== undefined) for (const id of ids) if (workspace.get(id) === undefined && factoryById(brain!.config, id) === undefined) throw new BrainError("UNKNOWN_ID", `No note with id ${id}`);
+    if (factoriesOn(brain!.config)) await readFactories(brain!, workspace.notes, environment.homeDirectory);
     const held = new Map<string, Set<string>>(); const planPath = args.options.plan as string | undefined; const skipConflicted = args.options["skip-conflicted"] === true;
     if (skipConflicted && planPath === undefined) throw new BrainError("USAGE", "--skip-conflicted needs --plan");
     const plan = planPath === undefined ? undefined : parsePlan(await readJsonInput(planPath, "sync render"));

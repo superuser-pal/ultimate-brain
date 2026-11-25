@@ -2,8 +2,9 @@ import { readMarker } from "./brain-marker.ts";
 import { BrainError } from "./errors.ts";
 import { isRecord } from "./input.ts";
 import { globMatch, KIT_FILE, kitBytesIfAny, kitProblems, matchesAny, parseKitBytes, type HubContext, type Kit } from "./link-kit.ts";
+import { modulesOf } from "./modules.ts";
 import { checkIssueInput, parseIssues, parseMarkdownTasks, statusMap, unmappedOf, type IssueInput } from "./repo-tasks.ts";
-import { assertAncestor, fileAtHead, filesAtHead, headCommit, lastTouched, openRepo, repoChanges, resolveCommit, type LinkedRepo } from "./repos.ts";
+import { assertAncestor, fileAtHead, filesAtHead, headCommit, lastTouched, openRepo, projectsOf, repoChanges, resolveCommit, type LinkedRepo } from "./repos.ts";
 import { listWorkflows } from "./workflow-store.ts";
 
 // The health check of spec/linked-repos.md §6: read-only.
@@ -45,8 +46,8 @@ export async function repoHealth(repo: LinkedRepo, hub: HubContext, brainRoot: s
 
   if (kit !== null) {
     const byId = new Map(hub.notes.map((note) => [note.id, note]));
-    for (const id of [kit.placement.area, kit.placement.project]) {
-      if (id !== undefined && isArchived(byId.get(id))) checks.push({ code: "PLACEMENT_ARCHIVED", severity: "warning", message: `${id} is archived: place ${repo.name} elsewhere or unlink it` });
+    for (const id of [kit.placement.area, ...projectsOf(kit.placement)]) {
+      if (isArchived(byId.get(id))) checks.push({ code: "PLACEMENT_ARCHIVED", severity: "warning", message: `${id} is archived: place ${repo.name} elsewhere or unlink it` });
     }
   }
 
@@ -82,6 +83,9 @@ export async function repoHealth(repo: LinkedRepo, hub: HubContext, brainRoot: s
     for (const file of kit.methodology.files ?? []) {
       if (await fileAtHead(path, file) === null) checks.push({ code: "METHODOLOGY_FILE_MISSING", severity: "warning", message: `${file} doesn't exist at HEAD`, path: file });
     }
+    for (const file of kit.plan ?? []) {
+      if (await fileAtHead(path, file) === null) checks.push({ code: "PLAN_FILE_MISSING", severity: "warning", message: `${file} doesn't exist at HEAD`, path: file });
+    }
     const source = kit.tasks?.source;
     let text: Buffer | null = null;
     if (source?.kind === "markdown") {
@@ -97,10 +101,12 @@ export async function repoHealth(repo: LinkedRepo, hub: HubContext, brainRoot: s
     }
     const open = listWorkflows(brainRoot).filter((workflow) => workflow.folder?.repo === repo.name && (workflow.state === "connected" || workflow.state === "paused"));
     if (kit.tasks?.mode === "connected" && open.length === 0) checks.push({ code: "CONNECTED_WITHOUT_WORKFLOW", severity: "warning", message: `${repo.name}'s tasks are connected, but no connected workflow names it: set one up or adopt the repo` });
-    if (kit.tasks?.mode !== "connected" && open.length > 0) checks.push({ code: "WORKFLOW_WITHOUT_CONNECTED", severity: "warning", message: `${open[0]!.id} runs in ${repo.name}, but the kit's mode isn't connected` });
+    // A workflow on the repo's Factory never asks for the kit's mode (§1.1): the mode says only where the detailed plan is tracked.
+    const elsewhere = open.find((workflow) => workflow.destination.factory === undefined);
+    if (kit.tasks?.mode !== "connected" && elsewhere !== undefined) checks.push({ code: "WORKFLOW_WITHOUT_CONNECTED", severity: "warning", message: `${elsewhere.id} runs in ${repo.name}, but the kit's mode isn't connected` });
     const link = await readDotBrain(path);
-    if (link !== null && (link.project !== kit.placement.project || link.area !== kit.placement.area)) checks.push({ code: "BRAIN_LINK_STALE", severity: "info", message: `.brain in ${repo.name} places it elsewhere than the kit: run brain link again`, path: ".brain" });
-    if (kit.tasks?.mode === "tracked-in-repo" && options.rollupAsOf !== undefined) {
+    if (link !== null && (link.area !== kit.placement.area || projectElsewhere(link.project, projectsOf(kit.placement)))) checks.push({ code: "BRAIN_LINK_STALE", severity: "info", message: `.brain in ${repo.name} places it elsewhere than the kit: run brain link again`, path: ".brain" });
+    if (kit.tasks?.mode === "tracked-in-repo" && options.rollupAsOf !== undefined && !modulesOf(hub.config).factories) {
       const asOf = options.rollupAsOf;
       if (source?.kind === "markdown") {
         const touched = await lastTouched(path, source.path);
@@ -110,6 +116,10 @@ export async function repoHealth(repo: LinkedRepo, hub: HubContext, brainRoot: s
   }
   return checks;
 }
+
+/** With one Project `brain link` gets it as `--project`, so `.brain` names it; with none or several `.brain` has none, or one of them (§2.3). */
+const projectElsewhere = (project: string | undefined, projects: readonly string[]): boolean =>
+  project === undefined ? projects.length === 1 : !projects.includes(project);
 
 /** The repo's `.brain`, read with the one marker reader (brain-marker.ts); a missing or malformed file is no link (`null`). */
 async function readDotBrain(path: string): Promise<{ project?: string; area?: string } | null> {

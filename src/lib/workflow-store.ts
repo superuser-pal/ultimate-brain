@@ -20,7 +20,7 @@ export const WORKFLOWS_DIR = "_workflows";
 // The records are JSON objects whose shapes spec/schemas/workflow.schema.json holds; they are typed loosely here and validated before each write.
 export type Json = Record<string, any>;
 
-export interface WorkflowSummary { id: string; state: string; folder: { name: string; repo?: string }; destination: { project?: string; area?: string } }
+export interface WorkflowSummary { id: string; state: string; folder: { name: string; repo?: string }; destination: { project?: string; area?: string; factory?: string } }
 
 function readJson(path: string): unknown {
   try { return JSON.parse(readFileSync(path, "utf8")); } catch { return undefined; }
@@ -41,9 +41,9 @@ export function listWorkflows(root: string): WorkflowSummary[] {
 export const compare = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 export const isOpen = (workflow: { state: string }): boolean => workflow.state === "connected" || workflow.state === "paused";
 
-/** The open (connected or paused) workflow whose `folder.repo` is this repo, as `{ id, state }`, or null (§3.1 allows at most one). */
-export function openWorkflowForRepo(root: string, repo: string): { id: string; state: string } | null {
-  const found = listWorkflows(root).find((workflow) => workflow.folder?.repo === repo && isOpen(workflow));
+/** The open (connected or paused) workflow whose `folder.repo` is this repo, or whose destination is its Factory, as `{ id, state }`, or null (§3.1 allows at most one). */
+export function openWorkflowForRepo(root: string, repo: string, factory?: string): { id: string; state: string } | null {
+  const found = listWorkflows(root).find((workflow) => isOpen(workflow) && (workflow.folder?.repo === repo || (factory !== undefined && workflow.destination?.factory === factory)));
   return found === undefined ? null : { id: found.id, state: found.state };
 }
 
@@ -62,6 +62,27 @@ export function recordIds(root: string): Set<string> {
   return ids;
 }
 
+/** Who has a Notion task already (§8.4): an item of any open workflow with its page, or the `wi-` id that is its Brain ID, `null` values when this brain has no record of it. */
+export interface TaskHolder { workflow: string | null; item: string | null; holder: Json | null }
+
+export function taskHolder(root: string, page: string, brainId: string | null): TaskHolder | null {
+  const wi = brainId !== null && /^wi-[0-9a-z]{8}$/.test(brainId) ? brainId : null;
+  const bare = (id: string) => id.replaceAll("-", "");
+  let byId: TaskHolder | null = null;
+  for (const workflow of listWorkflows(root)) {
+    const folder = join(root, WORKFLOWS_DIR, workflow.id, "items");
+    if (!existsSync(folder)) continue;
+    for (const file of readdirSync(folder).filter((name) => name.endsWith(".json")).sort()) {
+      const item = readJson(join(folder, file)) as Json | undefined;
+      if (!isRecord(item)) continue;
+      const found: TaskHolder = { workflow: workflow.id, item: item.id as string, holder: (item as Json).claim ?? null };
+      if (isOpen(workflow) && typeof (item as Json).notion?.page === "string" && bare((item as Json).notion.page) === bare(page)) return found;
+      if (wi !== null && item.id === wi) byId = found;
+    }
+  }
+  return wi === null ? null : byId ?? { workflow: null, item: null, holder: null };
+}
+
 /** A workflow's records as read, and the writes a command stages on them. Paths are brain-relative. */
 export class Records {
   readonly root: string;
@@ -74,6 +95,8 @@ export class Records {
   /** The JSON text of each record when read (null: created by this command), keyed by path. */
   private readonly original = new Map<string, string | null>();
   private readonly deleted = new Set<string>();
+  /** The `brain.json` text to write in the same commit (§3.5: ending a plain folder's Factory archives its entry). */
+  brainJson: string | null = null;
   private readonly ids: Set<string>;
 
   private constructor(root: string, id: string, workflow: Json) {
@@ -156,9 +179,10 @@ export class Records {
 
   /**
    * Validate and commit every change as one journaled operation (§10.1, capture-and-review §7.11): STALE_RECORD when a record changed on
-   * disk since it was read; BRAIN_BUSY when Git's index lock stays for 10 seconds. Returns the brain commit's op id, or null when nothing changed.
+   * disk since it was read; BRAIN_BUSY when Git's index lock stays for 10 seconds. `guard` runs right before the write, after another writer's
+   * commit was waited for, and may refuse. Returns the brain commit's op id, or null when nothing changed.
    */
-  async commit(now: Date, command: string): Promise<string | null> {
+  async commit(now: Date, command: string, guard?: () => void): Promise<string | null> {
     const changes = this.changes();
     if (changes.length === 0) return null;
     const problems: InputProblem[] = [];
@@ -178,10 +202,12 @@ export class Records {
     }
     await waitForIndex(this.root);
     await assertCleanTree(this.root);
+    guard?.();
 
     const op = newOpId();
     const logPath = `log/${formatTimestamp(now).slice(0, 7)}.md`;
     const entries: JournalEntry[] = changes.map(([path, record]) => ({ path, hash: record === null ? null : sha(serialize(record)), new: !this.original.has(path) || this.original.get(path) === null }));
+    if (this.brainJson !== null) entries.push({ path: "brain.json", hash: sha(this.brainJson), new: false });
     entries.push({ path: logPath, hash: null, new: !existsSync(join(this.root, logPath)) });
     await writeJournal(this.root, { op, written: now.toISOString(), entries });
     try {
@@ -190,6 +216,7 @@ export class Records {
         await ensureDirectory(this.root, posix.dirname(path));
         await atomicWriteFile(this.root, path, serialize(record));
       }
+      if (this.brainJson !== null) await atomicWriteFile(this.root, "brain.json", this.brainJson);
       await appendLog(this.root, now, [{ op: "workflow", id: "-", title: this.id, pairs: [["command", command.replaceAll(" ", "-")]] }]);
       await commitWithOp(this.root, op, entries.map((entry) => entry.path), `workflow: ${command} ${this.id}`);
     } catch (error) {

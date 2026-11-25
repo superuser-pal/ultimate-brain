@@ -1,8 +1,9 @@
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
+import { realpathSync } from "node:fs";
 import { realpath } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 
 import { BrainError } from "./errors.ts";
@@ -11,14 +12,19 @@ import { formatTimestamp } from "./time.ts";
 
 const exec = promisify(execFile);
 
-/** One `brain.json` `repos` entry (spec/schema.md §12, 0042; `never_read`, `project` and `kit` from a link kit, 0066). */
-export interface LinkedRepo { name: string; path: string; area: string; patterns: string[]; never_read?: string[]; project?: string; commit: string; kit?: { sha256: string } }
+/** One `brain.json` `repos` entry (spec/schema.md §12, 0042; `never_read`, `projects` and `kit` from a link kit, 0066; `project` was written until 0.17.0). */
+export interface LinkedRepo { name: string; path: string; area: string; patterns: string[]; never_read?: string[]; project?: string; projects?: string[]; commit: string; kit?: { sha256: string } }
 
 export interface RepoFile { path: string; status: "added" | "modified"; commit: string; committed_at: string; sha256: string; bytes: number }
 
 /** The `repos` list of a brain.json, `[]` when absent. */
 export function linkedRepos(config: Record<string, unknown>): LinkedRepo[] {
   return Array.isArray(config.repos) ? config.repos.filter(isRecord) as unknown as LinkedRepo[] : [];
+}
+
+/** The Projects of an entry's or a kit's placement, `project` read as a list of one (0113 §2). */
+export function projectsOf(placement: { project?: string; projects?: string[] }): string[] {
+  return placement.projects ?? (placement.project === undefined ? [] : [placement.project]);
 }
 
 /** The repo named `name`, or REPO_NOT_FOUND. */
@@ -58,6 +64,14 @@ export async function workTreeTop(path: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+/** A folder as it is compared with another (linked-repos.md §1.3): its real path, or the path itself when it isn't there; without case on Windows. */
+export function folderKey(path: string, home?: string): string {
+  const expanded = resolve(expandPath(path, home));
+  let real = expanded;
+  try { real = realpathSync.native(expanded); } catch { /* not on this machine */ }
+  return process.platform === "win32" ? real.toLowerCase() : real;
 }
 
 /** The repo's working tree, checked: REPO_NOT_FOUND when `path` isn't the top of one. */
@@ -148,6 +162,30 @@ export async function fileAtHead(path: string, file: string): Promise<Buffer | n
   } catch {
     return null;
   }
+}
+
+/** What a path is at `HEAD`: its Git mode (`120000` is a symbolic link), or null when it isn't there. */
+export async function modeAtHead(path: string, file: string): Promise<string | null> {
+  try {
+    const out = await git(path, ["ls-tree", "-z", "HEAD", "--", file]);
+    return out === "" ? null : out.split(" ", 1)[0]!;
+  } catch {
+    return null;
+  }
+}
+
+/** The committer time of each line of a file at `HEAD` (`git blame`, read-only), by 0-based line. */
+export async function blameAtHead(path: string, file: string): Promise<Date[]> {
+  const dates: Date[] = [];
+  const times = new Map<string, number>();
+  let commit = "";
+  for (const line of (await git(path, ["blame", "--porcelain", "HEAD", "--", file])).split("\n")) {
+    const head = /^([0-9a-f]{40,64}) \d+ (\d+)/.exec(line);
+    if (head !== null) commit = head[1]!;
+    else if (line.startsWith("committer-time ")) times.set(commit, Number(line.slice("committer-time ".length)));
+    else if (line.startsWith("\t")) dates.push(new Date(times.get(commit)! * 1000));
+  }
+  return dates;
 }
 
 /** The committer time of the newest commit touching `file`, or null. */

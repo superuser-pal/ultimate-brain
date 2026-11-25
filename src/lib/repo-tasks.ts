@@ -8,7 +8,7 @@ import type { Kit, Meaning, TaskSource } from "./link-kit.ts";
 
 export interface TaskItem { key: string; title: string; raw: string; meaning: Meaning | null; url?: string }
 
-export interface IssueInput { fetched_at: string; items: Array<{ number: number; title: string; state: string; state_reason?: string; labels: string[]; url: string }> }
+export interface IssueInput { fetched_at: string; items: Array<{ number: number; title: string; state: string; state_reason?: string; labels: string[]; url: string; closed_at?: string | null }> }
 
 const DEFAULT_MAPS: Record<string, Record<string, Meaning>> = {
   checklist: { " ": "todo", x: "done", X: "done" },
@@ -18,6 +18,9 @@ const DEFAULT_MAPS: Record<string, Record<string, Meaning>> = {
 };
 
 const norm = (raw: string): string => raw.trim().toLowerCase();
+
+/** The checklist map of a plan that is no task source (connected-workflows.md §9.1): §2.4's default. */
+export const checklistMap = (): Map<string, Meaning> => new Map(Object.entries(DEFAULT_MAPS.checklist!).map(([raw, meaning]) => [norm(raw), meaning]));
 
 /** The status map of a source: its default, with the kit's entries added, a kit entry winning on the same key (§2.4). Keys normalised. */
 export function statusMap(kit: Kit): Map<string, Meaning> {
@@ -29,12 +32,7 @@ export function statusMap(kit: Kit): Map<string, Meaning> {
   return map;
 }
 
-/** The lines a Markdown source reads (§2.4): LF lines without a trailing CR, outside fenced code blocks, at most 2,000 characters. */
-function readableLines(text: string): string[] {
-  return readableLinesWithIndex(text).map((entry) => entry.line);
-}
-
-/** The lines a Markdown source reads (§2.4), each with its 0-based index among the file's LF lines (`brain recall`'s stopped line, memory.md §5.1). */
+/** The lines a Markdown source reads (§2.4): LF lines without a trailing CR, outside fenced code blocks, at most 2,000 characters; each with its 0-based index among the file's LF lines (`brain recall`'s stopped line, memory.md §5.1). */
 export function readableLinesWithIndex(text: string): Array<{ index: number; line: string }> {
   const lines: Array<{ index: number; line: string }> = [];
   let fence: string | null = null;
@@ -55,7 +53,7 @@ export function readableLinesWithIndex(text: string): Array<{ index: number; lin
 const lineKey = (title: string): string => `line:${createHash("sha256").update(title.trim(), "utf8").digest("hex").slice(0, 12)}`;
 
 /** Give a repeated key `#2`, `#3`… in source order (§2.4). */
-function dedupe<T extends { key: string }>(items: T[]): T[] {
+export function dedupe<T extends { key: string }>(items: T[]): T[] {
   const seen = new Map<string, number>();
   for (const item of items) {
     const count = (seen.get(item.key) ?? 0) + 1;
@@ -66,26 +64,33 @@ function dedupe<T extends { key: string }>(items: T[]): T[] {
 }
 
 /** The items of a Markdown source (§2.4), each with its raw status and meaning. */
-export function parseMarkdownTasks(text: string, source: Extract<TaskSource, { kind: "markdown" }>, map: Map<string, Meaning>): TaskItem[] {
-  const items: TaskItem[] = [];
+export function parseMarkdownTasks(text: string, source: MarkdownSource, map: Map<string, Meaning>): TaskItem[] {
+  return dedupe(parseMarkdownLines(text, source, map).map(({ item }) => item));
+}
+
+export type MarkdownSource = Extract<TaskSource, { kind: "markdown" }>;
+
+/** The same items, each with the 0-based index of its line and its key not yet made unique. */
+export function parseMarkdownLines(text: string, source: MarkdownSource, map: Map<string, Meaning>): Array<{ item: TaskItem; line: number }> {
+  const items: Array<{ item: TaskItem; line: number }> = [];
   const regexp = source.format === "pattern" ? new RegExp(source.pattern, "u") : null;
-  for (const line of readableLines(text)) {
+  for (const { index, line } of readableLinesWithIndex(text)) {
     if (regexp === null) {
       const match = /^\s*[-*+] \[(.)\] (.+)$/u.exec(line);
       if (match === null) continue;
       const title = match[2]!.trim();
       if (title === "") continue;
-      items.push({ key: lineKey(title), title, raw: match[1]!, meaning: map.get(norm(match[1]!)) ?? null });
+      items.push({ item: { key: lineKey(title), title, raw: match[1]!, meaning: map.get(norm(match[1]!)) ?? null }, line: index });
     } else {
       const match = regexp.exec(line);
       if (match === null || match.groups?.title === undefined) continue;
       const title = match.groups.title.trim();
       const raw = match.groups.status ?? "";
       const id = match.groups.id;
-      items.push({ key: id !== undefined && id !== "" ? id : lineKey(title), title, raw, meaning: map.get(norm(raw)) ?? null });
+      items.push({ item: { key: id !== undefined && id !== "" ? id : lineKey(title), title, raw, meaning: map.get(norm(raw)) ?? null }, line: index });
     }
   }
-  return dedupe(items);
+  return items;
 }
 
 /** Validate the issue input of `repo tasks` and `repo health` (cli.md §5.29). */
@@ -177,17 +182,21 @@ export function sourceLabel(source: TaskSource): string {
 
 const LISTED: ReadonlyArray<readonly [Meaning, string]> = [["in_progress", "In progress"], ["review", "In review"], ["waiting", "Waiting"], ["todo", "To do"]];
 
+/** The counts line of §4: a zero part left out, dropped outside the percentage, unmapped items inside the open ones; "" with no item. */
+export function countsLine(counts: Counts): string {
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+  const open = counts.todo + counts.in_progress + counts.waiting + counts.review + counts.unmapped;
+  const detail = countParts([[counts.in_progress, "in progress"], [counts.review, "in review"], [counts.waiting, "waiting"], [counts.todo, "to do"]], ", ");
+  const percent = percentOf(counts.done, total, counts.dropped);
+  return [countParts([[counts.done, "completed"], [counts.dropped, "dropped"]], " · "), open > 0 ? `${open} open${detail === "" ? "" : ` (${detail})`}` : "", percent === null ? "" : `${percent}%`].filter((part) => part !== "").join(" · ");
+}
+
 /** The toggle text of §4 (normative). */
 export function rollupMarkdown(name: string, source: TaskSource, asOf: Date, items: readonly TaskItem[]): string {
   const first = `As of ${formatAsOf(asOf)} · from ${name} (${sourceLabel(source)})`;
   const capped = source.kind !== "markdown" && items.length >= 1000 ? " · first 1000 issues" : "";
   if (items.length === 0) return `${first} · no tasks found${capped}\n`;
-  const counts = countItems(items);
-  const open = counts.todo + counts.in_progress + counts.waiting + counts.review + counts.unmapped;
-  const detail = countParts([[counts.in_progress, "in progress"], [counts.review, "in review"], [counts.waiting, "waiting"], [counts.todo, "to do"]], ", ");
-  const percent = percentOf(counts.done, items.length, counts.dropped);
-  const parts = [countParts([[counts.done, "completed"], [counts.dropped, "dropped"]], " · "), open > 0 ? `${open} open${detail === "" ? "" : ` (${detail})`}` : "", percent === null ? "" : `${percent}%`].filter((part) => part !== "");
-  const lines = [`${first} · read-only${capped}`, parts.join(" · ")];
+  const lines = [`${first} · read-only${capped}`, countsLine(countItems(items))];
   const ordered = LISTED.flatMap(([meaning, label]) => items.filter((item) => item.meaning === meaning).map((item) => ({ item, label })));
   for (const { item, label } of ordered.slice(0, 20)) lines.push(`- ${label}: ${item.url === undefined ? item.title : `[${item.title}](${item.url})`}`);
   if (ordered.length > 20) lines.push(`…and ${ordered.length - 20} more open`);

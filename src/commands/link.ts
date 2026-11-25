@@ -30,7 +30,7 @@ export const linkCommand: Command = {
     const warnings: Warning[] = [];
     const source = await linkSource(brain!.root, warnings);
     const { notes } = await scanNotes(brain!.root);
-    const { planned, marker, retired, names } = await planLinkedRepo(root, { notes, config: brain!.config, source, options: args.options });
+    const { planned, marker, retired, names } = await planLinkedRepo(root, { notes, config: brain!.config, brainRoot: brain!.root, home: environment.homeDirectory, source, options: args.options });
     await applyLinkedRepo(root, planned, retired);
 
     const competing = competingCopies({ treeRoot: root, names, home: homeOf(environment.env), brainRoot: brain!.root });

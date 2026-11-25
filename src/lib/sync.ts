@@ -15,6 +15,7 @@ import { loadSchemas } from "./schemas.ts";
 import { formatDate, formatTimestamp, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 import type { LogEntry } from "./log.ts";
+import { factoriesOf, factoryArea, factoryById, factoryProjects, orderedFactory, type Factory } from "./factories.ts";
 import { databaseId, moduleForDatabase, modulesOf, typeIsOn } from "./modules.ts";
 import { applyReviewDecisions } from "./review-apply.ts";
 import { recordRevisionRequests } from "./review-revision.ts";
@@ -920,7 +921,37 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
   const creates = new Set(items.filter((item) => item.action === "create").map((item) => item.id));
   items.push(...waiting.filter((item) => item.pending_relations.some((entry) => Array.isArray(entry.ids) && entry.ids.some((id) => creates.has(String(id))))));
   items.sort((a, b) => DATABASES.concat(["meetings"] as never[]).indexOf(a.database as never) - DATABASES.concat(["meetings"] as never[]).indexOf(b.database as never) || compareCodePoints(a.id, b.id));
+  // The Factories come after the notes, in `brain.json` order (0113 §1).
+  for (const entry of factoriesOf(workspace.config)) {
+    if (ids !== undefined && !ids.includes(entry.id)) continue;
+    if (!modules.factories) { if (ids !== undefined) errors.push({ id: entry.id, reason: "MODULE_OFF" }); continue; }
+    if (entry.archived === true && entry.notion === undefined) continue;
+    const factoriesId = databaseIdFor(workspace, "factories"); if (factoriesId === "") { warnings.push({ code: "DATABASE_NOT_CONFIGURED", message: "factories database is not configured", id: entry.id }); continue; }
+    const item = renderFactory(workspace, entry, factoriesId, now);
+    if (item.action === "create" || Object.keys(item.properties).length > 0 || item.pending_relations.some((relation) => (relation.ids as string[]).some((id) => creates.has(id)))) items.push(item);
+  }
   return { items, errors, warnings, skipped };
+}
+
+/** The row of one `brain.json` `factories` entry (cli §5.14.4, 0113 §1): every property on create, those whose B differs from S on update. */
+function renderFactory(workspace: Workspace, entry: Factory, databaseId: string, now: Date): RenderItem {
+  const area = factoryArea(workspace.config, entry);
+  const relations: Record<string, string[]> = { Area: area === undefined ? [] : [area], Projects: factoryProjects(workspace.config, entry) };
+  const published: Record<string, unknown> = { Name: entry.name, Area: relationPages(relations.Area, workspace), Projects: relationPages(relations.Projects, workspace), ...(entry.overview === undefined ? {} : { "Overview as of": dateOutput(entry.overview.as_of) }), Archived: entry.archived === true, "Brain ID": entry.id };
+  const pending: Array<Record<string, unknown>> = [];
+  for (const [property, ids] of Object.entries(relations)) {
+    const missing = ids.filter((id) => typeof workspace.get(id)?.attributes.notion !== "string");
+    if (missing.length > 0) pending.push({ property, ids: missing });
+  }
+  const isCreate = entry.notion === undefined;
+  const sent = entry.published ?? {};
+  const properties: Record<string, unknown> = {};
+  for (const [name, value] of Object.entries(published)) {
+    if (!isCreate && Object.hasOwn(sent, name) && sameValue(value, sent[name])) continue;
+    properties[name] = { type: Object.hasOwn(relations, name) ? "relation" : name === "Overview as of" ? "date" : name === "Archived" ? "checkbox" : name === "Name" ? "title" : "rich_text", value };
+  }
+  if (!isCreate && Object.keys(properties).length > 0) properties["Last Synced"] = { type: "date", value: { start: formatTimestamp(now), end: null } };
+  return { id: entry.id, type: "factory", database: "factories", database_id: databaseId, page_id: entry.notion ?? null, action: isCreate ? "create" : "update", ...(isCreate ? { template: { type: "default" as const } } : {}), properties, body: null, sections: null, pending_relations: pending, published };
 }
 
 /** The rendered properties a held name holds back: `Key Facts/<key>` holds Key Facts whole, one text property in Notion (cli §5.14.4). */
@@ -1428,7 +1459,15 @@ function bindTaskItems(note: Note, attributes: Record<string, unknown>, value: u
 
 export function record(workspace: Workspace, input: unknown): { records: Array<Record<string, unknown>>; warnings: Array<{ code: string; message: string; id: string }> } {
   if (!isRecord(input) || !Array.isArray(input.records)) throw new BrainError("INPUT_INVALID", "record input needs a records list"); const records: Array<Record<string, unknown>> = []; const warnings: Array<{ code: string; message: string; id: string }> = [];
+  let config = workspace.config;
   for (const entry of input.records) {
+    // A Factory's result is kept on its `brain.json` entry (cli §5.14.6, 0113 §1).
+    if (isRecord(entry) && typeof entry.id === "string" && isTimestamp(entry.synced_at) && factoryById(config, entry.id) !== undefined) {
+      const next = recordFactory(config, factoryById(config, entry.id)!, entry);
+      if (typeof next === "string") { records.push({ id: entry.id, result: "failed", reason: next, changed: [] }); continue; }
+      config = next; workspace.writeText("brain.json", `${JSON.stringify(config, null, 2)}\n`);
+      records.push({ id: entry.id, result: "recorded", changed: ["brain.json"] }); continue;
+    }
     // A question carries only `task` since 0.16.0: the Task that tracks it (cli §5.14.6, 0099). `task` on any other note is no result of a publish.
     if (isRecord(entry) && typeof entry.id === "string" && (entry.task !== undefined || workspace.get(entry.id)?.type === "question")) { records.push(recordQuestionTask(workspace, entry)); continue; }
     if (!isRecord(entry) || typeof entry.id !== "string" || !isTimestamp(entry.synced_at)) throw new BrainError("INPUT_INVALID", "each record needs id and synced_at"); const syncedAt = normalizeTimestamp(entry.synced_at)!; const note = workspace.get(entry.id); if (note === undefined) { records.push({ id: entry.id, result: "failed", reason: "UNKNOWN_ID", changed: [] }); continue; } const checkpoint = workspace.checkpoint(); try { const doc = workspace.edit(note);
@@ -1436,6 +1475,15 @@ export function record(workspace: Workspace, input: unknown): { records: Array<R
     if (REVIEWED_PAGE_TYPES.has(note.type) && isRecord(entry.published) && entry.published["@trashed"] !== undefined) { if (typeof doc.attributes.notion !== "string" || doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); for (const key of ["notion", "notion_published", "last_synced"]) delete doc.attributes[key]; workspace.save(note.path, doc); if (workspace.newErrors().length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); continue; }
     if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = withClearedBaselines({ ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }, entry.published); if ((note.type !== "view" || isReport(note) || isWeekly(note)) && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if ((note.type === "meeting" || note.type === "source") && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; if (entry.task_items !== undefined) bindTaskItems(note, doc.attributes, entry.task_items, entry.tasks); workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); if (bodyWithoutReadBack(entry.published)) warnings.push({ code: "NOTION_BODY_MISSING", message: `${note.id}: a body was published without the read-back of its page, so the next plan holds it (cli §5.14.6, §5.14.7)`, id: note.id }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && (error.message === "NOTION_ID_MISMATCH" || error.message === "TASK_ITEM_EXISTS") ? error.message : "INVALID_RESULT", changed: [] }); } }
   return { records, warnings };
+}
+
+/** `brain.json` with a Factory's publish recorded, or the reason it failed (cli §5.14.6). */
+function recordFactory(config: Record<string, unknown>, factory: Factory, entry: Record<string, unknown>): Record<string, unknown> | string {
+  if (Object.keys(entry).some((key) => !["id", "notion", "published", "synced_at"].includes(key)) || (entry.published !== undefined && !isRecord(entry.published))) return "INVALID_RESULT";
+  if (factory.notion !== undefined && entry.notion !== undefined && entry.notion !== factory.notion) return "NOTION_ID_MISMATCH";
+  const next = orderedFactory({ ...factory, notion: (entry.notion ?? factory.notion) as string | undefined, last_synced: normalizeTimestamp(entry.synced_at as string)!, ...(entry.published === undefined ? {} : { published: { ...factory.published, ...entry.published } }) } as Factory);
+  const changed = { ...config, factories: factoriesOf(config).map((other) => (other.id === factory.id ? next : other)) };
+  return loadSchemas().brain(changed) ? changed : "INVALID_RESULT";
 }
 
 /**
