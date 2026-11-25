@@ -624,6 +624,33 @@ test("factory overview: taken tasks come first, their state changes the hash, an
   assert.equal((await overviewOf(c, id, { by: "session", plan: "Login." }, "2026-12-25T09:00:00Z")).markdown.includes("Done lately"), false);
 });
 
+test("factory read: changed is true when only a taken task's status or title changed, and false again once the overview is written", async (context) => {
+  const c = await setup(context);
+  const { path, id } = await plain(context, c, ["--plan", "PLAN.md"]);
+  await writeFile(join(path, "PLAN.md"), "- [ ] Draw\n");
+  const wf = await connect(c, id, path);
+  const changed = async () => (await c.ok(["factory", "read", id])).changed;
+  const write = async () => {
+    const input = { by: "catch-up", plan: "Cards." };
+    const { sha256, folder: version } = await overviewOf(c, id, input);
+    await overviewOf(c, id, input, NOW, ["--written", sha256]);
+    return version;
+  };
+  const before = await write();
+  assert.equal(await changed(), false);
+  await c.ok(["workflow", "item", "put", wf, "--input", await c.file({ title: "Speed up login", scope: "Cache it", acceptance: [], approve: true, task: { page: PAGE, title: "Speed up login", status: "To Do", brain_id: null } })]);
+  assert.equal(await changed(), true, "a task was taken");
+  await write();
+  for (const patch of [{ status: "in_progress" }, { title: "Speed up the login" }]) {
+    assert.equal(await changed(), false);
+    const [item] = (await c.ok(["workflow", "show", wf])).items;
+    await c.ok(["workflow", "item", "put", wf, "--input", await c.file({ id: item.id, ...patch }), "--rev", String(item.rev)]);
+    assert.equal(await changed(), true, JSON.stringify(patch));
+    assert.equal(await write(), before, "the plan files are the same");
+  }
+  assert.equal(await changed(), false);
+});
+
 // ---------------------------------------------------------------- the rows (§5.14.4, §5.14.6)
 
 const render = async (c: Awaited<ReturnType<typeof setup>>, args: string[] = ["--changed"]) => c.ok(["sync", "render", ...args]);
