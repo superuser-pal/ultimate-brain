@@ -31,6 +31,9 @@ In the databases on "Brain Data", add these two-way relations. Use exactly these
 [Tasks] - Tasks "Source" ↔ Inbox "Tasks"
 - Areas "Domain" ↔ Domains "Areas" (limit Areas' side to one page)
 [Orgs] - Domains "Org" ↔ Orgs "Domains"
+[Factories] - Factories "Area" ↔ Areas "Factories" (limit Factories' side to one page)
+[Factories] - Factories "Projects" ↔ Projects "Factories"
+[Factories] [Tasks] - Tasks "Factory" ↔ Factories "Tasks" (limit Tasks' side to one page)
 
 Then add these one-way relations: each is a property on the first database only, with no property on the other side (in the relation's settings, "Show on" the other database is off):
 - Inbox "Changed from" → Inbox (a relation from the Inbox to itself)
@@ -40,6 +43,10 @@ Then, once the relations above exist, add these rollups, each named "Domain": ov
 - in "Projects"
 - in "Meetings"
 [Documents] - in "Documents"
+[Tasks] - in "Tasks"
+- in "Inbox"
+[Planning] - in "Goals"
+[Factories] - in "Factories"
 
 Do not create any other relations or rollups.
 ```
@@ -48,6 +55,6 @@ Do not create any other relations or rollups.
 - [ ] Open each database: both sides of every relation exist, with the names above.
 - [ ] Each relation is two-way: linking a Project to an Area in Projects shows the Project in that Area's "Projects".
 - [ ] The one-way relations have no other side: the Inbox has one "Changed from" and no second property for it, and (Documents, Tasks) Tasks has no property for Documents' "Task". If Notion AI made one two-way, open the relation's settings and turn off "Show on" the other database.
-- [ ] Areas "Domain" is limited to one page. Notion AI may skip the limit: set it by hand (the relation's settings → Limit: 1 page).
-- [ ] Projects, Meetings and (Documents) Documents each have a rollup "Domain": relation Area, property Domain, Show original. Link a Project to an Area that has a Domain: the Project's Domain shows it (decision 0105). Prompt 5 describes it; the brain never reads it.
+- [ ] Areas "Domain" is limited to one page, and (Factories) so are Factories "Area" and (Tasks) Tasks "Factory". Notion AI may skip the limit: set it by hand (the relation's settings → Limit: 1 page).
+- [ ] Projects, Meetings, Inbox and, of your modules, Documents, Tasks, Goals and Factories each have a rollup "Domain": relation Area, property Domain, Show original. Link a Project to an Area that has a Domain: the Project's Domain shows it (decisions 0105, 0114). Prompt 5 describes it; the brain never reads it.
 - [ ] No other relations or rollups were created.
