@@ -35,8 +35,8 @@ const hash = (text: string | Uint8Array) => `sha256:${sha(text)}`;
 // ---- kit helpers -----------------------------------------------------------------------------------------------
 
 const ORDER = {
-  top: ["kit_version", "name", "placement", "knowledge", "tasks", "methodology", "starter"],
-  placement: ["area", "domain", "project"],
+  top: ["kit_version", "name", "placement", "knowledge", "tasks", "methodology", "plan", "starter"],
+  placement: ["area", "domain", "projects"],
   knowledge: ["patterns", "never_read"],
   tasks: ["mode", "source", "status_map"],
   source: ["kind", "path", "format", "pattern", "repo", "project"],
@@ -44,8 +44,9 @@ const ORDER = {
   starter: ["name", "version"],
 };
 
-/** The canonical bytes of linked-repos.md §2.1, written here independently of the implementation. */
+/** The canonical bytes of linked-repos.md §2.1 as the hub writes them (§2.2: `project` as `projects`), written here independently of the implementation. */
 function canon(kit: any): string {
+  if (kit.placement?.project !== undefined) kit = { ...kit, placement: { ...kit.placement, projects: [kit.placement.project] } };
   const pick = (object: any, keys: string[]) => Object.fromEntries(keys.filter((key) => object[key] !== undefined).map((key) => [key, object[key]]));
   const out: any = pick(kit, ORDER.top);
   for (const key of ["placement", "knowledge", "methodology", "starter"] as const) if (out[key]) out[key] = pick(out[key], ORDER[key]);
@@ -134,6 +135,26 @@ notion_fields:
 A second area.
 `);
 }
+async function addProject(dir: string, id: string, area: string) {
+  await mkdir(join(dir, "projects", id), { recursive: true });
+  await writeFile(join(dir, "projects", id, "project.md"), `---
+id: ${id}
+type: project
+title: Project ${id}
+summary: One more project.
+lifecycle: reviewed
+area: ${area}
+sources: [notion:2b3c4d5e-6f7a-4b8c-9d0e-1f2a3b4c5d6e]
+created: 2026-09-15
+updated: 2026-09-15
+notion_fields:
+  as_of: 2026-12-05T08:31:00Z
+  state: Active
+---
+
+One more project.
+`);
+}
 /** A `file:` source of a linked repo, made with `note new` (as in tests/repos.test.ts). */
 async function addSource(dir: string, name: string, repoPath: string, commit: string) {
   const text = `# ${repoPath}\n`;
@@ -151,6 +172,7 @@ async function addSource(dir: string, name: string, repoPath: string, commit: st
 
 test("repo kit check: every valid example has no problems and the hash of the bytes it read", async (context) => {
   const dir = await fixtureClone(context);
+  await addProject(dir, "prj-4k2r8m6t", AREA);
   for (const name of await readdir(join(EXAMPLES, "valid"))) {
     const file = join(EXAMPLES, "valid", name);
     const bytes = await readFile(file);
@@ -245,14 +267,18 @@ test("repo kit check: the area and project must exist in the brain", async (cont
   const pointers = async (kit: object) =>
     (await run(dir, ["repo", "kit", "check", "--input", await inputFile(dir, canon(kit))])).json.data.problems.map((problem: { pointer: string }) => problem.pointer);
   assert.ok((await pointers(makeKit({ placement: { area: "area-00000000" } }))).includes("/placement/area"));
-  assert.ok((await pointers(makeKit({ placement: { area: AREA, project: "prj-00000000" } }))).includes("/placement/project"));
+  assert.deepEqual(await pointers(makeKit({ placement: { area: AREA, projects: [PROJECT, "prj-00000000"] } })), ["/placement/projects/1"]);
+  const old = await run(dir, ["repo", "kit", "check", "--input", await inputFile(dir, JSON.stringify(makeKit({ placement: { area: AREA, project: "prj-00000000" } })))]);
+  assert.deepEqual(old.json.data.problems.map((problem: { pointer: string }) => problem.pointer), ["/placement/project"]);
 });
 
-test("repo kit check: a project that belongs to another Area is a problem at /placement/project", async (context) => {
+test("repo kit check: a Project of another Area is accepted, and the kit's one Project stays the rollup's target (0113 §2)", async (context) => {
   const dir = await fixtureClone(context);
   await addSecondArea(dir);
   const result = await run(dir, ["repo", "kit", "check", "--input", await inputFile(dir, canon(makeKit({ placement: { area: OTHER_AREA, project: PROJECT } })))]);
-  assert.ok(result.json.data.problems.some((problem: { pointer: string }) => problem.pointer === "/placement/project"), result.stdout);
+  assert.deepEqual(result.json.data.problems, []);
+  const link = await linked(context, { dir, kit: makeKit({ placement: { area: OTHER_AREA, projects: [PROJECT] } }) });
+  assert.deepEqual((await run(dir, ["repo", "tasks", link.name])).json.data.target, { project: PROJECT });
 });
 
 test("repo kit check: a methodology file or a task source path matched by never_read is a problem at /methodology/files/<n> or /tasks/source/path", async (context) => {
@@ -421,7 +447,7 @@ test("repo add --kit records the kit's values and its hash", async (context) => 
   const link = await linked(context);
   const config = await readConfig(link.dir);
   assert.deepEqual(config.repos, [{
-    name: "acme-api", path: link.repo.root, area: AREA, patterns: ["decisions/**"], never_read: [".env*", "secrets/**"], project: PROJECT, commit: "", kit: { sha256: link.hash },
+    name: "acme-api", path: link.repo.root, area: AREA, patterns: ["decisions/**"], never_read: [".env*", "secrets/**"], projects: [PROJECT], commit: "", kit: { sha256: link.hash },
   }]);
 });
 
@@ -581,7 +607,7 @@ test("repo refresh: a legacy entry adopts the kit written in its repo, keeps com
   assert.equal(result.code, 0, result.stdout);
   assert.deepEqual(result.json.data, expected);
   assert.deepEqual((await readConfig(dir)).repos, [{
-    name: "acme-api", path: repo.root, area: AREA, patterns: ["decisions/**", "docs/**"], never_read: ["secrets/**"], project: PROJECT, commit: head, kit: { sha256: hash(canon(kit)) },
+    name: "acme-api", path: repo.root, area: AREA, patterns: ["decisions/**", "docs/**"], never_read: ["secrets/**"], projects: [PROJECT], commit: head, kit: { sha256: hash(canon(kit)) },
   }]);
   assert.ok((await logOf(dir)).includes(`repo-refresh - "acme-api" sha=${sha(canon(kit)).slice(0, 12)}`));
   const changes = await run(dir, ["repo", "changes", "acme-api"]);
@@ -620,7 +646,7 @@ test("repo refresh --path: a moved kit-linked repo takes its new path, keeps com
   assert.equal(result.code, 0, result.stdout);
   assert.deepEqual(result.json.data, expected);
   const entry = (await readConfig(link.dir)).repos[0];
-  assert.deepEqual(entry, { name: "acme-api", path: moved, area: AREA, patterns: ["decisions/**"], never_read: [".env*", "secrets/**"], project: PROJECT, commit: link.head, kit: { sha256: link.hash } });
+  assert.deepEqual(entry, { name: "acme-api", path: moved, area: AREA, patterns: ["decisions/**"], never_read: [".env*", "secrets/**"], projects: [PROJECT], commit: link.head, kit: { sha256: link.hash } });
   assert.ok((await logOf(link.dir)).includes(`repo-refresh - "acme-api" sha=${link.hash.slice(7, 19)} path=${logValue(moved)}`));
   const changes = await run(link.dir, ["repo", "changes", "acme-api"]);
   assert.deepEqual([changes.json.data.from, changedPaths(changes)], [link.head, []]);
@@ -1150,7 +1176,7 @@ test("repo unlink removes the entry, keeps the repos key and the knowledge, leav
 
   const result = await run(link.dir, ["repo", "unlink", "acme-api"]);
   assert.equal(result.code, 0, result.stdout);
-  assert.deepEqual(result.json.data, { name: "acme-api", removed: entry, sources: 1, workflow: null });
+  assert.deepEqual(result.json.data, { name: "acme-api", removed: entry, sources: 1, workflow: null, factory: null });
   assert.deepEqual((await readConfig(link.dir)).repos, []);
   assert.deepEqual(await readSources(), sourcesBefore);
   assert.equal(await readFile(join(link.repo.root, "brain-kit.json"), "utf8"), link.text);

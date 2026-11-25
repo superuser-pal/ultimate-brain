@@ -22,7 +22,7 @@ test("a new brain starts with the onboarding defaults, and modules lists what ea
   const list = await brain(["modules", "--brain", target, "--json"], root);
   assert.equal(list.code, 0, list.stdout);
   assert.deepEqual(list.json.data.modules.map((module: { name: string; on: boolean }) => [module.name, module.on]), [
-    ["domains", false], ["orgs", true], ["documents", true], ["reports", true], ["tasks", true], ["planning", false],
+    ["domains", false], ["orgs", true], ["documents", true], ["reports", true], ["tasks", true], ["planning", false], ["factories", false],
   ]);
   const byName = Object.fromEntries(list.json.data.modules.map((module: { name: string }) => [module.name, module]));
   // Knowledge is retired in 0.16.0 (0099): decisions and questions have no database.
@@ -33,7 +33,7 @@ test("a new brain starts with the onboarding defaults, and modules lists what ea
   assert.deepEqual([byName.reports.databases, byName.reports.missing], [["documents"], ["documents"]]);
 
   const status = await brain(["status", "--brain", target, "--json"], root);
-  assert.deepEqual(status.json.data.modules, { domains: false, orgs: true, documents: true, reports: true, tasks: true, planning: false });
+  assert.deepEqual(status.json.data.modules, { domains: false, orgs: true, documents: true, reports: true, tasks: true, planning: false, factories: false });
   assert.ok(status.json.data.notion.missing.includes("documents"));
 });
 
@@ -69,7 +69,7 @@ test("a brain without a modules block has every module on; switching one writes 
   await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
 
   const status = await brain(["status", "--brain", target, "--json"], root);
-  assert.deepEqual(status.json.data.modules, { domains: false, orgs: true, documents: true, reports: true, tasks: true, planning: true });
+  assert.deepEqual(status.json.data.modules, { domains: false, orgs: true, documents: true, reports: true, tasks: true, planning: true, factories: false });
 
   const off = await brain(["modules", "off", "planning", "--brain", target, "--now", NOW, "--json"], root);
   assert.equal(off.code, 0, off.stdout);
@@ -85,7 +85,7 @@ test("a present block with a key left out takes that module's default (schema §
   config.modules = { documents: true };
   await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
   const status = await brain(["status", "--brain", target, "--json"], root);
-  assert.deepEqual(status.json.data.modules, { domains: false, orgs: true, documents: true, reports: false, tasks: false, planning: false });
+  assert.deepEqual(status.json.data.modules, { domains: false, orgs: true, documents: true, reports: false, tasks: false, planning: false, factories: false });
 });
 
 test("modules refuses core, an unknown module and a switch without one", async (context) => {
