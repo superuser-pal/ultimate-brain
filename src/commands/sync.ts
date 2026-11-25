@@ -11,6 +11,7 @@ import { lintWarnings } from "../lib/warnings.ts";
 import { applyQuestionStatus, buildQuestionsPlan, questionsSnapshotProblems, splitQuestionStatus } from "../lib/questions-transition.ts";
 import { trackedQuestions } from "../lib/tracked-tasks.ts";
 import { buildSnapshot, type SnapshotInput } from "../lib/sync-snapshot.ts";
+import { factoriesOn } from "../lib/task-areas.ts";
 import { formatTimestamp } from "../lib/time.ts";
 import { readdir, stat, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -44,7 +45,7 @@ export const syncSnapshotCommand: Command = {
     const notion = (brain!.config.notion ?? {}) as { databases?: Record<string, string>; tasks?: { database?: string; properties?: Record<string, string> } };
     const databases: Record<string, string> = { ...(notion.databases ?? {}) };
     if (typeof notion.tasks?.database === "string" && notion.tasks.database !== "") databases.tasks = notion.tasks.database;
-    const built = buildSnapshot(inputs, { databases, taskProperties: notion.tasks?.properties ?? {} }, formatTimestamp(now));
+    const built = buildSnapshot(inputs, { databases, taskProperties: notion.tasks?.properties ?? {}, factories: factoriesOn(brain!.config) }, formatTimestamp(now));
     const target = resolve(output);
     await writeFile(target, `${JSON.stringify(built.snapshot, null, 2)}\n`);
     return { data: { output: target, rows: built.snapshot.rows.length, examples_left_out: built.examples_left_out, databases: built.databases }, warnings: built.warnings, human: `${built.snapshot.rows.length} rows written to ${target}; ${built.examples_left_out} example rows left out\n` };
@@ -172,8 +173,12 @@ export const syncTasksCommand: Command = {
     if ([meeting !== undefined, source !== undefined, direct, question !== undefined].filter(Boolean).length !== 1 || input === undefined) throw new BrainError("USAGE", "sync tasks needs exactly one of --meeting, --source, --direct or --question, and --input");
     // With Tasks off nothing is tracked, a question neither (capture-and-review §6.4).
     if (!modulesOf(brain!.config).tasks) throw new BrainError("MODULE_OFF", "The Tasks module is off: brain modules on tasks");
-    if (question !== undefined) return { data: renderQuestionTask(await Workspace.open(brain!), question, await readJsonInput(input, "sync tasks")), human: "Task payload rendered.\n" };
-    return { data: renderTasks(await Workspace.open(brain!), direct ? undefined : meeting ?? source!, await readJsonInput(input, "sync tasks")), human: "Task payloads rendered.\n" };
+    if (question !== undefined) {
+      const { warnings, ...data } = renderQuestionTask(await Workspace.open(brain!), question, await readJsonInput(input, "sync tasks"));
+      return { data, warnings, human: "Task payload rendered.\n" };
+    }
+    const { warnings, ...data } = renderTasks(await Workspace.open(brain!), direct ? undefined : meeting ?? source!, await readJsonInput(input, "sync tasks"));
+    return { data, warnings, human: "Task payloads rendered.\n" };
   },
 };
 

@@ -63,13 +63,15 @@ export interface NotionWrite {
   properties?: Record<string, { type: string; value: unknown }>;
 }
 
-/** The Notion write of an approved new_task (0.17.0, spec/schema.md §11.2): create a Tasks row named V with its project's page. */
-export function createTaskWrite(workspace: Workspace, id: string, title: string, projectPage: string): NotionWrite {
+/** The Notion write of an approved new_task (0.17.0, spec/schema.md §11.2): create a Tasks row named V with its project's page and, from 0.18.0, its Area's (capture-and-review §6.5). */
+export function createTaskWrite(workspace: Workspace, id: string, title: string, projectNote: Note): NotionWrite {
   const name = taskProperty(workspace, "title") || "Name";
   const project = taskProperty(workspace, "project") || "Project";
+  const area = taskProperty(workspace, "area");
+  const areaPage = workspace.get(String(projectNote.attributes.area))?.attributes.notion;
   return {
     proposal: id, database: "tasks", action: "create", page_id: null, property: name, payload: { type: "title", value: title }, expect: null, value: title,
-    properties: { [name]: { type: "title", value: title }, [project]: { type: "relation", value: [projectPage] } },
+    properties: { [name]: { type: "title", value: title }, [project]: { type: "relation", value: [projectNote.attributes.notion] }, ...(area !== "" && typeof areaPage === "string" ? { [area]: { type: "relation", value: [areaPage] } } : {}) },
   };
 }
 
@@ -165,8 +167,8 @@ function checkArea(workspace: Workspace, item: Record<string, unknown>, pointer:
   if (area!.type !== "area") invalid(`${pointer}/area`, `is a ${area!.type}, not an Area`);
 }
 
-/** The Tasks mapping's Notion property name for a notion_change property, "" when unmapped. */
-function taskProperty(workspace: Workspace, property: string): string {
+/** The Tasks mapping's Notion property name for a key of `notion.tasks.properties`, "" when unmapped. */
+export function taskProperty(workspace: Workspace, property: string): string {
   const notion = isRecord(workspace.config.notion) ? workspace.config.notion : {};
   const tasks = isRecord(notion.tasks) ? notion.tasks : {};
   const properties = isRecord(tasks.properties) ? tasks.properties : {};

@@ -113,7 +113,7 @@ const DOC = "c4000000-0000-4000-8000-000000000003";
 const reportPage = (id: string, refresh: boolean, fix: string) => page(DB.documents, id, { Name: title("Acme report"), "Brain ID": text("vw-5b2n7q9h"), "Refresh asked": checkbox(refresh), "What to fix": text(fix), Project: relation(PROJECT), Accepted: checkbox(false) });
 const docPage = page(DB.documents, DOC, { Name: title("Row-level security"), "Brain ID": text("con-1s6t8e2b"), Lifecycle: select("Draft"), Accepted: checkbox(true), "Accepted at": { type: "date", date: { start: "2026-12-09T10:00:00.000Z", end: null } }, Project: relation() });
 const TASK = "d4000000-0000-4000-8000-000000000001";
-const taskPage = (asked: boolean, id = TASK) => page(DB.tasks, id, { Name: title("Check go-live with hosting"), Status: status("To Do"), "Document asked": checkbox(asked), Project: relation(PROJECT), Area: relation(), Due: { type: "date", date: null } });
+const taskPage = (asked: boolean, id = TASK) => page(DB.tasks, id, { Name: title("Check go-live with hosting"), Status: status("To Do"), "Document asked": checkbox(asked), Project: relation(PROJECT), Area: relation(AREA), Due: { type: "date", date: null } });
 
 test("query replies of each database give the snapshot the skill writes today, and sync plan takes it unchanged (cli §5.14.10)", async (context) => {
   const { dir, tmp } = await setup(context);
@@ -145,7 +145,7 @@ test("query replies of each database give the snapshot the skill writes today, a
     { database: "inbox", page_id: INBOX_ASKED, last_edited: EDITED, properties: { "Brain ID": "src-2k6m9p3t", "Document asked": true, "Only keep": null } },
     { database: "inbox", page_id: INBOX_PLAIN, last_edited: EDITED, properties: { "Brain ID": "src-7w3c9k5m" } },
     mariaRow, carlosRow,
-    { database: "tasks", page_id: TASK, last_edited: EDITED, properties: { Name: "Check go-live with hosting", "Document asked": true, Project: [PROJECT], Area: [], Status: "To Do" }, status_group: "todo" },
+    { database: "tasks", page_id: TASK, last_edited: EDITED, properties: { Name: "Check go-live with hosting", "Document asked": true, Project: [PROJECT], Area: [AREA], Status: "To Do" }, status_group: "todo" },
     { database: "tasks", page_id: "d4000000-0000-4000-8000-000000000009", last_edited: null, properties: {}, unreadable: true },
   ] };
   // Sorted by database, then page id.
@@ -219,7 +219,7 @@ test("a rows file joins a query row only for a tracked task or a wording object,
   const later = "2026-12-10T08:45:00Z";
   const { run, read } = await snapshot(dir, [replies, await save(tmp, { rows: [{ database: "tasks", page_id: TASK, last_edited: later, properties: { Name: "Check go-live with hosting", Status: "Done" }, status_group: "complete", gone: true }] })]);
   assert.equal(run.code, 0, run.stdout);
-  assert.deepEqual((await read()).rows, [{ database: "tasks", page_id: TASK, last_edited: later, properties: { Name: "Check go-live with hosting", "Document asked": true, Project: [PROJECT], Area: [], Status: "Done" }, status_group: "complete", gone: true }]);
+  assert.deepEqual((await read()).rows, [{ database: "tasks", page_id: TASK, last_edited: later, properties: { Name: "Check go-live with hosting", "Document asked": true, Project: [PROJECT], Area: [AREA], Status: "Done" }, status_group: "complete", gone: true }]);
 });
 
 test("Tasks rows are left out when Document asked is unmapped; an Inbox Report row asking for a refresh keeps its report properties", async (context) => {
