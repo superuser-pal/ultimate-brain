@@ -113,7 +113,7 @@ A feature release, by explicit roadmap change after the cutoff ([0113](../decisi
 | CC-398 | The CLI fills a task's Area from its Project | `src/`, `tests/` | after CC-396 | `done` (#501) |
 | CC-399 | The release's Notion migration, prompts, views guide and template documents | `notion/` | after CC-395 and CC-396; CC-384's and CC-386's steps join it | `todo` |
 | CC-400 | The skills for 0.18.0, through the fork | the fork, then `.agents/skills/` | after CC-395 and CC-396; vendored after CC-397 and CC-398 | `todo` |
-| CC-401 | Guides and template text | the README, `docs/`, `templates/` | after CC-397 to CC-400 | `todo` |
+| CC-401 | Guides and template text | the README, `docs/`, `templates/` | after CC-397 to CC-400 | `review` |
 | CC-384 | Weekly review's answer line names only the task options (moved from 1.0.0's section) | brain-assistant.md, the release's migration | any order; one migration with CC-386 | `done` (#499) |
 | CC-385 | A skill page built from Prompt 9 keeps its text where the template does (moved from 1.0.0's section) | `spec/setup.md` §6.4, Notion design §5, Prompt 9, brain-assistant.md, the fork if it names the layout | contract first | `done` (#494) |
 | CC-386 | Setup and First things first say that Tools and access decide which Skills database runs (moved from 1.0.0's section) | Notion design §10.1, brain-assistant.md, `spec/setup.md` §6.4, brain-setup through a fork PR, the release's migration | any order; one migration with CC-384 | `done` (#498) |
@@ -300,7 +300,7 @@ In the block read the rich text item of the date is `{"type":"mention","mention"
 **From CC-386 (2026-11-23):** the exact text for brain-setup's item 3 and check 5, and where each goes, is in CC-386's row under "Text for CC-400's fork release".
 **From CC-385 (2026-11-23):** brain-setup's `references/notion.md`, check 4, says it reads the mentions in each page's Description and in its body (spec/setup.md §6.4 check 5).
 
-### CC-401 · Guides and template text for 0.18.0 (0113 §1 to §10) · `in progress`
+### CC-401 · Guides and template text for 0.18.0 (0113 §1 to §10) · `review`
 **Release:** 0.18.0
 **Changelog:** The guides explain Factories and Domain homes: linking a folder, writing what you want next, how a session starts, the overview, and your Domain pages.
 **Output:** words only: the README, `docs/setup.md`, the Everyday Guide and How it works gain what a user needs for Factories and Domain homes, by their trigger words and one example each; the guides say that the overview is as fresh as the last session or catch-up, and that the detailed plan stays in the folder; the generic starter's `AGENTS.md` (`templates/repo/generic/`) and the linked folder's block agree with CC-397's line; `docs/design-principles.md` §3's evidence for the new database points to 0113 §1. English only: 0.20.0 translates.
