@@ -107,7 +107,7 @@ Then it sets the version, writes the CHANGELOG section from the task rows (`- <i
 git diff --stat v0.17.0..v0.18.0 -- notion/brain-assistant.md notion/minutes-format.md
 ```
 
-With the author's yes to read it, the agent reads **every** page of the template's Skills database through the Notion MCP, after the release's migration is applied there, and writes one entry per page to a JSON file outside this repository (it is never committed), in the form the script's usage line gives. The page's title goes under `name`, whatever the property is called: **Skill name** in the template and its duplicates (a database of Notion's own skills type), **Name** in a space built by Prompt 9. Then, on macOS or Windows:
+With the author's yes to read it, the agent reads **every** page of the template's Skills database through the Notion MCP, after the release's migration is applied there, and writes one entry per page to a JSON file outside this repository (it is never committed), in the form the script's usage line gives. The page's title goes under `name`, whatever the property is called: **Skill name** in the template and its duplicates (a database of Notion's own skills type), **Name** in a space built by Prompt 9. Then, with the released texts checked out (the main checkout while `main` is at the release), on macOS or Windows:
 
 ```sh
 node scripts/skills-pages-check.mjs <pages.json>
