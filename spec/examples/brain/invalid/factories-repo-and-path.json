@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "owner": {
+    "name": "Alex"
+  },
+  "budgets": {
+    "ingest_max_notes": 8
+  },
+  "modules": {
+    "orgs": true,
+    "documents": false,
+    "reports": false,
+    "tasks": true,
+    "planning": false,
+    "factories": true
+  },
+  "notion": {
+    "databases": {
+      "areas": "",
+      "projects": "",
+      "meetings": "",
+      "people": "",
+      "inbox": "",
+      "orgs": "",
+      "documents": "",
+      "factories": ""
+    },
+    "tasks": {
+      "database": "",
+      "properties": {
+        "title": "Name",
+        "meeting": "Meeting",
+        "brain_id": "Brain ID",
+        "factory": "Factory"
+      },
+      "new_task_status": "To Do"
+    }
+  },
+  "settings": {
+    "unattended": {
+      "max_inputs": 10
+    }
+  },
+  "repos": [
+    {
+      "name": "acme-api",
+      "path": "~/code/acme-api",
+      "area": "area-2m7c4h8n",
+      "patterns": [
+        "decisions/**"
+      ],
+      "commit": ""
+    },
+    {
+      "name": "acme-web",
+      "path": "~/code/acme-web",
+      "area": "area-2m7c4h8n",
+      "patterns": [
+        "docs/**"
+      ],
+      "commit": "9f3c2b1a0d4e5f60718293a4b5c6d7e8f9012345",
+      "never_read": [
+        ".env*",
+        "docs/clients/**"
+      ],
+      "kit": {
+        "sha256": "sha256:abababababababababababababababababababababababababababababababab"
+      },
+      "projects": [
+        "prj-9x4t1b7e",
+        "prj-4k2r8m6t"
+      ]
+    }
+  ],
+  "factories": [
+    {
+      "id": "fac-7k2m9q4x",
+      "name": "acme-api",
+      "repo": "acme-api",
+      "path": "~/code/acme-api",
+      "area": "area-2m7c4h8n"
+    },
+    {
+      "id": "fac-5d8h2w6r",
+      "name": "acme-web",
+      "repo": "acme-web",
+      "overview": {
+        "as_of": "2026-11-25T18:40:00Z",
+        "by": "session",
+        "sha256": "sha256:abababababababababababababababababababababababababababababababab",
+        "folder": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "tasks": "sha256:efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef"
+      }
+    },
+    {
+      "id": "fac-3n8w5t2c",
+      "name": "Workshop kit",
+      "path": "~/work/workshop-kit",
+      "area": "area-2m7c4h8n",
+      "projects": [],
+      "plan": [
+        "PLAN.md"
+      ]
+    },
+    {
+      "id": "fac-9b4x7k1m",
+      "name": "acme-old",
+      "repo": "acme-old",
+      "area": "area-2m7c4h8n",
+      "projects": [
+        "prj-9x4t1b7e"
+      ],
+      "archived": true
+    }
+  ]
+}

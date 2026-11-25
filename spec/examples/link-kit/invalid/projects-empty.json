@@ -1,0 +1,25 @@
+{
+  "kit_version": 1,
+  "name": "acme-web",
+  "placement": {
+    "area": "area-2m7c4h8n",
+    "projects": []
+  },
+  "knowledge": {
+    "patterns": [
+      "docs/**"
+    ]
+  },
+  "tasks": {
+    "mode": "connected",
+    "source": {
+      "kind": "notion"
+    }
+  },
+  "methodology": {
+    "summary": "Plans in docs/plans; tasks live in Notion."
+  },
+  "plan": [
+    "docs/roadmap.md"
+  ]
+}

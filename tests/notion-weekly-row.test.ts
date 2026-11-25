@@ -69,6 +69,11 @@ test("Weekly review reads the two parts, decides nothing in the row, and ends wi
   assert.match(weekly, /Show the change toggle/);
   assert.ok(weekly.includes("Then set this row's Brain Status to Ready: the next catch-up applies your ticks."));
   assert.match(weekly, /none marked as a suggestion/, "Focus first suggests no value (the author's answer of 2026-11-20)");
+  // CC-384: the answer line names only the task options.
+  const step8 = section(weekly, "\n8. ", "\n9. ");
+  assert.match(step8, /The answer line names only these numbered task options: no row label \(A1, U1, C1\), and never the word tick\. The row's items are only ever ticked in the row\./);
+  const examples = [...weekly.matchAll(/"Answer like ([^"]*)"/g)].map((match) => match[1]);
+  assert.deepEqual(examples, ["1a 27 Nov, 2d."], "one example, with task options only");
   assert.match(weekly, /was written before 0\.17\.0: step 10\./);
   assert.match(weekly, /Never tick or untick a to-do, never write on a Your note line, and never set Brain Status\./);
   assert.match(weekly, /or wait for its scheduled run if you set one/);

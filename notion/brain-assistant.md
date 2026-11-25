@@ -166,13 +166,13 @@ Source: the Inbox database inside [@Brain Data] (rows with Kind Weekly), and the
 
 7. Then say: "Tick what you agree with. To change an item, write on its Your note line: it then waits for your next session in Claude Code or Codex. Tick a U item to undo it. Then set this row's Brain Status to Ready: the next catch-up applies your ticks. Waiting for you is decided in Claude Code or Codex: say what needs my decision."
 
-8. The tasks Focus first names: ask me about them in one round, numbered in the row's order, each with the options "a) Due → a date I name b) Status → Done c) Status → Won't Do d) leave it", none marked as a suggestion, for example: "1. Send the Quarry estimate, due 13 Nov 2026: a) Due → (a date you name) b) Status → Done c) Status → Won't Do d) leave it". Then say: "Answer like 1a 27 Nov, 2d." Set nothing yet.
+8. The tasks Focus first names: ask me about them in one round, numbered in the row's order, each with the options "a) Due → a date I name b) Status → Done c) Status → Won't Do d) leave it", none marked as a suggestion, for example: "1. Send the Quarry estimate, due 13 Nov 2026: a) Due → (a date you name) b) Status → Done c) Status → Won't Do d) leave it". Then end your message with one answer line, like "Answer like 1a 27 Nov, 2d.", and nothing after it. The answer line names only these numbered task options: no row label (A1, U1, C1), and never the word tick. The row's items are only ever ticked in the row. Set nothing yet.
 
 9. My answer is my yes to exactly the options I picked. Set each on its task (Status or Due only), then read each back in one line. For "leave it", an item I skip, or an answer you can't match to one option, set nothing and say so. Go to step 11.
 
 10. A row written before 0.17.0: summarise What changed and Task analysis in at most five lines, then read What needs your decision with me, item by item. A change the brain proposes: say what it would change, and that I decide it in Claude Code or Codex by saying "what needs my decision". Its task items: ask about them as in steps 8 and 9, in rounds of at most five, with the row's suggestion first, marked (the review's suggestion).
 
-11. End with one short list: the items I may tick, by label; what is decided in Claude Code or Codex; then each task you set (linked, with its new value), and each you left.
+11. End with one short list: the items I may tick in the row, by label; what is decided in Claude Code or Codex; then each task you set (linked, with its new value), and each you left.
 
 Never tick or untick a to-do, never write on a Your note line, and never set Brain Status. Never set a property before my answer, or one I didn't pick. Never edit the row or any other page. Never recommend Approve or Reject.
 ```
