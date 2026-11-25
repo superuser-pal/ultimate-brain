@@ -5,7 +5,7 @@
 **What changes:**
 - **Notion Brain Assistant sets your operational fields after your yes** (0101 §3). In its chat, after you say yes to a change it names with its value, Notion Brain Assistant may set a task's Status or Due, a project's Status, Priority or Dates, a goal's Status, and a key result's Current, Done or Due. Nothing else: never a property the brain owns, a section the brain writes, Brain Status, Accepted, Document asked or Refresh asked; asked to, it says where that is done. Its **Weekly review** asks about the week's task items in numbered options and sets the ones you pick ("1a"), instead of only listing them. These stay your fields: the brain reads them as pointers and stores none of them, so nothing Notion Brain Assistant sets is knowledge. Its Instructions, its Weekly review skill, its Tools and access, and First things first's "Give it access" item change.
 - **Notion Brain Assistant** (0072 §1, 0106 §4). Brain Assistant is renamed Notion Brain Assistant, so it isn't confused with Ultimate Assistant in Claude Code or Codex. The same agent keeps its rules, skills, access and buttons; its name changes, with the first line of its Instructions, Write minutes' Description, the Start here callout, First things first and the Voice note template's gray line.
-- **The path without Notion AI** (0101 §7, §8). Notion AI and Notion credits are optional: without credits, Notion Brain Assistant's skills run from Claude Code or Codex, and without Notion AI, your agent writes a meeting's minutes from its transcript. First things first's **Check your plan** item says so, instead of sending you to your personal Notion Agent, and the Start here callout gets a table of what works on each Notion plan.
+- **The path without Notion AI** (0101 §7, §8). Notion AI and Notion credits are optional: without credits, Notion Brain Assistant's skills run from Claude Code or Codex, and without Notion AI, your agent writes a meeting's minutes from its transcript. First things first's **Check your plan** item says so, instead of sending you to your personal Notion Agent. The table of what works on each Notion plan is in the README's Get started and in docs/setup.md, not in Start here.
 - **The weekly row** ([0110](../../decisions/0110-the-weekly-row-scheduling-on-mac-and-windows-and-0-16-x-folded-into-0-17-0.md) §1 to §5; part D). From 0.17.0 Claude Code or Codex writes the week's Inbox row in two parts, Your week and Clean-up, and you decide its Actions and clean-up items by ticking them in the row and setting it Ready; the next catch-up applies them. Nothing in Notion's structure changes: the row is an Inbox row of Kind Weekly with Brain Status New, Ready and Done, which exist. Only Notion Brain Assistant's texts change: its **Weekly review** reads the two-part row with you, as an optional companion, and never ticks, writes a Your note line or sets Ready; its Instructions say the ticks, the notes and the row's Brain Status are yours; **Today** says to tick, then set Ready.
 
 Run this migration after `brain upgrade` has put 0.17.0 in place, in an attended session (never from a schedule). **The template's copy** (no brain) does the same steps.
@@ -98,16 +98,20 @@ Open **Agents → Notion Brain Assistant → Instructions**. [../brain-assistant
 
 ### B3 · Write minutes' Description (the agent, or by hand)
 
-Open **Skills** (on System; "Brain Assistant Skills" in a space built before 0.14.0, a name that doesn't change) and the page **Write minutes**. It is the one skill whose text names the agent, twice, in its Description. [../brain-assistant.md](../brain-assistant.md) has the new Description, under "Write minutes".
-1. **Already done?** The Description reads "… Notion Brain Assistant doesn't run it: …" and "… Asked to write minutes, Notion Brain Assistant gives you these steps …". Then change nothing.
-2. **Otherwise,** the agent, with your yes, sets the page's **Description** property to the new text, where Skills is shared with the integration; or replace the Description by hand. The page's body (the minutes prompt) and the other skills don't change.
+Open **Skills** (on System; "Brain Assistant Skills" in a space built before 0.14.0, a name that doesn't change) and the page **Write minutes**. It is the one skill whose text names the agent, twice. [../brain-assistant.md](../brain-assistant.md) has the new text, under "Write minutes": its **Description:** line. First see which layout your Skills pages have, as in A3, on another skill's page, such as Today:
+- **The text is in the Description property and the page body is empty** (the template's layout, and every space duplicated from it): Write minutes is the one page whose body is not empty. Its Description holds the skill's text, which names the agent twice, and its body holds the minutes prompt. Replace **Description's whole text**, and leave the body as it is.
+- **The text is in the page body** (a Skills database built by hand from Prompt 9): Write minutes' Description holds the short **Description:** line, which names the agent twice, and its body holds the minutes prompt. Replace the **Description**, and leave the body as it is.
+
+So in both layouts the agent's name is in Description, and the new text is the same.
+1. **Already done?** The Description, in either layout, reads "… Notion Brain Assistant doesn't run it: …" and "… Asked to write minutes, Notion Brain Assistant gives you these steps …". Then change nothing.
+2. **Otherwise,** the agent, with your yes, sets the page's **Description** property to the new text, in either layout, where Skills is shared with the integration; or replace the Description by hand. The page's body (the minutes prompt) and the other skills don't change.
 3. **No Write minutes page** (a space before 0.16.2's CC-283): nothing to change.
 
 ### B4 · Start here, First things first and the Voice note template (the agent, or by hand)
 
 docs/notion-space-design.md §10 and §10.1 have the exact texts.
-1. **Already done?** The Start here callout and the page First things first name **Notion Brain Assistant**, and "Brain Assistant" appears in them only after "Notion" (or as the database name "Brain Assistant Skills"). Then change nothing.
-2. **Start here** (the callout on your top page): line 3, "Then open First things first: create your own Brain Assistant and select it in its buttons.", and line 4, "Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits.", each say **Notion Brain Assistant** instead. The agent, with your yes, replaces the name in those two lines and keeps their links ("First things first", "Notion credits") and the other lines as they are. Or edit them by hand.
+1. **Already done?** The Start here callout and the page First things first name **Notion Brain Assistant**, and in them "Brain Assistant" appears only after "Notion", in the database name "Brain Assistant Skills", or in item 2's sentence "perhaps still named Brain Assistant?". Then change nothing.
+2. **Start here** (the callout on your top page): find two sentences by their first words, wherever they stand in the callout, in one text or several. "Then open First things first: create your own Brain Assistant and select it in its buttons." and "Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits." each say **Notion Brain Assistant** instead. The agent, with your yes, replaces the name in those two sentences and keeps their links ("First things first", "Notion credits") and the rest of the callout as they are. Or edit them by hand.
 3. **First things first:** the opening line and the items **Check your plan**, **Create your own Brain Assistant** (its bold title becomes **Create your own Notion Brain Assistant**), **Paste its Instructions and replace the mentions**, **Select your agent in the three buttons** and **Run Today and check the buttons** say **Notion Brain Assistant** where they said Brain Assistant. **Create your own …** also gets its new sentence, "Already have one you created that answers in its chat, perhaps still named Brain Assistant? Keep it, don't create a second one: rename it **Notion Brain Assistant**, check items 3 to 6, then do item 8." in place of "Already have a Brain Assistant you created that answers in its chat? Keep it, don't create a second one: check items 3 to 6, then do item 8." The agent, with your yes, replaces those words in each to-do block and keeps the rest of each item, its bold words, its links (item 4's "… setup page" link, item 1's "Notion credits") and its tick as they are. Or edit them by hand. A space without the page (one that skipped 0028's part A) has nothing to change here.
 4. **The Voice note template** (by hand; the API can't edit a database template): open **Inbox** → the arrow next to **New** → **Voice note**, ••• next to it → **Edit**. In the gray line under the callout, "then ask Brain Assistant: Voice summary." becomes "then ask Notion Brain Assistant: Voice summary.", and nothing else changes. Voice notes already made keep their text, and say the same agent. A space without the Voice note template has nothing to change here.
 
@@ -115,11 +119,11 @@ docs/notion-space-design.md §10 and §10.1 have the exact texts.
 
 1. *(you)* **The agent:** Agents lists **Notion Brain Assistant** for this space, and no agent named Brain Assistant has this space's Brain Data in its Tools and access. In its chat, ask **Run Today**: it answers from your space as before.
 2. *(you)* **The buttons follow the agent:** for **Tidy capture** (Inbox), **Write up** and **Refresh report** (Documents; each there with its module on), open the database as a full page → ••• → Properties → the button. **Send message to** shows **Notion Brain Assistant**, and the message is unchanged. If it is empty or shows another agent, select your Notion Brain Assistant there (First things first, **Select your agent in the three buttons**) and keep the message as it is. Then click **Tidy capture** on a made-up row in Inbox, `Name check: delete me`, Kind **Capture**, Brain Status **New**, with a line of text: it is tidied as before. Move the test row to the trash (••• → Delete) before any catch-up.
-3. *(API)* The agent reads back, with your yes: Write minutes' Description (where Skills is shared with the integration), the Start here callout and First things first name Notion Brain Assistant and hold no "Brain Assistant" without "Notion" before it, apart from "Brain Assistant Skills".
+3. *(API)* The agent reads back, with your yes: Write minutes' Description (where Skills is shared with the integration), the Start here callout (its whole text, the blocks inside it included) and First things first name Notion Brain Assistant, and in them "Brain Assistant" appears only after "Notion", in the database name "Brain Assistant Skills", or in item 2's sentence "perhaps still named Brain Assistant?".
 
-## Part C · The path without Notion AI: First things first's item 1 and the plan table in Start here (0101 §7, §8; CC-329)
+## Part C · The path without Notion AI: First things first's item 1 (0101 §7, §8; CC-329)
 
-Two texts in your space say what works on your Notion plan: First things first's item 1 (docs/notion-space-design.md §10.1, "Item 1's wording changed in 0.17.0") and a plan table in the Start here callout (§10). Nothing else changes: setup asks its two questions from the brain, not from Notion (spec/setup.md §13).
+One text in your space says what works on your Notion plan: First things first's item 1 (docs/notion-space-design.md §10.1, "Item 1's wording changed in 0.17.0"). Start here holds no plan table (C2). Nothing else changes: setup asks its two questions from the brain, not from Notion (spec/setup.md §13).
 
 ### C1 · First things first, item 1 (the agent, or by hand)
 
@@ -131,20 +135,9 @@ The page **First things first** (under your top page; migration 0028) starts wit
 2. **Otherwise,** the agent, with your yes, replaces the item's text after **Check your plan.** with the text above, in the same to-do block. It keeps the bold words, the link on "Notion credits" (https://www.notion.com/help/buy-and-track-notion-credits-for-custom-agents) and the tick as they are, then reads the block back: the new text once, "personal Notion Agent" nowhere on the page. Or edit the text by hand.
 3. **No First things first page** (a space that skipped 0028's part A): nothing to change.
 
-### C2 · The plan table in Start here (by hand, or the agent)
+### C2 · No plan table in Start here (nothing to do)
 
-Inside the **Start here** callout, right below its line "Notion Brain Assistant and its buttons need Notion's Business or Enterprise plan with Notion credits.", add a simple table with a header row, three columns and three rows (docs/notion-space-design.md §10, the exact text):
-
-| Your Notion | Meetings | Notion Brain Assistant and its buttons |
-|---|---|---|
-| Business or Enterprise, with Notion credits | Notion AI meeting notes and the minutes prompt, or any other tool | Yes |
-| Business or Enterprise, without credits | Notion AI meeting notes and the minutes prompt, or any other tool | No: ask Claude Code or Codex for the same skills |
-| Free or Plus | Any other tool, pasting, or transcript files: your agent writes the minutes | No: ask Claude Code or Codex for the same skills |
-
-- **Already there?** The callout holds a table whose first column starts "Your Notion". Then change nothing.
-- **By hand:** click at the end of the line on Notion credits, press Enter, type `/table`, choose **Table** (the simple one, not a database), make it 3 columns and 4 rows, turn on **Header row**, and type the cells above. If Notion puts the table below the callout instead of inside it, drag it into the callout, right below that line.
-- **The agent** adds it when the line on Notion credits is the callout's last block of its own: it appends a table block (3 columns, header row on, the four rows above) to the callout's children, then reads the callout back: the table once, right after that line. When the lines are the callout's own text, the table goes in by hand.
-- **No Start here callout** (a space built before 0.14.0 without it): nothing to change.
+Start here holds no plan table: the table is in the README's [Get started](../../README.md#get-started), which Start here's "Get started" link opens, and in [docs/setup.md](../../docs/setup.md); a space that added the table under this step's earlier text may keep it or delete it, and nothing checks it.
 
 ## Part D · The weekly row: Weekly review, the Instructions and Today (0110; CC-372)
 
@@ -204,7 +197,7 @@ If the System callout on your top page reads `Template version: …` with a lowe
 - **The buttons don't change.** A button's message carries its skill's confirmation only, never a yes to set a field ([../views-guide.md](../views-guide.md) §9).
 - **Part B changes no database, property, option, view, button or template structure.** It renames the agent and replaces its name in five texts; the skills database keeps its name, Skills or Brain Assistant Skills. The buttons' messages never named the agent: **Send message to** selects it, and B5 checks that it still does.
 - **Part B is Notion's side only.** The brain never reads the agent's name, so nothing changes in it.
-- **Part C changes no database, property, view, button, skill or Notion Brain Assistant itself**: it changes two texts that describe your plan. A Notion Brain Assistant you already have keeps working; a personal Notion Agent you set up before 0.17.0 keeps its Instructions too, but setup no longer checks it ([../brain-assistant.md](../brain-assistant.md), Without a Custom Agent).
+- **Part C changes no database, property, view, button, skill or Notion Brain Assistant itself**: it changes one text that describes your plan, and adds no plan table to Start here. A Notion Brain Assistant you already have keeps working; a personal Notion Agent you set up before 0.17.0 keeps its Instructions too, but setup no longer checks it ([../brain-assistant.md](../brain-assistant.md), Without a Custom Agent).
 - **Part D changes no database, property, option, view or button.** The weekly row is an Inbox row of Kind Weekly with Brain Status New, Ready and Done, which every space has; no Example row is added to the template for it.
 - **The guides come with the skills release.** brain-howto's Everyday guide and the user guide say that Notion Brain Assistant sets your fields after your yes, call it by its new name, and say how the weekly row is ticked and set Ready; republish your **Everyday guide** and **How it works** pages from the skills release that ships with 0.17.0, as for any guide change.
 
@@ -224,13 +217,12 @@ Part B, Notion Brain Assistant (decision 0072 §1, 0106 §4):
 - [ ] *(you)* Agents lists **Notion Brain Assistant** for this space, and its Instructions start "You are Notion Brain Assistant, my helper for the Ultimate Brain workspace."
 - [ ] *(you)* Tidy capture, Write up and Refresh report (those your space has) send to **Notion Brain Assistant**, with their messages unchanged, and Tidy capture tidied the test row, now in the trash.
 - [ ] *(you)* The Voice note template's gray line ends "then ask Notion Brain Assistant: Voice summary."
-- [ ] *(API)* Where Skills is shared with the integration: Write minutes' Description says Notion Brain Assistant twice, and never Notion Brain Assistant without "Notion" before it.
-- [ ] *(API)* The Start here callout and First things first say Notion Brain Assistant, and "Notion Brain Assistant" without "Notion" before it nowhere; their links are still there.
+- [ ] *(API)* Where Skills is shared with the integration: Write minutes' Description, which holds the skill's text in the template's layout and the short **Description:** line in a Skills database built by hand from Prompt 9 (its body is the minutes prompt in both), says Notion Brain Assistant twice, and in it "Brain Assistant" appears only after "Notion", in the database name "Brain Assistant Skills", or in item 2's sentence "perhaps still named Brain Assistant?".
+- [ ] *(API)* The Start here callout (its whole text, the blocks inside it included) and First things first say Notion Brain Assistant, and in them "Brain Assistant" appears only after "Notion", in the database name "Brain Assistant Skills", or in item 2's sentence "perhaps still named Brain Assistant?"; their links are still there.
 
 Part C, the path without Notion AI (decision 0101 §7, §8):
 - [ ] *(API)* First things first's item **Check your plan.** says "ask Claude Code or Codex for a skill by its name", and "personal Notion Agent" is nowhere on the page.
-- [ ] *(API)* The Start here callout holds the plan table once, its first column "Your Notion", "Business or Enterprise, with Notion credits", "Business or Enterprise, without credits" and "Free or Plus", right after the line on Notion credits.
-- [ ] *(you)* The table shows inside the callout, with its header row, and the link on "Notion credits" in item 1 still opens Notion's help page.
+- [ ] *(you)* The link on "Notion credits" in item 1 still opens Notion's help page.
 
 Part D, the weekly row (decision 0110):
 - [ ] *(you)* The Weekly review page holds D1's text where the page keeps its text: a step 4 starting "4. A row whose headings are "Your week" and "Clean-up"", a Description starting "Optional:"; neither "6. Then ask me about the task items in rounds of at most five" nor "Ask me nothing to decide:" is on the page.
