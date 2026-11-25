@@ -277,7 +277,7 @@ In the block read the rich text item of the date is `{"type":"mention","mention"
 **By hand, with what the person should see (for U-47 and U-48; the full text is in migration 0031 and notion/modules/factories.md, CC-399):**
 | Step | U-47 (the template's copy) | U-48 (your space) | What you should see |
 |---|---|---|---|
-| B1 · the Domains page template | yes | Domains on | a Domain made from it shows views-guide §9a's headings in order, each view empty and without a warning; link an Area and its rows appear |
+| B1 · the Domains page template | yes | Domains on | a Domain made from it shows views-guide §9a's headings in order, each view empty and without a warning |
 | B2 · the old views of a Domain page | `Example · Work` | each Domain page, after the agent's read back | the page opens with "What needs me here?", only that Domain's rows, your notes still there |
 | B3 · Domain in the layouts of Tasks, Inbox and Goals | yes | yes (hidden with Domains off) | a task shows its Domain in the panel, not in the heading |
 | Part C · Home | add the tab Domains, first, and keep both sets | add it and delete Areas and Projects | one card per Domain; a click opens its home; the Areas with no Domain below |

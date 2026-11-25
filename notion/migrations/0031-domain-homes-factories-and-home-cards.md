@@ -54,7 +54,7 @@ For each, by its property named **Domain**:
 [../views-guide.md](../views-guide.md) §9a holds the views, in order.
 1. **Already done?** Open **Domains** → the **New** arrow (▾) → the default template → **Edit**: it starts with the heading "What needs me here?" and holds "How are my areas?". Then change nothing.
 2. **Otherwise,** build §9a's headings and views there. "Which meetings?" and "What do we know?" are in the template already: keep them, and change them to §9a's. "Which projects?" becomes "What's active here?". A heading of a module you left off is left out.
-3. **What you should see:** create a Domain named `Home check: delete me` from the template. Its page shows the headings of §9a in order, each view empty and without a warning. Link one of your Areas to it: "How are my areas?" lists that Area, and the Area's projects, meetings and documents show under their headings. Set the Area's Domain back and move the test Domain to the trash, before any catch-up.
+3. **What you should see:** create a Domain named `Home check: delete me` from the template. Its page shows the headings of §9a in order, each view empty and without a warning. Move the test Domain to the trash, before any catch-up: B2 shows you the views with your own rows.
 
 ### B2 · Domain pages you already have (agent, with your yes for each page; or by hand)
 
@@ -149,7 +149,7 @@ Part A:
 - [ ] *(API)* A row whose Area has a Domain shows that Domain; a row with no Area shows none. A query filtered on the rollup for one Domain returns exactly the rows whose Area has it.
 
 Part B (Domains on):
-- [ ] *(you)* A Domain made from the template shows §9a's headings in order, and only that Domain's rows.
+- [ ] *(you)* A Domain made from the template shows §9a's headings in order; a Domain page you use shows only that Domain's rows.
 - [ ] *(API)* Each Domain page you had holds "What needs me here?" once, and the filter of each of its views names that page.
 - [ ] *(you)* Your own notes on each Domain page are still there, and no old view is left.
 - [ ] *(you)* A task, an Inbox row and a goal show Domain in their panel, not in the heading.
