@@ -249,7 +249,7 @@ Write commands append to `log/<YYYY-MM>.md` (month of `--now`), creating it with
 
 **The Factory lines (0.18.0, §5.39).** `factory-add`, `factory-set` and `factory-archive` log `<op> - "<name>" factory=<fac id>`; `factory overview --written` logs `factory-overview - "<name>" factory=<fac id> by=<session|catch-up>` when it records a new text. `repo add`, `repo unlink` and `modules on factories` log their own lines only.
 
-**The catch-up line (0045, 0051).** An attended catch-up logs `catch-up - notes_read=<n> seconds=<s>`. An unattended one (§6.1) logs `catch-up - mode=unattended inputs=<n> left=<n> skipped=<n> waiting=<n> failed=<n>[ failures="<reason>; <reason>"] report=<yes|no> notes_read=<n> seconds=<s>`: `inputs` taken in (failed ones included), `left` the inputs beyond the budget, `skipped` the inputs skipped for a blocker, `waiting` the report What to fix left for an attended run and the proposals the run wrote that wait for a decision in the session (capture-and-review §7.4), `failed` the steps that failed, `failures` their reasons in a few words each ("Notion login"), `report` whether it wrote a Report row. A `catch-up` line without `mode=unattended` is attended, as every line before 0.7.0 is. `brain status` reads these lines (§5.2).
+**The catch-up line (0045, 0051).** An attended catch-up logs `catch-up - notes_read=<n> seconds=<s>`. An unattended one (§6.1) logs `catch-up - mode=unattended inputs=<n> left=<n> skipped=<n> waiting=<n> failed=<n>[ failures="<reason>; <reason>"] report=<yes|no> notes_read=<n> seconds=<s>`: `inputs` taken in (failed ones included), `left` the inputs beyond the budget, `skipped` the inputs skipped for a blocker, `waiting` the decisions the next session asks, from this run or before it (`proposal list --waiting`'s `counts.waiting`, §5.6; counted by `brain log` since 0.18.0, §5.11), `failed` the steps that failed, `failures` their reasons in a few words each ("Notion login"), `report` whether it wrote a Catch-up row (§6.1; the line comes after the row). A `catch-up` line without `mode=unattended` is attended, as every line before 0.7.0 is. `brain status` reads these lines (§5.2).
 
 ---
 
@@ -1110,7 +1110,9 @@ brain log ingest mtg-8c4n2p7w created=4 proposals=3 tasks=1 --json
 { "data": { "path": "log/2026-12.md", "line": "- 2026-12-03T10:22:00Z ingest mtg-8c4n2p7w \"Acme sync\" created=4 proposals=3 tasks=1" } }
 ```
 
-Errors: `USAGE` (bad op or key=value), `UNKNOWN_ID`.
+**`catch-up` with `mode=unattended`** (0.18.0): the command sets `waiting` itself, to `counts.waiting` of `proposal list --waiting` (§5.6) when it runs, as the pair before `failed`, or last when there is none. A `waiting` in the arguments (a skill from before 0.18.0) is replaced by the count. No other line is changed.
+
+Errors: `USAGE` (bad op or key=value), `UNKNOWN_ID`; with `mode=unattended`, those of `proposal list --waiting`.
 
 ### 5.12 `brain link`
 
@@ -2452,7 +2454,7 @@ A request that asks no question runs as attended: a re-read, a `document_request
 | `tracked_tasks`: the task that tracks an open question is finished, in the trash or unreadable | **waits**, as attended: written as a pending `tracked_task`; the next attended session asks whether the question is answered (0101 §6) |
 | `updates`: Lifecycle you set (Reviewed, Archived), Notion-owned fields (Status, Priority, Dates, Progress, Archived, Email, Relationship, Website, Type, Key Results), a `notion` page id | **applied** |
 | `create`: an area, goal, project, person or org row you created | **applied** (an addition) |
-| *(Reports)* `report_fixes`: a What to fix on a Report row | **waits**: counted in `waiting`; that report's refresh waits with it (first table), and `sync render --skip-conflicted` doesn't publish it (`FIX_WAITING`), so its What to fix, Refresh asked and body stay as they are in Notion, and any earlier change to it in Git waits for the attended run |
+| *(Reports)* `report_fixes`: a What to fix on a Report row | **waits**: named in the report and in the Catch-up row; that report's refresh waits with it (first table), and `sync render --skip-conflicted` doesn't publish it (`FIX_WAITING`), so its What to fix, Refresh asked and body stay as they are in Notion, and any earlier change to it in Git waits for the attended run |
 | `ignored` (`NOT_CORRECTABLE`, `MODULE_OFF`, `REVIEW_ROW`, …) | nothing, as attended; `NOT_CORRECTABLE` is named under Check |
 | Chat decisions | none: nobody is in the chat |
 

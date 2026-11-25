@@ -2,6 +2,8 @@ import type { Command } from "../lib/command.ts";
 import { BrainError } from "../lib/errors.ts";
 import { appendLog, formatLogLine } from "../lib/log.ts";
 import { scanNotes } from "../lib/notes.ts";
+import { waitingProposals } from "../lib/proposals.ts";
+import { Workspace } from "../lib/workspace.ts";
 
 const OP = /^[a-z][a-z0-9-]*$/;
 const KEY = /^[a-z][a-z0-9_]*$/;
@@ -40,6 +42,15 @@ export const logCommand: Command = {
       const note = notes.find((candidate) => candidate.id === id);
       if (note === undefined) throw new BrainError("UNKNOWN_ID", `No note with id ${id}`);
       title ??= typeof note.attributes.title === "string" ? note.attributes.title : "";
+    }
+
+    // An unattended catch-up never counts its own `waiting` (spec/cli.md §5.11, 0.18.0).
+    if (op === "catch-up" && pairs.some(([key, value]) => key === "mode" && value === "unattended")) {
+      const { waiting } = waitingProposals(await Workspace.open(brain!), undefined).counts;
+      const others = pairs.filter(([key]) => key !== "waiting");
+      const at = others.findIndex(([key]) => key === "failed");
+      others.splice(at === -1 ? others.length : at, 0, ["waiting", String(waiting)]);
+      pairs.splice(0, pairs.length, ...others);
     }
 
     const entry = { op, id, title: title ?? "", pairs };
