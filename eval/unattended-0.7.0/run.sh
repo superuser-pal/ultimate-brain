@@ -32,7 +32,22 @@ if [ -z "$COLLECT_ONLY" ]; then
   if [ $# -eq 0 ]; then python3 "$HERE/setup.py" all >/dev/null || exit 1; else for s in "$@"; do python3 "$HERE/setup.py" "$s" >/dev/null || exit 1; done; fi
 fi
 export PATH="$B/bin:$PATH"
+export BRAIN_DIR="$B/no-brain"  # no such folder: a brain CLI that isn't the shim is refused too
 mkdir -p "$OUT" "$B/exit"
+
+# No session may reach this computer's own brain. Two guards, checked before any model runs: the shim has the eval's HOME,
+# which holds no config (a command without --brain is BRAIN_NOT_CONFIGURED), and a CLI past the shim gets BRAIN_DIR above,
+# which wins over the config (BRAIN_NOT_FOUND; cli.md §4).
+refused() { # code, command...: the command must fail with that error code
+  local code="$1" out; shift
+  out="$("$@" 2>&1)" && return 1
+  grep -q "\"$code\"" <<< "$out"
+}
+if [ -z "$COLLECT_ONLY" ]; then
+  if [ -e "$B/home/.config/ultimate-brain" ] || ! refused BRAIN_NOT_CONFIGURED brain status --json || ! refused BRAIN_NOT_FOUND node "$HERE/../../bin/brain.js" status --json; then
+    echo "the eval isn't isolated: a command without --brain isn't refused; no session was run" >&2; exit 1
+  fi
+fi
 
 MODEL="${UB_EVAL_MODEL:-claude-sonnet-5-5}"
 AWAY="The user is away and cannot be asked anything. There is no git remote and no Notion in this session."
