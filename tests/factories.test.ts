@@ -20,6 +20,7 @@ const AREA = "area-2m7c4h8n";
 const PROJECT = "prj-9x4t1b7e";
 const SECOND = "prj-4k2r8m6t";
 const DATABASE = "a1000000-0000-4000-8000-0000000000fa";
+const AREA_PAGE = "1a2b3c4d-5e6f-4a8b-9c0d-1e2f3a4b5c6d";
 const PAGE = "6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b";
 const FAC = /^fac-[0-9abcdefghjkmnpqrstvwxyz]{8}$/;
 const STATUS_MAP = { todo: "To Do", in_progress: "Doing", waiting: "Waiting On", review: "Doing", done: "Done", dropped: "Won't Do" };
@@ -155,6 +156,14 @@ test("off factories deletes no entry, and every factory command but list refuses
   }
 });
 
+test("status reports the factories database only with the module on", async (context) => {
+  const c = await setup(context, { database: "" });
+  assert.equal((await c.ok(["status"])).notion.missing.includes("factories"), true);
+  await c.ok(["modules", "off", "factories"]);
+  const { notion } = await c.ok(["status"]);
+  assert.equal([...notion.missing, ...notion.configured].includes("factories"), false);
+});
+
 // ---------------------------------------------------------------- the entries (schema §12)
 
 test("brain lint: factory-record names each broken check, and a command that reads the entries refuses with BRAIN_CONFIG_INVALID", async (context) => {
@@ -208,6 +217,12 @@ test("repo add makes the repo's Factory with the module on, and none with it off
   const plainLink = await linkedRepo(context, off);
   assert.equal(Object.hasOwn(await off.config(), "factories"), false);
   assert.equal(plainLink.data.factory ?? null, null);
+});
+
+test("repo add: a name another entry has gets -2, -3", async (context) => {
+  const c = await setup(context, { factories: [{ id: "fac-7k2m9q4x", name: "ACME-api", path: "/work/one", area: AREA, projects: [] }, { id: "fac-3n6q8v2b", name: "acme-api-2", path: "/work/two", area: AREA, projects: [] }] });
+  const { data } = await linkedRepo(context, c);
+  assert.equal((await c.config()).factories.find((entry: { id: string }) => entry.id === data.factory).name, "acme-api-3");
 });
 
 test("a folder connected first and linked later keeps its id; unlinking archives its entry with its Area and Projects; linking again is the same one", async (context) => {
@@ -573,6 +588,21 @@ test("factory overview --written: one commit of brain.json and the log; only the
   assert.equal((await overviewOf(c, id, input, later, ["--written", changed.sha256])).entry.overview.as_of, later);
 });
 
+test("factory overview --written refuses a brain with uncommitted changes (DIRTY_TREE) and a hash that isn't this one's, and writes nothing", async (context) => {
+  const c = await setup(context);
+  const { path, id } = await plain(context, c, ["--plan", "PLAN.md"]);
+  await writeFile(join(path, "PLAN.md"), "- [ ] One\n");
+  await c.commitBrain();
+  const input = { by: "catch-up", plan: "One thing." };
+  const { sha256 } = await overviewOf(c, id, input);
+  const written = async (hash: string) => c.call(["factory", "overview", id, "--input", await c.file(input), "--written", hash]);
+  assert.equal((await written(sha("other"))).json.error?.code, "STALE_RECORD");
+  await writeFile(join(c.dir, "index.md"), "changed by hand\n");
+  const dirty = await written(sha256);
+  assert.deepEqual([dirty.code, dirty.json.error?.code], [5, "DIRTY_TREE"]);
+  assert.equal((await c.config()).factories[0].overview, undefined);
+});
+
 test("factory overview: taken tasks come first, their state changes the hash, and an item done 14 days ago is the last one shown", async (context) => {
   const c = await setup(context);
   const { path, id } = await plain(context, c, ["--plan", "PLAN.md"]);
@@ -605,18 +635,15 @@ test("sync render: a Factory's row on create, after the notes, from a repos entr
   const { id } = await plain(context, c);
   const data = await render(c);
   assert.deepEqual(data.items.slice(-2).map((item: { id: string }) => item.id), [link.factory, id]);
-  const areaPage = JSON.parse(JSON.stringify(data.items)).find((item: any) => item.id === AREA)?.page_id;
   const [row, second] = rows(data);
   assert.deepEqual([row.type, row.database, row.database_id, row.page_id, row.action, row.template, row.body, row.sections], ["factory", "factories", DATABASE, null, "create", { type: "default" }, null, null]);
   assert.deepEqual(Object.keys(row.properties), ["Name", "Area", "Projects", "Archived", "Brain ID"]);
   assert.deepEqual([row.properties.Name, row.properties.Archived, row.properties["Brain ID"]], [{ type: "title", value: "acme-api" }, { type: "checkbox", value: false }, { type: "rich_text", value: link.factory }]);
-  const pageOf = async (path: string) => /^notion: (.+)$/m.exec(await readFile(join(c.dir, path), "utf8"))?.[1];
-  const project = await pageOf("projects/acme-website/project.md");
-  assert.deepEqual(row.properties.Projects, { type: "relation", value: project === undefined ? [] : [project] });
-  assert.deepEqual(row.published.Projects, project === undefined ? [] : [project]);
+  const project = /^notion: (.+)$/m.exec(await readFile(join(c.dir, "projects/acme-website/project.md"), "utf8"))![1]!;
+  assert.deepEqual([row.properties.Projects, row.published.Projects], [{ type: "relation", value: [project] }, [project]]);
   assert.equal(Object.hasOwn(row.published, "@content"), false);
   assert.deepEqual(second.properties.Projects.value, []);
-  void areaPage;
+  assert.deepEqual([row.properties.Area, second.properties.Area], [{ type: "relation", value: [AREA_PAGE] }, { type: "relation", value: [AREA_PAGE] }]);
 });
 
 test("sync render: an unpublished Project waits in pending_relations; an update sends only what changed, and Last Synced", async (context) => {
@@ -672,6 +699,7 @@ test("sync record: another page is NOTION_ID_MISMATCH, another key INVALID_RESUL
   const c = await setup(context);
   const { id } = await plain(context, c);
   const record = async (entry: Record<string, unknown>, extra: string[] = []) => (await c.call(["sync", "record", "--input", await c.file({ records: [{ id, synced_at: NOW, ...entry }] }), ...extra])).json.data.records[0];
+  assert.equal((await record({ notion: "not a page id" })).reason, "INVALID_RESULT");
   assert.equal((await record({ notion: PAGE }, ["--dry-run"])).result, "recorded");
   assert.equal((await c.config()).factories[0].notion, undefined);
   await record({ notion: PAGE, published: { Name: "Workshop kit" } });
@@ -679,7 +707,6 @@ test("sync record: another page is NOTION_ID_MISMATCH, another key INVALID_RESUL
   assert.deepEqual((await c.config()).factories[0].published, { Name: "Workshop kit", Archived: false }, "merged key by key");
   assert.equal((await record({ notion: PAGE.replace(/b$/, "c") })).reason, "NOTION_ID_MISMATCH");
   assert.equal((await record({ tasks: [] })).reason, "INVALID_RESULT");
-  assert.equal((await record({ notion: "not a page id", id })).reason === "INVALID_RESULT" || (await record({ notion: "not a page id" })).reason === "NOTION_ID_MISMATCH", true);
   assert.equal((await record({ id: "fac-00000000" })).reason, "UNKNOWN_ID");
 });
 
@@ -723,6 +750,12 @@ test("brain link: no paragraph with the module off, for an ended workflow, for a
   const other = await folder(context);
   assert.equal((await link(c, other)).code, 0);
   assert.equal((await agents(other)).includes("is the Factory"), false);
+  const onProject = await folder(context);
+  await c.ok(["factory", "add", "--path", onProject, "--name", "On a Project", "--area", AREA]);
+  await c.commitBrain();
+  await c.ok(["workflow", "new", "--input", await c.file({ folder_path: onProject, opted_in: { statement: "Connect it" }, destination: { project: PROJECT }, settings: { work_type: "general", logging: "tasks_only", custom: [] }, status_map: STATUS_MAP })]);
+  assert.equal((await link(c, onProject)).code, 0);
+  assert.equal((await agents(onProject)).includes("is the Factory"), false);
   await c.ok(["modules", "off", "factories"]);
   assert.equal((await link(c, path)).code, 0);
   assert.equal((await agents(path)).includes("is the Factory"), false);
