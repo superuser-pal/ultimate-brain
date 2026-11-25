@@ -21,15 +21,17 @@ const LATER = "2026-12-10T11:05:00Z";
 const PAGE = "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d";
 const INPUT_PAGE = "11111111-2222-4333-8444-555555555555";
 
-/** The contract's table, read from the Markdown read's tag; any other tag is read from its block. */
+/** The offset of a zone at a local time: an Etc/GMT name's sign is reversed, UTC is +00:00, a named zone has its own on that day. */
+function offset(zone: string, local: string): string {
+  const shown = (at: number) => new Intl.DateTimeFormat("en", { timeZone: zone, timeZoneName: "longOffset" }).formatToParts(at).find((part) => part.type === "timeZoneName")!.value.slice(3) || "+00:00";
+  return shown(Date.parse(`${local}${shown(Date.parse(`${local}Z`))}`));
+}
+/** The contract's table, read from the Markdown read's tag. */
 function written(tag: string): string {
-  const attributes = Object.fromEntries([...tag.matchAll(/([A-Za-z]+)="([^"]*)"/g)].map((match) => [match[1], match[2]]));
-  const keys = Object.keys(attributes).sort().join(" ");
-  if (keys === "start") return attributes.start!;
-  if (keys === "end start") return `${attributes.start} → ${attributes.end}`;
-  const zone = /^Etc\/GMT([+-])(\d{1,2})$/.exec(attributes.timeZone ?? "");
-  assert.ok(keys === "start startTime timeZone" && zone, `not in the table: ${tag}`);
-  return `${attributes.start}T${attributes.startTime}:00.000${zone[1] === "-" ? "+" : "-"}${zone[2]!.padStart(2, "0")}:00`;
+  const { start, startTime, end, endTime, timeZone, ...other } = Object.fromEntries([...tag.matchAll(/([A-Za-z]+)="([^"]*)"/g)].map((match) => [match[1], match[2]])) as Record<string, string>;
+  assert.deepEqual(other, {}, `not in the table: ${tag}`);
+  const side = (date: string, time: string | undefined) => time === undefined ? date : `${date}T${time}:00.000${offset(timeZone!, `${date}T${time}:00`)}`;
+  return end === undefined ? side(start!, startTime) : `${side(start!, startTime)} → ${side(end, endTime)}`;
 }
 /** The Markdown read's blocks (one line each in the fixture), joined by one blank line. */
 const fromMarkdown = (markdown: string, date: (tag: string) => string) => `${markdown.split("\n").map((line) => line.replace(/<mention-date [^>]*\/>/g, date)).join("\n\n")}\n`;
@@ -41,7 +43,7 @@ const MARKDOWN_READ = JSON.parse(await fixture("markdown-read.json")).markdown a
 const BLOCK_READ = JSON.parse(await fixture("block-read.json")).results as Array<Record<string, any>>;
 /** The same page as a run before 0.18.0 may have recorded it: each date as the tag. */
 const TAGS = fromMarkdown(MARKDOWN_READ, (tag) => tag);
-const DATES = ["2026-11-14", "2026-11-14T10:30:00.000+01:00", "2026-11-14 → 2026-11-16"];
+const DATES = ["2026-11-14", "2026-11-14T10:30:00.000+01:00", "2026-11-14 → 2026-11-16", "2026-11-14T22:00:00.000-05:00 → 2026-11-15T01:15:00.000-05:00", "2026-11-16T09:00:00.000+00:00"];
 
 async function run(dir: string, args: string[], input?: unknown, now = NOW) {
   const extra: string[] = [];
@@ -88,9 +90,21 @@ test("the fixture's two replies give one Markdown, byte for byte, with one finge
   assert.equal(fromMarkdown(MARKDOWN_READ, written), EXPECTED);
   assert.equal(textHash(fromBlocks(BLOCK_READ)), textHash(fromMarkdown(MARKDOWN_READ, written)));
   const mentions = BLOCK_READ.flatMap((block) => block[block.type].rich_text).filter((item) => item.type === "mention").map((item) => item.plain_text);
-  assert.deepEqual(mentions, DATES, "the three mentions of CC-387's table");
-  assert.equal(written('<mention-date start="2026-11-14" startTime="10:30" timeZone="Etc/GMT+5"/>'), "2026-11-14T10:30:00.000-05:00", "an Etc/GMT name has its sign reversed");
-  assert.throws(() => written('<mention-date start="2026-11-14" startTime="10:30" timeZone="Europe/Madrid"/>'), /not in the table/);
+  assert.deepEqual(mentions, DATES, "a date, a date with a time, a range, a range with times, UTC");
+});
+
+test("each tag of CC-402's synthetic page is written as that item's plain_text (evidence in build/TASKS.md)", () => {
+  const date = (start: string, rest = "") => `<mention-date start="${start}"${rest}/>`;
+  for (const [tag, text] of [
+    [date("2026-11-14", ' startTime="10:30" end="2026-11-14" endTime="11:45" timeZone="Etc/GMT-1"'), "2026-11-14T10:30:00.000+01:00 → 2026-11-14T11:45:00.000+01:00"],
+    [date("2026-11-14", ' startTime="22:00" end="2026-11-15" endTime="01:15" timeZone="Etc/GMT-1"'), "2026-11-14T22:00:00.000+01:00 → 2026-11-15T01:15:00.000+01:00"],
+    [date("2026-11-14", ' startTime="10:30" timeZone="Europe/Madrid"'), "2026-11-14T10:30:00.000+01:00"],
+    [date("2026-07-14", ' startTime="10:30" timeZone="Europe/Madrid"'), "2026-07-14T10:30:00.000+02:00"],
+    [date("2026-10-24", ' startTime="10:00" end="2026-10-26" endTime="10:00" timeZone="Europe/Madrid"'), "2026-10-24T10:00:00.000+02:00 → 2026-10-26T10:00:00.000+01:00"],
+    [date("2026-11-14", ' startTime="10:30" timeZone="Asia/Calcutta"'), "2026-11-14T10:30:00.000+05:30"],
+    [date("2026-11-14", ' startTime="10:30" timeZone="UTC"'), "2026-11-14T10:30:00.000+00:00"],
+    [date("2026-11-14", ' startTime="10:30" timeZone="Etc/GMT+5"'), "2026-11-14T10:30:00.000-05:00"],
+  ] as const) assert.equal(written(tag), text);
 });
 
 for (const [name, recorded] of [["a block read", EXPECTED], ["the tags, sent in that form", TAGS]] as const) {
@@ -116,7 +130,7 @@ test("the same body in the other form would be a false edit: why a page read bef
   assert.equal((await plan(dir, EXPECTED, true)).accepted_wording.length, 1);
 });
 
-test("a text property with the three mentions normalizes to this form (cli §5.14.10)", async (context) => {
+test("a text property with the mentions normalizes to this form (cli §5.14.10)", async (context) => {
   const dir = await fixtureCopy(context);
   const rich = BLOCK_READ.flatMap((block) => block[block.type].rich_text).filter((item) => item.type === "mention")
     .flatMap((item) => [item, { type: "text", text: { content: "; " }, plain_text: "; " }]);
