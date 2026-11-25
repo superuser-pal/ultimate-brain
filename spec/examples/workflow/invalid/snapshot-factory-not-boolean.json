@@ -1,0 +1,20 @@
+{
+  "read_at": "2026-11-04T09:30:00Z",
+  "destination": {
+    "page": "6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b",
+    "workflow": "Connected"
+  },
+  "tasks": [
+    {
+      "page": "6f1e2d3c-4b5a-4987-8a6b-5c4d3e2f1a0b",
+      "brain_id": null,
+      "title": "Speed up login",
+      "status": "To Do",
+      "archived": false,
+      "in_trash": false,
+      "edited": "2026-11-04T09:20:00Z",
+      "factory": "fac-7k2m9q4x"
+    }
+  ],
+  "artifacts": []
+}

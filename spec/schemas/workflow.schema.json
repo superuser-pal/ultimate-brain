@@ -237,6 +237,20 @@
                   "pattern": "^area-"
                 }
               }
+            },
+            {
+              "type": "object",
+              "required": [
+                "factory"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "factory": {
+                  "description": "An entry of brain.json factories (decision 0113 §4, schema.md §12).",
+                  "type": "string",
+                  "pattern": "^fac-[0-9abcdefghjkmnpqrstvwxyz]{8}$"
+                }
+              }
             }
           ]
         },
@@ -1454,14 +1468,26 @@
           "$ref": "#/$defs/timestamp"
         },
         "destination": {
+          "description": "All five keys for a Project or an Area; only page and workflow for a Factory, whose row carries no other setting (connected-workflows.md §4.1, §8.4). Which form a workflow takes is the CLI's check.",
           "type": "object",
           "required": [
             "page",
-            "workflow",
-            "work_type",
-            "logging_level",
-            "log_artifacts"
+            "workflow"
           ],
+          "dependentRequired": {
+            "work_type": [
+              "logging_level",
+              "log_artifacts"
+            ],
+            "logging_level": [
+              "work_type",
+              "log_artifacts"
+            ],
+            "log_artifacts": [
+              "work_type",
+              "logging_level"
+            ]
+          },
           "additionalProperties": false,
           "properties": {
             "page": {
@@ -1534,6 +1560,10 @@
               },
               "edited": {
                 "$ref": "#/$defs/timestamp"
+              },
+              "factory": {
+                "description": "The task's Factory relation isn't empty (0.18.0, connected-workflows.md §8.4). Absent: false.",
+                "type": "boolean"
               }
             }
           }
