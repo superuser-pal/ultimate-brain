@@ -1,0 +1,7 @@
+{
+  "object": "page_markdown",
+  "id": "c4020000-0000-4000-8000-000000000001",
+  "markdown": "## Pilot dates\nThe offer closes on 14 Nov 2026, which is <mention-date start=\"2026-11-14\"/>.\nThe kickoff call is at <mention-date start=\"2026-11-14\" startTime=\"10:30\" timeZone=\"Etc/GMT-1\"/>.\nThe site visit is **<mention-date start=\"2026-11-14\" end=\"2026-11-16\"/>**, and nothing else moved.",
+  "truncated": false,
+  "unknown_block_ids": []
+}
