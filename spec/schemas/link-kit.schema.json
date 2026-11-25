@@ -16,8 +16,14 @@
       "properties": {
         "area": { "$ref": "#/$defs/id", "pattern": "^area-" },
         "domain": { "$ref": "#/$defs/id", "pattern": "^dom-" },
-        "project": { "$ref": "#/$defs/id", "pattern": "^prj-" }
-      }
+        "project": { "description": "As written until 0.17.0: read as projects with one id.", "$ref": "#/$defs/id", "pattern": "^prj-" },
+        "projects": {
+          "description": "The Projects the repo serves (decision 0113 §2, 0.18.0).",
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id", "pattern": "^prj-" }
+        }
+      },
+      "not": { "required": ["project", "projects"] }
     },
     "knowledge": {
       "type": "object",
@@ -27,6 +33,10 @@
         "patterns": { "$ref": "#/$defs/pathspecs", "minItems": 1 },
         "never_read": { "$ref": "#/$defs/pathspecs" }
       }
+    },
+    "plan": {
+      "description": "The files that say what the plan is, read for the overview (0.18.0, linked-repos.md §2.2).",
+      "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/repoPath" }
     },
     "tasks": {
       "type": "object",
