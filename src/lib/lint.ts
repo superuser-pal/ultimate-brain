@@ -21,7 +21,8 @@ import { STATE_PATH as WEEKLY_STATE_PATH, stateFileProblems } from "./weekly-sta
 import { contextFor, eligibleNotes, indexNotes, loadSuppressions, restrictionOf } from "./suppressions.ts";
 import { describeErrors, loadSchemas } from "./schemas.ts";
 import { deriveView, generatedBlockRange, type ViewKind } from "./views.ts";
-import { workflowRecordProblems } from "./workflow-store.ts";
+import { factoryProblems, orphanWorkflows } from "./factories.ts";
+import { listWorkflows, workflowRecordProblems } from "./workflow-store.ts";
 import { decodePath, linkTargets } from "./lint-links.ts";
 import { fingerprintProblem, heldFingerprints, holdsWholeText, mergeFingerprint, nearDuplicatePairs, reflectedNotes } from "./reflect.ts";
 
@@ -113,6 +114,8 @@ export function lintBrain(input: LintInput): Issue[] {
 
   if (!schemas.brain(input.brainConfig)) {
     add("error", "brain-config", "brain.json", 1, null, describeErrors(schemas.brain.errors).join("; "));
+  } else {
+    for (const message of [...factoryProblems(input.brainConfig as Record<string, unknown>, input.notes), ...orphanWorkflows(input.brainConfig as Record<string, unknown>, listWorkflows(input.root))]) add("error", "factory-record", "brain.json", 1, null, message);
   }
 
   let lineageContext: ReturnType<typeof contextFor> | undefined;

@@ -4,6 +4,7 @@ import { basename, join } from "node:path";
 import { KEBAB, parseMarker, type RepoMarker } from "./brain-marker.ts";
 import { BrainError } from "./errors.ts";
 import { atomicWriteFile, ensureDirectory } from "./fs-safe.ts";
+import { factoriesOn, factoryAt, factoryWorkflow } from "./factories.ts";
 import type { Note } from "./notes.ts";
 import { assertPlainPath } from "./skills.ts";
 import { modulesOf } from "./modules.ts";
@@ -32,6 +33,9 @@ export interface PlannedFile {
 export async function planLinkedRepo(root: string, input: {
   notes: readonly Note[];
   config: Record<string, unknown>;
+  brainRoot: string;
+  /** For `~/` in a stored path. */
+  home?: string;
   source: LinkSource;
   options: Record<string, string | boolean | string[] | undefined>;
 }): Promise<{ planned: PlannedFile[]; marker: RepoMarker; retired: string[]; names: string[] }> {
@@ -43,7 +47,7 @@ export async function planLinkedRepo(root: string, input: {
   const retired = (existingMarker.value.skills?.names ?? []).filter((name) => !names.includes(name));
   const project = marker.project === undefined ? undefined : noteOf(notes, marker.project, "project");
   const area = marker.area === undefined ? undefined : noteOf(notes, marker.area, "area");
-  const block = instructionBlock(project, area, names, recallOpening(input.config), styleLines(input.config), domainOf(area, notes, input.config));
+  const block = instructionBlock(project, area, names, recallOpening(input.config), styleLines(input.config), domainOf(area, notes, input.config), connectedFactory(root, input));
 
   const agents = await readOptional(root, "AGENTS.md");
   const agentText = replaceOrAppend(agents, block, "AGENTS.md");
@@ -151,7 +155,7 @@ export function recallOpening(config: Record<string, unknown>): boolean {
 
 /**
  * The block of cli.md §5.12; the recall paragraph follows the `How:` paragraph when `settings.recall` is `opening`,
- * the workflow lines join it when brain-workflow is among the linked skills (skills-delivery §9.7), and the style paragraph
+ * the Factory paragraph and the workflow lines join it when brain-workflow is among the linked skills (skills-delivery §9.7), and the style paragraph
  * goes right before the read-only line when the brain's `settings.style` has style lines (§5.3.1).
  */
 /**
@@ -167,7 +171,17 @@ function domainOf(area: Note | undefined, notes: readonly Note[], config: Record
   return archived ? undefined : domain;
 }
 
-export function instructionBlock(project: Note | undefined, area: Note | undefined, linked: readonly string[], recall: boolean, style: readonly string[] = [], domain?: Note): string {
+/** The name of the Factory this folder is, when a workflow of it isn't ended (cli §5.12 "Factory paragraph", 0113 §5); null in every other case. */
+function connectedFactory(root: string, input: { config: Record<string, unknown>; brainRoot: string; home?: string }): string | null {
+  if (!factoriesOn(input.config)) return null;
+  const factory = factoryAt(input.config, root, input.home);
+  return factory === undefined || factoryWorkflow(input.brainRoot, factory.id) === null ? null : factory.name;
+}
+
+/** cli.md §5.12 "Factory paragraph", normative bytes. */
+const factoryParagraph = (name: string): string => `This folder is the Factory **${name}** in Notion. Start a session here with the \`brain-workflow\` skill, which reads this Factory's open tasks (To Do and Doing). With no request from the user, list them and ask which one before you plan anything; with a request, stop only if one of them might be it. Agree how to do a task before you build it. At the end set its status and write the Factory's overview.`;
+
+export function instructionBlock(project: Note | undefined, area: Note | undefined, linked: readonly string[], recall: boolean, style: readonly string[] = [], domain?: Note, factory: string | null = null): string {
   const lines = [
     START,
     "## Ultimate Brain",
@@ -192,6 +206,8 @@ export function instructionBlock(project: Note | undefined, area: Note | undefin
   );
   if (recall) lines.push("", RECALL_PARAGRAPH);
   const workflow = linked.includes("brain-workflow");
+  const session = workflow && factory !== null;
+  if (session) lines.push("", factoryParagraph(factory));
   if (workflow) {
     const adopt = linked.includes("brain-workflow-adopt") ? "; to take over its existing plans and tasks, use `brain-workflow-adopt`." : ".";
     lines.push("", `To track this repo's work, the standard way or connected to a Notion Project or Area, use the \`brain-workflow\` skill${adopt}`);
@@ -199,7 +215,7 @@ export function instructionBlock(project: Note | undefined, area: Note | undefin
   if (style.length > 0) lines.push("", styleParagraph(style));
   lines.push(
     "",
-    `The brain is read-only from this repo. Never edit its files from here.${workflow ? " A connected workflow's records change only through `brain workflow` commands." : ""}`,
+    `The brain is read-only from this repo. Never edit its files from here.${workflow ? " A connected workflow's records change only through `brain workflow` commands." : ""}${session ? " Its overview changes only through `brain factory overview`." : ""}`,
     END,
   );
   return lines.join("\n");

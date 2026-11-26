@@ -12,11 +12,12 @@ import { atomicWriteFile } from "../lib/fs-safe.ts";
 import { readJsonInput } from "../lib/input.ts";
 import { journalExists } from "../lib/journal.ts";
 import { assertKitTarget, KIT_FILE, kitBytesIfAny, kitHash, kitInvalid, kitProblems, matchesAny, parseKitBytes, readKitFile, serializeKit, shortHash, validKit, type HubContext, type Kit, type KitRead } from "../lib/link-kit.ts";
+import { factoriesOf, factoriesOn, linkFactory, readFactories, unlinkFactory, type Factory } from "../lib/factories.ts";
 import { appendLog } from "../lib/log.ts";
 import { scanNotes } from "../lib/notes.ts";
 import { repoHealth } from "../lib/repo-health.ts";
 import { checkIssueInput, countItems, parseIssues, parseMarkdownTasks, percentOf, rollupMarkdown, statusMap, unmappedOf, type TaskItem } from "../lib/repo-tasks.ts";
-import { assertAncestor, expandPath, isAbsoluteOrHome, fileAtHead, fileDirty, findRepo, headCommit, isDirty, linkedRepos, openRepo, repoChanges, resolveCommit, workTreeTop, type LinkedRepo } from "../lib/repos.ts";
+import { assertAncestor, expandPath, isAbsoluteOrHome, fileAtHead, fileDirty, findRepo, headCommit, isDirty, linkedRepos, openRepo, projectsOf, repoChanges, resolveCommit, workTreeTop, type LinkedRepo } from "../lib/repos.ts";
 import { describeErrors, loadSchemas } from "../lib/schemas.ts";
 import { guardPin, PIN_EXEMPT } from "../lib/skills-pin.ts";
 import { installedProduct } from "../lib/skills.ts";
@@ -25,9 +26,9 @@ import { openWorkflowForRepo } from "../lib/workflow-store.ts";
 const exec = promisify(execFile);
 const NAME = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
-/** Write brain.json with `repos` replaced, after checking the whole file against its schema. */
-async function writeRepos(brain: Brain, repos: LinkedRepo[]): Promise<void> {
-  const next: Record<string, unknown> = { ...structuredClone(brain.config), repos };
+/** Write brain.json with `repos` (and `factories`, when given) replaced, after checking the whole file against its schema. */
+async function writeRepos(brain: Brain, repos: LinkedRepo[], factories?: Factory[]): Promise<void> {
+  const next: Record<string, unknown> = { ...structuredClone(brain.config), repos, ...(factories === undefined ? {} : { factories }) };
   const schemas = loadSchemas();
   if (!schemas.brain(next)) throw new BrainError("INPUT_INVALID", `brain.json would be invalid: ${describeErrors(schemas.brain.errors).join("; ")}`);
   await atomicWriteFile(brain.root, "brain.json", `${JSON.stringify(next, null, 2)}\n`);
@@ -75,7 +76,7 @@ function kitEntry(name: string, path: string, kit: Kit, commit: string, sha256: 
   return {
     name, path, area: kit.placement.area, patterns: kit.knowledge.patterns,
     ...(kit.knowledge.never_read === undefined ? {} : { never_read: kit.knowledge.never_read }),
-    ...(kit.placement.project === undefined ? {} : { project: kit.placement.project }),
+    ...(projectsOf(kit.placement).length === 0 ? {} : { projects: projectsOf(kit.placement) }),
     commit, kit: { sha256 },
   };
 }
@@ -122,9 +123,11 @@ export const repoAddCommand: Command = {
       if (top === (await realpath(brain!.root))) throw new BrainError("REPO_IS_BRAIN", `${path} is the brain itself; link another repo`);
     }
 
-    await writeRepos(brain!, [...repos, repo]);
+    // With Factories on, the repo gets its Factory in the same write (§5.16, 0113 §1).
+    const linked = factoriesOn(brain!.config) ? linkFactory(await readFactories(brain!, undefined, environment.homeDirectory), repo, environment.homeDirectory) : null;
+    await writeRepos(brain!, [...repos, repo], linked?.factories);
     await appendLog(brain!.root, now, [{ op: "repo-add", id: "-", title: name }]);
-    return { data: repo, human: `linked ${name} (${expandPath(path, environment.homeDirectory)}) to ${repo.area}\n` };
+    return { data: { ...repo, ...(linked === null ? {} : { factory: linked.id }) }, human: `linked ${name} (${expandPath(path, environment.homeDirectory)}) to ${repo.area}${linked === null ? "" : `; Factory ${linked.id}`}\n` };
   },
 };
 
@@ -344,7 +347,7 @@ export const repoRefreshCommand: Command = {
     const data = {
       name,
       changed: (read !== null && read.sha256 !== repo.kit?.sha256) || path !== repo.path,
-      placement_changed: kit !== null && (repo.area !== kit.placement.area || repo.project !== kit.placement.project),
+      placement_changed: kit !== null && (repo.area !== kit.placement.area || JSON.stringify(projectsOf(repo)) !== JSON.stringify(projectsOf(kit.placement))),
       added_patterns: kit === null ? [] : diff(repo.patterns, kit.knowledge.patterns),
       removed_patterns: kit === null ? [] : diff(kit.knowledge.patterns, repo.patterns),
       added_never_read: kit === null ? [] : diff(repo.never_read, kit.knowledge.never_read),
@@ -373,7 +376,7 @@ export const repoRefreshCommand: Command = {
 export const repoShowCommand: Command = {
   name: "repo show",
   usage: "brain repo show <name> [--json]",
-  summary: "Show a linked repo's brain.json entry, its kit and the workflow running in it. Writes nothing.",
+  summary: "Show a linked repo's brain.json entry, its kit, the workflow running in it and its Factory. Writes nothing.",
   options: {},
   maxPositionals: 1,
   needsBrain: true,
@@ -396,8 +399,9 @@ export const repoShowCommand: Command = {
         else { kit = read.kit; status = read.sha256 === repo.kit.sha256 ? "current" : "changed"; }
       }
     }
-    const workflow = openWorkflowForRepo(brain!.root, name);
-    return { data: { entry: repo, kit, kit_sha256: kitSha, kit_status: status, workflow }, human: `${name}: ${expandPath(repo.path, environment.homeDirectory)} · kit ${status}${workflow === null ? "" : ` · workflow ${workflow.id} (${workflow.state})`}\n` };
+    const factory = factoriesOf(brain!.config).find((entry) => entry.repo === name) ?? null;
+    const workflow = openWorkflowForRepo(brain!.root, name, factory?.id);
+    return { data: { entry: repo, kit, kit_sha256: kitSha, kit_status: status, workflow, factory }, human: `${name}: ${expandPath(repo.path, environment.homeDirectory)} · kit ${status}${workflow === null ? "" : ` · workflow ${workflow.id} (${workflow.state})`}\n` };
   },
 };
 
@@ -470,7 +474,8 @@ export const repoTasksCommand: Command = {
     return {
       data: {
         name,
-        target: kit.placement.project !== undefined ? { project: kit.placement.project } : { area: kit.placement.area },
+        // One page: the Project when the repo serves exactly one, else its Area (linked-repos.md §4).
+        target: projectsOf(kit.placement).length === 1 ? { project: projectsOf(kit.placement)[0] } : { area: kit.placement.area },
         as_of: asOf.toISOString().replace(/\.\d{3}Z$/, "Z"),
         counts,
         percent: percentOf(counts.done, items.length, counts.dropped),
@@ -498,10 +503,13 @@ export const repoUnlinkCommand: Command = {
     const removed = findRepo(brain!.config, name);
     const { notes } = await scanNotes(brain!.root);
     const sources = notes.filter((note) => note.type === "source" && note.attributes.repo === name).length;
-    const workflow = openWorkflowForRepo(brain!.root, name);
-    await writeRepos(brain!, linkedRepos(brain!.config).filter((entry) => entry.name !== name));
+    // Its Factory is archived in the same write, with the module on or off (§5.29, linked-repos.md §9).
+    const factories = factoriesOf(brain!.config);
+    const archived = unlinkFactory(factories, removed);
+    const workflow = openWorkflowForRepo(brain!.root, name, factories.find((entry) => entry.repo === name)?.id);
+    await writeRepos(brain!, linkedRepos(brain!.config).filter((entry) => entry.name !== name), archived?.factories);
     await appendLog(brain!.root, now, [{ op: "repo-unlink", id: "-", title: name }]);
-    return { data: { name, removed, sources, workflow }, human: `unlinked ${name}; ${sources} source(s) kept${workflow === null ? "" : `; workflow ${workflow.id} still runs in the repo`}\n` };
+    return { data: { name, removed, sources, workflow, factory: archived?.id ?? null }, human: `unlinked ${name}; ${sources} source(s) kept${archived === null ? "" : `; Factory ${archived.id} archived`}${workflow === null ? "" : `; workflow ${workflow.id} still runs in the repo`}\n` };
   },
 };
 
