@@ -112,7 +112,7 @@ A feature release, by explicit roadmap change after the cutoff ([0113](../decisi
 | CC-397 | The CLI for Factories | `src/`, `tests/`, `templates/` | after CC-395 | `done` (#506) |
 | CC-398 | The CLI fills a task's Area from its Project | `src/`, `tests/` | after CC-396 | `done` (#501) |
 | CC-399 | The release's Notion migration, prompts, views guide and template documents | `notion/` | after CC-395 and CC-396; CC-384's and CC-386's steps join it | `todo` |
-| CC-400 | The skills for 0.18.0, through the fork | the fork, then `.agents/skills/` | after CC-395 and CC-396; vendored after CC-397 and CC-398 | `todo` |
+| CC-400 | The skills for 0.18.0, through the fork | the fork, then `.agents/skills/` | after CC-395 and CC-396; vendored after CC-397 and CC-398 | `in progress` |
 | CC-401 | Guides and template text | the README, `docs/`, `templates/` | after CC-397 to CC-400 | `todo` |
 | CC-384 | Weekly review's answer line names only the task options (moved from 1.0.0's section) | brain-assistant.md, the release's migration | any order; one migration with CC-386 | `done` (#499) |
 | CC-385 | A skill page built from Prompt 9 keeps its text where the template does (moved from 1.0.0's section) | `spec/setup.md` §6.4, Notion design §5, Prompt 9, brain-assistant.md, the fork if it names the layout | contract first | `done` (#494) |
