@@ -1,10 +1,27 @@
-Done: 10 drop-folder files taken in, 2 left for the next run. The unattended catch-up ran with no Notion and no git remote.
+Done: 10 documents ingested from the drop folder
+Needs you: 13 decisions waiting (10 from this run, 3 older) · 2 files wait for the next run (`note-11.md`, `note-12.md`), because a run takes at most 10
+Next: say "what needs my decision". To see the brain in Notion, say "connect the brain to Notion" and then sync.
 
-- **Ingested:** `note-01.md` to `note-10.md`, supplier notes from Maria López at Acme. Each is now a source linked to the Clients area and the Acme website project, in commit a119b5c.
-- **Moved:** the 10 files are in `budget-drop/processed/`.
-- **Left:** `note-11.md` and `note-12.md` stay in the queue because the unattended input limit is 10.
-- **No other notes:** I wrote no other notes. The files are repeated update requests from Maria, each with a Carlos Ruiz reply date, and I judged that nothing durable to keep. I created no tasks, because the owner of the replies is unclear.
-- **Needs you:** 3 proposals are still pending for your next session. They are two sets of new notes to review (from Acme sync and Acme kickoff) and the Acme mobile app relaunch change.
-- **Not run:** Notion pull and publish, because Notion isn't configured. The setup check also shows no git remote.
-- **Lint:** `brain lint` reports 0 errors and 0 warnings. The log line is in commit ad756f6.
-- **Not pushed:** `git push` failed because no push destination is configured, so both commits are local only. Not backed up: no remote is configured. Say "fix my backup".
+**What came in:** each note has one proposed addition to the Acme website project, and none is applied yet. No new people, decisions, questions, risks or Documents came in, and no facts changed. In each one, Maria López of Acme asked for an update on the website content plan, and Carlos Ruiz is to reply.
+
+| Supplier note | Update requested | Date of request | Carlos Ruiz to reply by |
+|---|---|---|---|
+| 1 | 1 | 2026-12-01 | 2026-12-11 |
+| 2 | 2 | 2026-12-02 | 2026-12-12 |
+| 3 | 3 | 2026-12-03 | 2026-12-13 |
+| 4 | 4 | 2026-12-04 | 2026-12-14 |
+| 5 | 5 | 2026-12-05 | 2026-12-15 |
+| 6 | 6 | 2026-12-06 | 2026-12-16 |
+| 7 | 7 | 2026-12-07 | 2026-12-17 |
+| 8 | 8 | 2026-12-08 | 2026-12-18 |
+| 9 | 9 | 2026-12-09 | 2026-12-19 |
+| 10 | 10 | 2026-12-10 | 2026-12-20 |
+
+**Check:**
+- **Project:** none of the notes names one. I proposed Acme website for all 10 and marked that choice as unsure on each.
+- **Dates:** all 10 request dates are after today (2026-11-25). I kept them as written, so check that the dates in the notes, or this computer's date, are right.
+- **Action items:** Carlos Ruiz's replies, with the dates above, are their commitments, so I created no tasks or questions for them.
+
+**What I checked:** lint ran after each note, and the final run showed 0 errors and 0 warnings. It also noted that the skills aren't pinned; running `brain upgrade` pins them. Each note has its own commit, followed by one for the run log. The 10 ingested files are now in the drop folder's `processed/` folder. Nothing was published, since Notion isn't connected.
+
+Not backed up: no remote is configured, so the push failed. Say "fix my backup".

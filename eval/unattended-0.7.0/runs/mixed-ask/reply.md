@@ -1,29 +1,36 @@
-Unattended catch-up for 2026-12-14 is finished. It took in 2 meetings and skipped 1. I wrote nothing to Notion, so `writes.md` is empty, because `settings.publish` is `ask` and nobody was there to say yes. `brain lint` reported 0 errors (4 orphan-note warnings on people notes). All work is committed on `main`.
+Done: 2 meetings ingested · 6 new notes, plus 2 source copies · 1 weekly tick applied for the week of 14 Dec
+Needs you: 7 decisions waiting · 2 weekly items (C3, C4) · "Acme budget call" skipped (no date) · drop folder not set: say where it is
+Next: say "what needs my decision" in a session in the brain.
 
-**Done**
-- **Meetings taken in:** Acme design review (10 Dec) and Acme content check-in (12 Dec).
-  - Both are `draft` notes.
-  - Design review: the decision to use the new grid for all pages stays a dated line in the meeting note. It is too small to be a decision note.
-  - Content check-in: I wrote a decision note, "Move the Acme website launch to March 2027", and an open question, "Who approves the German copy?".
-- **Proposals left pending:** one `review_notes` per meeting. The content check-in also has an `update_fact` changing the Acme website's `launch_date` from 2027-02 to 2027-03.
-- **Weekly row (Week of 14 Dec):** C1 (Lena Hart's repeated alias) is applied. Nothing else was written to Notion.
-- **Pull:** 1 correction came in from Notion and is pending (see Needs you).
+**What came in** (new notes are drafts you haven't reviewed)
+- **Acme design review, 10 Dec:**
+  - I added a meeting note. "Use the new grid for all pages" is recorded there rather than as a separate decision. Adding it to the Acme website project waits for your yes.
+  - Action item: Carlos Ruiz sends the design tokens by 2026-12-17.
+- **Acme content check-in, 12 Dec:**
+  - I added a meeting note.
+  - New decision: move the Acme website launch to March 2027.
+  - New open question: who approves the German copy? Maria López raised it.
+  - The launch date change from 2027-02 to 2027-03 waits for your yes.
+  - Action item: Maria López confirms the blog topics by 2026-12-19.
 
-**Needs you**
-- **Acme budget call:** skipped and still Ready. Its Date is empty, so I couldn't ingest it. Set the date in Notion.
-- **C2 (Mira Lund's repeated alias):** not applied. Her note changed since the review, so the proposal was closed.
-- **C3 (Otto Kern's repeated alias):** waits for a session. You wrote a note on it, and an unattended run doesn't act on notes.
-- **C4 (Ivo Brand's repeated alias):** left open because C3 still waits. It is declined once nothing else in the row waits.
-- **Role correction from Notion:** Maria López's Role changed from "Product Manager" to "Product lead". It is pending as `prp-7m9fyccs`, and the brain's value stays until you decide.
-- **Decisions waiting:** 7 proposals are pending. Say "what needs my decision" in a session.
+**Waiting for your decision**
+- **Your Notion edit:** it changes Maria López's role from "Product Manager" to "Product lead".
+- **Changes:** the launch date, and an earlier addition to Acme about the mobile app relaunch planned for 2027.
+- **Notes to review:** one set each from Acme kickoff, Acme sync, the design review and the content check-in. The design review's set includes the grid addition.
+
+**Weekly ticks**
+- **C1:** applied, removing the repeated alias on Lena Hart.
+- **C2:** not applied because Mira Lund's note changed since the review, so that item is closed.
+- **C3 (Otto Kern):** it waits for a session because you wrote a note on it. I didn't act on the note.
+- **C4 (Ivo Brand):** it's unticked and stays open while C3 waits.
 
 **Check**
-- **Documents Project change:** you changed the Project of document `con-1s6t8e2b` in Notion. The brain can't take that edit (`NOT_CORRECTABLE`), so it was ignored.
-- **Not done:**
-  - No Notion publish happened.
-  - The new meetings stay Ready, and the Weekly row stays Ready (C3 and C4 still wait).
-  - No Tasks were created, because the Tasks module is off.
-  - The Notion tools weren't reachable, so I used the simulated files you gave me.
-- **Provisional clock:** the brain's own clock says 2026-11-23, so file names and log lines carry that date, not 2026-12-14.
+- **Budget call:** nothing from it was taken in, including "Keep the budget as it is". Add its date in Notion and leave it Ready.
+- **Notion edit not taken:** you changed the Project of Row-level security in Notion; that can't be changed by editing. Tell me what's wrong and I'll propose it.
+- **February dates:** the brain's launch date stays 2027-02 until you approve the change. Approving it won't rewrite the project summary, which says February 2027. The last copy of the Notion project dates, from 2026-12-05, ends on 2027-02-28.
+- **No tasks created:** the Tasks module is off, so both action items are only in their meeting notes.
+- **Nothing published:** publishing is set to `ask`, so I wrote nothing to Notion, and `writes.md` is empty. Both ingested meetings and the weekly row weren't updated there, so the meetings should still show Ready. I made no Catch-up row either. An attended catch-up can ask you about publishing.
 
-Not backed up: there is no git remote. Say "fix my backup".
+The final lint check showed 0 errors and 4 warnings: the notes for Lena Hart, Mira Lund, Otto Kern and Ivo Brand have no links, project or area. Everything is committed locally. The push failed because there's no remote.
+
+Not backed up: no git remote is configured. Say "fix my backup".
