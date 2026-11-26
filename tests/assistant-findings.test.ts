@@ -141,6 +141,37 @@ test("project_no_next_step and project_done_but_open: Someday isn't a next step,
   assert.match(run.json.data.report, /No next step · Packaging \(project\) · every task done \(2 done, 1 dropped\), Status still Active\n/);
 });
 
+test("a repo that serves several Projects is a next step of each of them, whatever their Area, and of no other (0113 §2, answer 2 C)", async (context) => {
+  const recent = { updated: daysAgo(1) };
+  const root = await world(context, [
+    WORK, CLIENTS,
+    area("area-aaaaaaa2", "Tools", { domain: "dom-aaaaaaa1", notion: areaPage(2) }),
+    project("prj-ccccccc1", "Site", "area-aaaaaaa1", { notion: projectPage(1), ...recent }),
+    project("prj-ccccccc2", "App", "area-aaaaaaa1", { notion: projectPage(2), ...recent }),
+    project("prj-ccccccc3", "Not served", "area-aaaaaaa2", { notion: projectPage(3), ...recent }),
+  ], { repos: [{ name: "tools", path: "/work/tools", area: "area-aaaaaaa2", projects: ["prj-ccccccc1", "prj-ccccccc2"], patterns: ["*.md"], commit: "" }] });
+  // `repo tasks` still gives the Area (linked-repos.md §2.3): the entry's Projects are read instead.
+  const rollup = { name: "tools", target: { area: "area-aaaaaaa2" }, counts: { todo: 1, in_progress: 0, waiting: 0, review: 0, done: 0, dropped: 0, unmapped: 0 } };
+  const rows = { projects: [projectRow(1, "prj-ccccccc1", "Site"), projectRow(2, "prj-ccccccc2", "App"), projectRow(3, "prj-ccccccc3", "Not served")], areas: [CLIENTS_ROW, areaRow(2, "area-aaaaaaa2", "Tools")] };
+  const run = await findings(root, snapshot({ ...rows, repos: [{ name: "tools", rollup }] }));
+  assert.deepEqual(keys(run), ["project_no_next_step:prj-ccccccc3"]);
+  const without = await findings(root, snapshot(rows));
+  assert.deepEqual(keys(without).sort(), ["project_no_next_step:prj-ccccccc1", "project_no_next_step:prj-ccccccc2", "project_no_next_step:prj-ccccccc3"]);
+});
+
+test("area_empty: the Area of a repo that serves several Projects elsewhere still has its work", async (context) => {
+  const root = await world(context, [
+    WORK, CLIENTS,
+    area("area-aaaaaaa2", "Tools", { domain: "dom-aaaaaaa1", notion: areaPage(2) }),
+    project("prj-ccccccc1", "Site", "area-aaaaaaa1", { notion: projectPage(1), updated: daysAgo(1) }),
+    project("prj-ccccccc2", "App", "area-aaaaaaa1", { notion: projectPage(2), updated: daysAgo(1) }),
+  ], { repos: [{ name: "tools", path: "/work/tools", area: "area-aaaaaaa2", projects: ["prj-ccccccc1", "prj-ccccccc2"], patterns: ["*.md"], commit: "" }] });
+  const rows = { projects: [projectRow(1, "prj-ccccccc1", "Site"), projectRow(2, "prj-ccccccc2", "App")], areas: [CLIENTS_ROW, areaRow(2, "area-aaaaaaa2", "Tools")] };
+  const rollup = { name: "tools", target: { area: "area-aaaaaaa2" }, counts: { todo: 1, in_progress: 0, waiting: 0, review: 0, done: 0, dropped: 0, unmapped: 0 } };
+  assert.equal(keys(await findings(root, snapshot({ ...rows, repos: [{ name: "tools", rollup }] }))).includes("area_empty:area-aaaaaaa2"), false);
+  assert.equal(keys(await findings(root, snapshot(rows))).includes("area_empty:area-aaaaaaa2"), true);
+});
+
 test("project_misplaced needs 3 mentions with an Area and two thirds of them in one other Area", async (context) => {
   const marketing = area("area-aaaaaaa2", "Marketing", { domain: "dom-aaaaaaa1", notion: areaPage(2) });
   const mention = (id: string, projectId: string, areaId: string) => meeting(id, `Meeting ${id}`, daysAgo(3), { area: areaId, projects: [projectId] });

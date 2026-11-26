@@ -14,7 +14,7 @@
 # written to Notion).
 #
 # Each session runs on the schedule's default model (UB_EVAL_MODEL, default claude-sonnet-5-5), without the user's own settings,
-# hooks or MCP servers, at most 6 USD.
+# hooks or MCP servers, at most 6 USD (UB_EVAL_BUDGET). CLAUDE_CONFIG_DIR picks another Claude Code login.
 #
 # A scenario is INCOMPLETE, listed at the end with the script exiting 1, when its `claude -p` exited with an error or its
 # reply says a limit was hit, when anything its collection needs is missing (the brain, its baseline commit, its reply, its
@@ -32,7 +32,22 @@ if [ -z "$COLLECT_ONLY" ]; then
   if [ $# -eq 0 ]; then python3 "$HERE/setup.py" all >/dev/null || exit 1; else for s in "$@"; do python3 "$HERE/setup.py" "$s" >/dev/null || exit 1; done; fi
 fi
 export PATH="$B/bin:$PATH"
+export BRAIN_DIR="$B/no-brain"  # no such folder: a brain CLI that isn't the shim is refused too
 mkdir -p "$OUT" "$B/exit"
+
+# No session may reach this computer's own brain. Two guards, checked before any model runs: the shim has the eval's HOME,
+# which holds no config (a command without --brain is BRAIN_NOT_CONFIGURED), and a CLI past the shim gets BRAIN_DIR above,
+# which wins over the config (BRAIN_NOT_FOUND; cli.md §4).
+refused() { # code, command...: the command must fail with that error code
+  local code="$1" out; shift
+  out="$("$@" 2>&1)" && return 1
+  grep -q "\"$code\"" <<< "$out"
+}
+if [ -z "$COLLECT_ONLY" ]; then
+  if [ -e "$B/home/.config/ultimate-brain" ] || ! refused BRAIN_NOT_CONFIGURED brain status --json || ! refused BRAIN_NOT_FOUND node "$HERE/../../bin/brain.js" status --json; then
+    echo "the eval isn't isolated: a command without --brain isn't refused; no session was run" >&2; exit 1
+  fi
+fi
 
 MODEL="${UB_EVAL_MODEL:-claude-sonnet-5-5}"
 AWAY="The user is away and cannot be asked anything. There is no git remote and no Notion in this session."
@@ -40,7 +55,7 @@ sim() {
   echo "Notion isn't connected in this session and no Notion tools exist. Treat these files as the Notion tools' answers: $B/$1-sim/snapshot.json holds the rows of every configured database in the shape sync plan takes; as brain sync snapshot writes it (take it as that command's output); $B/$1-sim/meetings.json is the Meetings database (Brain Status, Date, Project, Attendees, page_text); $B/$1-sim/inbox.json is the Inbox rows that are not Done and their body as Markdown (empty: none; no capture and no Ask row waits). Take the time as 2026-12-14T09:05:00Z, whatever the computer's clock says. Wherever the skill would write to Notion with its tools (create or update a page, set a property, create a Report row), append one line saying exactly what you would write to $B/$1-sim/writes.md and treat the write as done; a page you create gets a page id you make up (a UUID), to record as Notion's. The user is away and cannot be asked anything. There is no git remote."
 }
 claude_in() { # name, dir, prompt, outfile: keeps the output, and the exit status for the end
-  (cd "$2" && claude -p "$3" --model "$MODEL" --max-budget-usd 6 --setting-sources project --permission-mode bypassPermissions --strict-mcp-config --mcp-config "$B/no-mcp.json" --add-dir "$B" > "$4" 2>&1; echo $? > "$B/exit/$1")
+  (cd "$2" && claude -p "$3" --model "$MODEL" --max-budget-usd "${UB_EVAL_BUDGET:-6}" --setting-sources project --permission-mode bypassPermissions --strict-mcp-config --mcp-config "$B/no-mcp.json" --add-dir "$B" > "$4" 2>&1; echo $? > "$B/exit/$1")
 }
 
 # Page ids and content hashes (the fixture's and the ones an agent makes up) become <id 1>, <id 2>, ... in every trace, so no

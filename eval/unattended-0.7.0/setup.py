@@ -29,8 +29,10 @@ REPORT_BODY = "\n\n".join([
 
 def prepare():
     (B / "bin").mkdir(parents=True, exist_ok=True)
+    (B / "home").mkdir(exist_ok=True)
     shim = B / "bin" / "brain"
-    shim.write_text(f'#!/bin/sh\nexec node {R}/bin/brain.js "$@"\n')
+    # HOME is the eval's own, so a command without --brain is refused (cli.md §4) instead of reading this computer's default brain
+    shim.write_text(f'#!/bin/sh\nexec env -u BRAIN_DIR HOME="{B}/home" node {R}/bin/brain.js "$@"\n')
     shim.chmod(0o755)
     (B / "no-mcp.json").write_text('{"mcpServers":{}}\n')
     os.environ["PATH"] = f"{B / 'bin'}:{os.environ['PATH']}"
@@ -67,8 +69,6 @@ def make(name):
     shutil.rmtree(d, ignore_errors=True)
     shutil.rmtree(B / f"{name}-sim", ignore_errors=True)
     sh("node", "scripts/blind-brain.mjs", "brain-acme", str(d), cwd=R)
-    (d / ".claude/agents").mkdir(parents=True)
-    shutil.copy(R / "templates/brain/.claude/agents/ultimate-assistant.md", d / ".claude/agents")  # a product file blind-brain.mjs leaves out; brain lint wants it
     sh("brain", "proposal", "backlog", "--brain", str(d), "--json")  # the one-time backlog rows are not work for these runs
     commit(d, "setup: backlog done")
     return d

@@ -5,7 +5,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { promisify } from "node:util";
 
 import { isRecord } from "./input.ts";
-import { databaseId, MODULES, missingFor, modulesOf } from "./modules.ts";
+import { databaseId, MODULES, missingFor, modulesOf, TASKS_FACTORY } from "./modules.ts";
 import type { Note } from "./notes.ts";
 import { slugify } from "./paths.ts";
 import { scheduledBrains } from "./schedule.ts";
@@ -181,11 +181,11 @@ async function ownRemote(root: string): Promise<boolean> {
   return (await gitValue(root, ["remote", "get-url", "origin"])) !== "";
 }
 
-/** Every database of Core and of each module on, and the Tasks database with Tasks on (setup.md §5). */
+/** Every database of Core and of each module on, and the Tasks database with Tasks on (setup.md §5); the Factory relation is a property, not a database. */
 function databasesConnected(config: Record<string, unknown>): boolean {
   if (CORE_DATABASES.some((key) => databaseId(config, key) === "")) return false;
   const on = modulesOf(config);
-  return MODULES.every((module) => !on[module] || missingFor(config, module).length === 0);
+  return MODULES.every((module) => !on[module] || missingFor(config, module).every((piece) => piece === TASKS_FACTORY));
 }
 
 function ownerPerson(config: Record<string, unknown>, notes: readonly Note[]): boolean {

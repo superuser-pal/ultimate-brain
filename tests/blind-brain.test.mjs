@@ -27,6 +27,9 @@ test("blind-brain builds a committed brain from brain-acme that status reads, wi
   assert.equal(result.ok, true, status.stdout);
   assert.deepEqual(result.data.notion.configured, []);
   assert.equal(result.data.notion.tasks_database, false);
+
+  const lint = spawnSync(process.execPath, ["--experimental-strip-types", join(source, "src/cli.ts"), "lint", "--brain", dir, "--json"], { encoding: "utf8", env: { ...process.env, HOME: parent } });
+  assert.equal(JSON.parse(lint.stdout).data.errors, 0, lint.stdout);
 });
 
 test("blind-brain refuses an unknown fixture, a non-empty target and missing arguments", (context) => {

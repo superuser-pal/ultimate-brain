@@ -1,12 +1,31 @@
-Done: 2 meetings taken in (Acme design review, 10 Dec; Acme content check-in, 12 Dec) · 5 notes written as `draft` (2 sources, 2 meetings, 1 question) · 3 proposals pending · Weekly tick C1 applied · 19 Notion writes simulated to `writes.md`, plus the Catch-up Inbox row. `brain lint` reported 0 errors and 4 warnings (orphan person notes). Nothing was pushed because there is no git remote: the work is committed but not backed up.
+Done: 2 meetings ingested · 4 new notes (plus 2 source copies) · Week of 14 Dec: 1 tick applied · 14 pages published (to the simulated Notion log)
+Needs you: 7 decisions waiting (one is your Notion edit to Maria López's Role) · Acme budget call skipped because it has no date; set one in Notion (it stays Ready) · C3 in Week of 14 Dec waits because you wrote a note on it; say "catch up" in a session · drop folder not set; say where it is
+Next: say "what needs my decision"
 
-Needs you:
-- **Acme budget call** is skipped. It has no Date, so it stays Ready until you set one in Notion.
-- **Weekly row C3** (Otto Kern) has a note, so it waits for a session. C4 is unticked and stays open while C3 waits, so the row stays Ready.
-- **Weekly row C2** (Mira Lund) was not applied: that note changed since the review, so its proposal is closed.
-- **Role edit in Notion:** Maria López's Role is now "Product lead" there. It waits as a correction for your next session.
-- **7 decisions wait.** They include launch date 2027-02 → 2027-03, the new-grid line for the project, the two meetings' note reviews, the Acme mobile app relaunch and the role correction.
-- **Not created:** Carlos Ruiz's two follow-ups (design tokens, 17 Dec) and Maria López's (blog topics, 19 Dec) are plain text in the meeting notes, because Tasks is off. "Who approves the German copy?" is a draft question.
-- **Not run:** the drop folder (not set up), linked repos (none) and the schedule setup.
+**What came in** (new notes are drafts)
+- **Acme design review, 10 Dec:** the meeting note. Waiting for you: adding "2026-12-10: Use the new grid for all pages." to Acme website.
+- **Acme content check-in, 12 Dec:** the meeting note, the decision "Move the Acme website launch to March 2027" and the open question "Who approves the German copy?". The launch date change from 2027-02 to 2027-03 is waiting and not applied.
 
-Next: say "what needs my decision".
+**Check**
+- **Weekly ticks:**
+  - C1 applied: Lena Hart's repeated alias is removed.
+  - C2 not applied: Mira Lund's note changed since the review, so its proposal is closed.
+  - C3: I didn't act on anything in your note.
+  - C4: you didn't tick it, so it stays open while C3 waits.
+  - The weekly row stays Ready, and I didn't rewrite it.
+- **Row-level security:** you changed its Project in Notion; that can't be changed by editing. Tell me what's wrong and I'll propose it.
+- **Maria López's Role:** your Notion value "Product lead" is waiting. The brain still says "Product Manager", and I didn't overwrite the Role in Notion.
+- **New grid:** I proposed it as a dated line on the project, not a decision note. That was my call, because the minutes give no alternatives or trade-off.
+- **Project summary:** Acme website's summary still says "launching February 2027". Approving the new date won't rewrite it.
+- **Action items:** these belong to other people, so they stay as text in the meeting notes:
+  - Carlos Ruiz sends the design tokens by 2026-12-17.
+  - Maria López confirms the blog topics by 2026-12-19.
+
+**About this run**
+- `brain lint` reported 0 errors. At the check after the first sync, it showed 4 warnings for unlinked person notes and 1 notice that skills aren't pinned.
+- All Notion writes are in `writes.md`, including a Catch-up row. That row first said "6 new notes", so I added a second write correcting it to 4. The copy of the report saved while drafting it still has the old number.
+- I published the pages myself instead of handing them to a separate publishing agent, as the catch-up instructions call for.
+- I used 2026-12-14T09:05:00Z as the time for the brain's records. The run duration (143 seconds when logged) comes from the computer's clock, and Git commit dates weren't overridden.
+- The work is committed, but the push failed.
+
+Not backed up: no git remote is configured. Say "fix my backup".

@@ -7,7 +7,7 @@ import { modulesOf } from "./modules.ts";
 import type { Note } from "./notes.ts";
 import { countParts, formatAsOf, formatDay, percentOf } from "./repo-tasks.ts";
 import { formatTimestamp } from "./time.ts";
-import { compare, type Json, type Records } from "./workflow-store.ts";
+import { compare, type Json, type Records, type TaskHolder } from "./workflow-store.ts";
 
 // The rules of spec/connected-workflows.md §§5–11 on a workflow's records. Commands stage changes here and commit them once.
 
@@ -272,8 +272,28 @@ const minute = (stamp: string): string => stamp.slice(0, 16);
 /** Map a destination label through §4's table: null for empty, or an option with no value. */
 const label = (table: Record<string, string>, value: string | null): string | null => (value === null || value === "" ? null : table[value.toLowerCase()] ?? null);
 
-/** `reconcile` (§8, §10.2, §10.3): apply a Notion snapshot to the records. */
-export function reconcile(records: Records, snapshot: Json, notes: ReadonlyMap<string, Note>, now: Date, start: boolean): { routine: Routine[]; busy: string[]; ops: string[] } {
+/** The tasks of a Factory to choose from (§8.4), `in_progress` first, then in snapshot order. `holderOf` finds a task's item anywhere in the brain. */
+export function openTasks(workflow: Json, snapshot: Json, holderOf: (page: string, brainId: string | null) => TaskHolder | null): Json[] {
+  const fold = (option: string) => option.toLowerCase();
+  const meaningOf = (status: string | null): Meaning | null => {
+    if (status === null || status === "") return "todo";
+    if (fold(status) === fold(String(workflow.status_map.in_progress))) return "in_progress";
+    return fold(status) === fold(String(workflow.status_map.todo)) ? "todo" : null;
+  };
+  const open = (snapshot.tasks as Json[]).filter((task) => task.factory === true && !task.archived && !task.in_trash).flatMap((task) => {
+    const meaning = meaningOf(task.status);
+    if (meaning === null) return [];
+    const held = holderOf(task.page, task.brain_id);
+    return [{ page: task.page, title: task.title, meaning, item: held?.item ?? null, claim: held?.holder ?? null, elsewhere: held !== null && held.item === null }];
+  });
+  return [...open.filter((task) => task.meaning === "in_progress"), ...open.filter((task) => task.meaning === "todo")];
+}
+
+/**
+ * `reconcile` (§8, §10.2, §10.3): apply a Notion snapshot to the records. `factory` is given for a Factory destination (§8.4): whether its entry
+ * is archived.
+ */
+export function reconcile(records: Records, snapshot: Json, notes: ReadonlyMap<string, Note>, now: Date, start: boolean, factory?: { archived: boolean }): { routine: Routine[]; busy: string[]; ops: string[] } {
   const workflow = records.workflow;
   const routine: Routine[] = [];
   const busy = new Set<string>();
@@ -281,11 +301,12 @@ export function reconcile(records: Records, snapshot: Json, notes: ReadonlyMap<s
 
   // The destination's settings (§8.1).
   const destination = snapshot.destination as Json;
-  const state = destination.workflow !== null && destination.workflow.toLowerCase() === "connected" ? "connected" : "paused";
+  const state = destination.workflow !== null && destination.workflow.toLowerCase() === "connected" && factory?.archived !== true ? "connected" : "paused";
   if (state !== workflow.state) { routine.push({ kind: "state_changed", target: workflow.id, from: workflow.state, to: state }); workflow.state = state; }
   const settings = workflow.settings as Json;
-  const next: Json = { work_type: label(TYPE_LABELS, destination.work_type) ?? settings.work_type, logging: label(LEVEL_LABELS, destination.logging_level) ?? "tasks_and_finals" };
-  next.custom = next.logging === "custom" ? [...new Set((destination.log_artifacts as string[]).map((value) => label(ARTIFACT_LABELS, value)).filter((value): value is string => value !== null))] : settings.custom;
+  // A Factory's row carries no other setting (§4.1): the record's stay.
+  const next: Json = factory !== undefined ? { ...settings } : { work_type: label(TYPE_LABELS, destination.work_type) ?? settings.work_type, logging: label(LEVEL_LABELS, destination.logging_level) ?? "tasks_and_finals" };
+  if (factory === undefined) next.custom = next.logging === "custom" ? [...new Set((destination.log_artifacts as string[]).map((value) => label(ARTIFACT_LABELS, value)).filter((value): value is string => value !== null))] : settings.custom;
   for (const key of ["work_type", "logging", "custom"]) {
     if (JSON.stringify(next[key]) !== JSON.stringify(settings[key])) { routine.push({ kind: "settings_changed", target: workflow.id, from: { [key]: settings[key] }, to: { [key]: next[key] } }); settings[key] = next[key]; settings.read_at = snapshot.read_at; }
   }
@@ -361,7 +382,8 @@ export function reconcile(records: Records, snapshot: Json, notes: ReadonlyMap<s
     const base = item.notion as Json;
     // Status: Notion wins whenever it changed (§8.2; 0059).
     const local = workflow.status_map[item.status];
-    const notionChanged = task.status !== base.status;
+    // A task taken with an empty status keeps "" as its base (§8.4).
+    const notionChanged = (task.status ?? "") !== base.status;
     const localChanged = local !== base.status;
     let wantUpdate = false;
     if (notionChanged) {
@@ -400,6 +422,8 @@ export function reconcile(records: Records, snapshot: Json, notes: ReadonlyMap<s
   const adopted = new Set(((records.adoption?.map as Json[] | undefined) ?? []).filter((entry) => entry.origin.kind === "notion").map((entry) => String(entry.origin.key).replaceAll("-", "")));
   for (const task of tasks) {
     const page = task.page.replaceAll("-", "");
+    // A task with a Factory is the user's instruction, never a question of any workflow (§8.4).
+    if (factory !== undefined || task.factory === true) continue;
     if (task.archived || task.in_trash || pages.has(page) || outside.has(page) || adopted.has(page) || (task.brain_id !== null && wiIds.has(task.brain_id))) continue;
     const hint = typeof task.brain_id === "string" && /^(mtg|src)-/.test(task.brain_id) ? " It looks like an action item from a meeting or source: keep it outside?" : "";
     raise(needsYou("UNKNOWN_TASK", task.page, `"${task.title}" is under the destination but not in the workflow: adopt it, or keep it outside?${hint}`, CHOICES.UNKNOWN_TASK!));

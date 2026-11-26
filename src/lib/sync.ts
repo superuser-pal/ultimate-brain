@@ -15,6 +15,7 @@ import { loadSchemas } from "./schemas.ts";
 import { formatDate, formatTimestamp, normalizeTimestamp } from "./time.ts";
 import type { Workspace } from "./workspace.ts";
 import type { LogEntry } from "./log.ts";
+import { factoriesOf, factoriesOn, factoryArea, factoryById, factoryProjects, orderedFactory, type Factory } from "./factories.ts";
 import { databaseId, moduleForDatabase, modulesOf, typeIsOn } from "./modules.ts";
 import { applyReviewDecisions } from "./review-apply.ts";
 import { recordRevisionRequests } from "./review-revision.ts";
@@ -30,6 +31,7 @@ import { chainOf, FOLLOW_UP } from "./extract.ts";
 import { wholeDocumentMarkdown } from "./whole-links.ts";
 import { FROM_THE_BRAIN_MARKER } from "./from-the-brain.ts";
 import { planTaskDocument, type TaskDocumentRequest } from "./task-documents.ts";
+import { byPage, newTaskArea, planTaskArea, type PlannedCreate, type TaskArea, type TaskAreaUnset } from "./task-areas.ts";
 import { changeText, dayMonthYear, NOTION_PROPERTY, notionValueWords } from "./weekly-record.ts";
 import { readState, type RowSlot } from "./weekly-state.ts";
 
@@ -57,6 +59,9 @@ export interface SyncPlan {
   document_requests: Array<{ page_id: string; source: string; files: string[]; only_keep: string | null; existing?: string[] }>;
   /** Tasks rows whose Document asked box is ticked by the Keep as document button (0100 §1); the skill keeps each as a whole Document. */
   task_documents: TaskDocumentRequest[];
+  /** Unfinished tasks with no Area that get their Project's, or else their Factory's, and those that get none (0113 §9, 0114); the skill writes them if empty. */
+  task_areas: TaskArea[];
+  task_areas_unset: TaskAreaUnset[];
   /** Report rows whose Refresh box is ticked, and their new What to fix texts (0045); the skill runs `report new` / `report fix`. */
   refresh_requests: Array<{ page_id: string; report: string; wording_blocked?: true }>;
   report_fixes: Array<{ page_id: string; report: string; text: string }>;
@@ -148,7 +153,7 @@ export function parseSnapshot(input: unknown): Snapshot {
 
 /** Compute the deterministic, no-network Notion pull plan (cli §5.14.2). */
 export function buildPlan(workspace: Workspace, snapshot: Snapshot, options: { reviewTransition?: boolean } = {}): SyncPlan {
-  const result: SyncPlan = { as_of: snapshot.as_of, create: [], updates: [], corrections: [], withdrawn: [], tracked_tasks: [], decisions: [], document_requests: [], task_documents: [], refresh_requests: [], report_fixes: [], accepted_wording: [], wording_waiting: [], wording_held: [], clear_accepted: [], review_pending: [], review_decisions: [], review_held: [], review_revisions: [], review_row_revisions: [], review_untouched: [], conflicts: [], ignored: [] };
+  const result: SyncPlan = { as_of: snapshot.as_of, create: [], updates: [], corrections: [], withdrawn: [], tracked_tasks: [], decisions: [], document_requests: [], task_documents: [], task_areas: [], task_areas_unset: [], refresh_requests: [], report_fixes: [], accepted_wording: [], wording_waiting: [], wording_held: [], clear_accepted: [], review_pending: [], review_decisions: [], review_held: [], review_revisions: [], review_row_revisions: [], review_untouched: [], conflicts: [], ignored: [] };
   const createsByPage = new Map<string, { id: string; type: string }>();
   for (const row of snapshot.rows) if (CREATABLE.has(row.database) && blank(property(row.properties, "Brain ID"))) {
     const existing = noteByNotion(workspace, row.page_id);
@@ -198,7 +203,8 @@ export function buildPlan(workspace: Workspace, snapshot: Snapshot, options: { r
   planTaskRows(workspace, snapshot.tasks, result);
   // A Tasks row is also read for Document asked (cli §5.14.2, 0100 §1); a page Notion can't find or in the trash asks for nothing.
   // With Tasks off, planTaskRows reports each row MODULE_OFF: the flag needs the Tasks module (capture-and-review §13.2).
-  if (modulesOf(workspace.config).tasks) for (const row of snapshot.tasks) if (row.gone !== true && row.unreadable !== true) planTaskDocument(workspace, row, result);
+  // And for its empty Area (0113 §9, 0114), counting the projects and areas this plan creates.
+  if (modulesOf(workspace.config).tasks) for (const row of snapshot.tasks) if (row.gone !== true && row.unreadable !== true) { planTaskDocument(workspace, row, result); planTaskArea(workspace, row, result.create as PlannedCreate[], result); }
   sortPlan(result);
   return result;
 }
@@ -487,6 +493,8 @@ function sortPlan(plan: SyncPlan): void {
   const order = (item: Record<string, unknown>) => [String(DATABASES.indexOf(String(item.database) as typeof DATABASES[number])).padStart(2, "0"), String(item.page_id ?? item.id), String(item.field ?? item.property ?? "")].join("\u0000");
   for (const values of [plan.create, plan.updates, plan.corrections, plan.decisions, plan.document_requests, plan.task_documents, plan.refresh_requests, plan.report_fixes, plan.accepted_wording, plan.wording_waiting, plan.wording_held, plan.clear_accepted, plan.conflicts, plan.ignored]) values.sort((a, b) => order(a as Record<string, unknown>).localeCompare(order(b as Record<string, unknown>)));
   plan.withdrawn.sort((a, b) => compareCodePoints(a.proposal, b.proposal));
+  plan.task_areas.sort(byPage);
+  plan.task_areas_unset.sort(byPage);
   plan.tracked_tasks.sort((a, b) => compareCodePoints(a.question, b.question) || compareCodePoints(a.page_id, b.page_id));
 }
 
@@ -613,8 +621,8 @@ function waitingQuestionProblems(p: Record<string, unknown>): InputProblem[] {
 /** Input validation and execution for `sync apply`. */
 export function parsePlan(input: unknown): SyncPlan {
   if (!isRecord(input)) assertNoProblems([{ pointer: "", message: "must be an object" }]);
-  const p = input as Record<string, unknown>; const problems = unknownKeys(p, ["as_of", "create", "updates", "corrections", "withdrawn", "tracked_tasks", "decisions", "document_requests", "task_documents", "refresh_requests", "report_fixes", "accepted_wording", "wording_waiting", "wording_held", "clear_accepted", "review_pending", "review_decisions", "review_held", "review_revisions", "review_row_revisions", "review_untouched", "conflicts", "ignored"], "");
-  for (const key of ["document_requests", "task_documents", "refresh_requests", "report_fixes", "accepted_wording", "wording_waiting", "wording_held", "clear_accepted", "review_pending", "review_decisions", "review_held", "review_revisions", "review_row_revisions", "review_untouched"]) if (p[key] !== undefined && !Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
+  const p = input as Record<string, unknown>; const problems = unknownKeys(p, ["as_of", "create", "updates", "corrections", "withdrawn", "tracked_tasks", "decisions", "document_requests", "task_documents", "task_areas", "task_areas_unset", "refresh_requests", "report_fixes", "accepted_wording", "wording_waiting", "wording_held", "clear_accepted", "review_pending", "review_decisions", "review_held", "review_revisions", "review_row_revisions", "review_untouched", "conflicts", "ignored"], "");
+  for (const key of ["document_requests", "task_documents", "task_areas", "task_areas_unset", "refresh_requests", "report_fixes", "accepted_wording", "wording_waiting", "wording_held", "clear_accepted", "review_pending", "review_decisions", "review_held", "review_revisions", "review_row_revisions", "review_untouched"]) if (p[key] !== undefined && !Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
   if (!isTimestamp(p.as_of)) problems.push({ pointer: "/as_of", message: "must be an ISO 8601 UTC timestamp" });
   for (const key of ["create", "updates", "corrections", "decisions", "conflicts", "ignored"]) if (!Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
   for (const key of ["withdrawn", "tracked_tasks"]) if (p[key] !== undefined && !Array.isArray(p[key])) problems.push({ pointer: `/${key}`, message: "must be a list" });
@@ -660,7 +668,7 @@ export function parsePlan(input: unknown): SyncPlan {
   });
   assertNoProblems(problems);
   const stamp = <T extends Record<string, unknown>>(item: T): T => (typeof item.observed_at === "string" ? { ...item, observed_at: normalizeTimestamp(item.observed_at)! } : item);
-  return { ...p, corrections: (p.corrections as Array<Record<string, unknown>>).map(stamp), withdrawn: p.withdrawn ?? [], tracked_tasks: ((p.tracked_tasks ?? []) as Array<Record<string, unknown>>).map(stamp), document_requests: p.document_requests ?? [], task_documents: p.task_documents ?? [], refresh_requests: p.refresh_requests ?? [], report_fixes: p.report_fixes ?? [], accepted_wording: p.accepted_wording ?? [], wording_waiting: p.wording_waiting ?? [], wording_held: p.wording_held ?? [], clear_accepted: p.clear_accepted ?? [], review_pending: p.review_pending ?? [], review_decisions: p.review_decisions ?? [], review_held: p.review_held ?? [], review_revisions: p.review_revisions ?? [], review_row_revisions: p.review_row_revisions ?? [], review_untouched: p.review_untouched ?? [], as_of: normalizeTimestamp(p.as_of)! } as unknown as SyncPlan;
+  return { ...p, corrections: (p.corrections as Array<Record<string, unknown>>).map(stamp), withdrawn: p.withdrawn ?? [], tracked_tasks: ((p.tracked_tasks ?? []) as Array<Record<string, unknown>>).map(stamp), document_requests: p.document_requests ?? [], task_documents: p.task_documents ?? [], task_areas: p.task_areas ?? [], task_areas_unset: p.task_areas_unset ?? [], refresh_requests: p.refresh_requests ?? [], report_fixes: p.report_fixes ?? [], accepted_wording: p.accepted_wording ?? [], wording_waiting: p.wording_waiting ?? [], wording_held: p.wording_held ?? [], clear_accepted: p.clear_accepted ?? [], review_pending: p.review_pending ?? [], review_decisions: p.review_decisions ?? [], review_held: p.review_held ?? [], review_revisions: p.review_revisions ?? [], review_row_revisions: p.review_row_revisions ?? [], review_untouched: p.review_untouched ?? [], as_of: normalizeTimestamp(p.as_of)! } as unknown as SyncPlan;
 }
 
 export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, recordOnly: boolean, skipConflicted = false): Record<string, unknown> {
@@ -737,7 +745,7 @@ export function applyPlan(workspace: Workspace, input: SyncPlan, now: Date, reco
       if (mine.length > 0 && mine.every((entry) => entry.result === "recorded" || entry.reason === "ALREADY_REQUESTED")) reviewClear.push({ proposal: row.proposal, page_id: row.page_id, properties: ["Your call", "What to fix"] });
     }
   }
-  return { create, updates, corrections: correctionsOut, withdrawn: waiting.withdrawn, tracked_tasks: trackedTasks, decisions: decisionsOut, notion_writes: decisionApply.notion_writes, review_results: [...review.results, ...reviewSkipped], revision_results: revisions, review_clear: reviewClear, document_requests: plan.document_requests, task_documents: plan.task_documents, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, accepted_wording: wording.results, wording_waiting: plan.wording_waiting, wording_held: plan.wording_held, clear_accepted: plan.clear_accepted.filter((item) => !conflictedIds.has(item.note) && !conflictedPages.has(item.page_id) && !updates.some((update) => update.id === item.note && update.result === "failed") && workspace.get(item.note) !== undefined), conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...wording.results, ...updates, ...correctionsOut, ...waiting.withdrawn, ...trackedTasks, ...decisionsOut, ...review.results, ...reviewSkipped].map((item) => ({ ...item }))), log };
+  return { create, updates, corrections: correctionsOut, withdrawn: waiting.withdrawn, tracked_tasks: trackedTasks, decisions: decisionsOut, notion_writes: decisionApply.notion_writes, review_results: [...review.results, ...reviewSkipped], revision_results: revisions, review_clear: reviewClear, document_requests: plan.document_requests, task_documents: plan.task_documents, task_areas: plan.task_areas, task_areas_unset: plan.task_areas_unset, refresh_requests: plan.refresh_requests, report_fixes: plan.report_fixes, accepted_wording: wording.results, wording_waiting: plan.wording_waiting, wording_held: plan.wording_held, clear_accepted: plan.clear_accepted.filter((item) => !conflictedIds.has(item.note) && !conflictedPages.has(item.page_id) && !updates.some((update) => update.id === item.note && update.result === "failed") && workspace.get(item.note) !== undefined), conflicts: plan.conflicts, ignored: plan.ignored, summary: summarize([...create, ...wording.results, ...updates, ...correctionsOut, ...waiting.withdrawn, ...trackedTasks, ...decisionsOut, ...review.results, ...reviewSkipped].map((item) => ({ ...item }))), log };
 }
 
 /**
@@ -920,7 +928,37 @@ export function render(workspace: Workspace, now: Date, ids?: readonly string[],
   const creates = new Set(items.filter((item) => item.action === "create").map((item) => item.id));
   items.push(...waiting.filter((item) => item.pending_relations.some((entry) => Array.isArray(entry.ids) && entry.ids.some((id) => creates.has(String(id))))));
   items.sort((a, b) => DATABASES.concat(["meetings"] as never[]).indexOf(a.database as never) - DATABASES.concat(["meetings"] as never[]).indexOf(b.database as never) || compareCodePoints(a.id, b.id));
+  // The Factories come after the notes, in `brain.json` order (0113 §1).
+  for (const entry of factoriesOf(workspace.config)) {
+    if (ids !== undefined && !ids.includes(entry.id)) continue;
+    if (!modules.factories) { if (ids !== undefined) errors.push({ id: entry.id, reason: "MODULE_OFF" }); continue; }
+    if (entry.archived === true && entry.notion === undefined) continue;
+    const factoriesId = databaseIdFor(workspace, "factories"); if (factoriesId === "") { warnings.push({ code: "DATABASE_NOT_CONFIGURED", message: "factories database is not configured", id: entry.id }); continue; }
+    const item = renderFactory(workspace, entry, factoriesId, now);
+    if (item.action === "create" || Object.keys(item.properties).length > 0 || item.pending_relations.some((relation) => (relation.ids as string[]).some((id) => creates.has(id)))) items.push(item);
+  }
   return { items, errors, warnings, skipped };
+}
+
+/** The row of one `brain.json` `factories` entry (cli §5.14.4, 0113 §1): every property on create, those whose B differs from S on update. */
+function renderFactory(workspace: Workspace, entry: Factory, databaseId: string, now: Date): RenderItem {
+  const area = factoryArea(workspace.config, entry);
+  const relations: Record<string, string[]> = { Area: area === undefined ? [] : [area], Projects: factoryProjects(workspace.config, entry) };
+  const published: Record<string, unknown> = { Name: entry.name, Area: relationPages(relations.Area, workspace), Projects: relationPages(relations.Projects, workspace), ...(entry.overview === undefined ? {} : { "Overview as of": dateOutput(entry.overview.as_of) }), Archived: entry.archived === true, "Brain ID": entry.id };
+  const pending: Array<Record<string, unknown>> = [];
+  for (const [property, ids] of Object.entries(relations)) {
+    const missing = ids.filter((id) => typeof workspace.get(id)?.attributes.notion !== "string");
+    if (missing.length > 0) pending.push({ property, ids: missing });
+  }
+  const isCreate = entry.notion === undefined;
+  const sent = entry.published ?? {};
+  const properties: Record<string, unknown> = {};
+  for (const [name, value] of Object.entries(published)) {
+    if (!isCreate && Object.hasOwn(sent, name) && sameValue(value, sent[name])) continue;
+    properties[name] = { type: Object.hasOwn(relations, name) ? "relation" : name === "Overview as of" ? "date" : name === "Archived" ? "checkbox" : name === "Name" ? "title" : "rich_text", value };
+  }
+  if (!isCreate && Object.keys(properties).length > 0) properties["Last Synced"] = { type: "date", value: { start: formatTimestamp(now), end: null } };
+  return { id: entry.id, type: "factory", database: "factories", database_id: databaseId, page_id: entry.notion ?? null, action: isCreate ? "create" : "update", ...(isCreate ? { template: { type: "default" as const } } : {}), properties, body: null, sections: null, pending_relations: pending, published };
 }
 
 /** The rendered properties a held name holds back: `Key Facts/<key>` holds Key Facts whole, one text property in Notion (cli §5.14.4). */
@@ -1217,17 +1255,29 @@ function digestBody(note: Note): string {
   return [line, typeof a.summary === "string" ? a.summary : undefined, typeof a.digest === "string" ? a.digest.replace(/\n+$/, "") : undefined].filter((part) => part !== undefined).join("\n\n");
 }
 
+/** What `sync tasks` gives: the payloads, and a warning per item whose Projects are in different Areas. */
+interface TaskPayloads { items: Array<Record<string, unknown>>; warnings: Array<{ code: string; message: string }> }
+
+/** A new task's Area (cli §5.14.5, 0113 §9): sent when there is one, published and mapped; Projects in different Areas send none, with a warning. */
+function putArea(workspace: Workspace, put: (key: string, type: string, value: unknown) => void, config: { properties: Record<string, string> }, found: { area?: string; differ: boolean }, warnings: TaskPayloads["warnings"], index: number, title: string): void {
+  if (typeof config.properties.area !== "string" || config.properties.area === "") return;
+  if (found.differ) warnings.push({ code: "TASK_AREA_NOT_SET", message: `Item ${index + 1} "${title}": its Projects are in different Areas, so no Area is set (cli §5.14.5)` });
+  const pages = found.area === undefined ? [] : publishedPages([found.area], workspace);
+  if (pages.length > 0) put("area", "relation", pages);
+}
+
 /** Task payloads for a meeting's or source's action items, or (targetId undefined, `--direct`) for tasks the user said yes to in a chat (cli §5.14.5). */
-export function renderTasks(workspace: Workspace, targetId: string | undefined, input: unknown): Record<string, unknown> {
+export function renderTasks(workspace: Workspace, targetId: string | undefined, input: unknown): TaskPayloads {
   if (!isRecord(input) || !Array.isArray(input.items)) throw new BrainError("INPUT_INVALID", "tasks input needs an items list");
   if (targetId === undefined) return renderDirectTasks(workspace, input.items);
   const config = tasksConfig(workspace); const target = workspace.get(targetId); const sourceMode = target?.type === "source";
   if (target === undefined) throw new BrainError("UNKNOWN_ID", `No meeting or source has id ${targetId}`);
   if (target.type !== "meeting" && !sourceMode) throw new BrainError("INPUT_INVALID", `${targetId} is not a meeting or source`);
   if (sourceMode && target.attributes.kind === undefined) throw new BrainError("INPUT_INVALID", "minutes sources use their meeting for tasks");
-  const followUps = new Set<string>();
+  const followUps = new Set<string>(); const warnings: TaskPayloads["warnings"] = [];
   const tasks = input.items.map((item, index) => {
     if (!isRecord(item) || typeof item.title !== "string" || item.title === "") throw new BrainError("INPUT_INVALID", "each task needs a title");
+    if (item.factory !== undefined) throw new BrainError("INPUT_INVALID", "only a task from a chat names a Factory", [{ pointer: `/items/${index}/factory`, message: "is only allowed with --direct" }]);
     const followUp = item.follow_up;
     if (followUp !== undefined) checkFollowUp(workspace, target, item, index, followUps);
     const projects = taskProjects(workspace, sourceMode ? undefined : target, item.projects, index);
@@ -1245,8 +1295,7 @@ export function renderTasks(workspace: Workspace, targetId: string | undefined, 
       if (unpublished.length > 0) pending_relations.push({ property: projectProperty, ids: unpublished });
       put("project", "relation", publishedPages(projects, workspace));
     }
-    const areas = sourceMode ? [...new Set(projects.flatMap((id) => { const area = workspace.get(id)?.attributes.area; return typeof area === "string" ? [area] : []; }))] : target.attributes.area === undefined ? [] : [target.attributes.area];
-    put("area", "relation", publishedPages(areas, workspace));
+    putArea(workspace, put, config, newTaskArea(workspace, projects, sourceMode ? undefined : target.attributes.area), warnings, index, item.title);
     if (sourceMode) {
       if (typeof config.properties.source === "string" && config.properties.source !== "") {
         if (typeof target.attributes.notion !== "string") pending_relations.push({ property: config.properties.source, ids: [target.id] });
@@ -1266,7 +1315,7 @@ export function renderTasks(workspace: Workspace, targetId: string | undefined, 
     }
     return { database_id: config.database, properties, pending_relations, ...(itemId === undefined ? {} : { item: itemId }), ...(followUp === undefined ? {} : { follow_up: followUp }) };
   });
-  return { items: tasks };
+  return { items: tasks, warnings };
 }
 
 /**
@@ -1290,10 +1339,10 @@ function checkFollowUp(workspace: Workspace, target: Note, item: Record<string, 
 
 /**
  * `sync tasks --direct` (0072, cli §5.14.5, assistant.md §7): no meeting or source, so no backlink and no Brain ID; an item may name
- * its Area; the owner is sent only on a Waiting On item. Nothing is recorded afterwards.
+ * its Area and, from 0.18.0, its Factory; the owner is sent only on a Waiting On item. Nothing is recorded afterwards.
  */
-function renderDirectTasks(workspace: Workspace, items: unknown[]): Record<string, unknown> {
-  const config = tasksConfig(workspace);
+function renderDirectTasks(workspace: Workspace, items: unknown[]): TaskPayloads {
+  const config = tasksConfig(workspace); const warnings: TaskPayloads["warnings"] = [];
   const tasks = items.map((item, index) => {
     if (!isRecord(item) || typeof item.title !== "string" || item.title === "") throw new BrainError("INPUT_INVALID", "each task needs a title", [{ pointer: `/items/${index}/title`, message: "must be a non-empty string" }]);
     if (item.item !== undefined) throw new BrainError("INPUT_INVALID", "a task from a chat has no extract item", [{ pointer: `/items/${index}/item`, message: "is only allowed with --source" }]);
@@ -1308,6 +1357,7 @@ function renderDirectTasks(workspace: Workspace, items: unknown[]): Record<strin
       if (note.type !== "area") throw new BrainError("INPUT_INVALID", `${note.id} is not an Area`, [{ pointer: `/items/${index}/area`, message: `is a ${note.type}, not an Area` }]);
       area = note.id;
     }
+    const factory = item.factory === undefined ? undefined : taskFactory(workspace, config, item.factory, index);
     const projects = taskProjects(workspace, undefined, item.projects, index);
     const properties: Record<string, unknown> = {}; const pending_relations: Array<Record<string, unknown>> = [];
     const put = (key: string, type: string, value: unknown) => { const name = config.properties[key]; if (typeof name === "string" && name !== "") properties[name] = { type, value }; };
@@ -1320,11 +1370,21 @@ function renderDirectTasks(workspace: Workspace, items: unknown[]): Record<strin
       if (unpublished.length > 0) pending_relations.push({ property: projectProperty, ids: unpublished });
       put("project", "relation", publishedPages(projects, workspace));
     }
-    const areas = area !== undefined ? [area] : [...new Set(projects.flatMap((id) => { const value = workspace.get(id)?.attributes.area; return typeof value === "string" ? [value] : []; }))];
-    put("area", "relation", publishedPages(areas, workspace));
+    if (factory !== undefined) { if (typeof factory.notion === "string") put("factory", "relation", [factory.notion]); else pending_relations.push({ property: config.properties.factory, ids: [factory.id] }); }
+    putArea(workspace, put, config, area !== undefined ? { area, differ: false } : newTaskArea(workspace, projects, undefined, factory === undefined ? [] : [factory]), warnings, index, item.title);
     return { database_id: config.database, properties, pending_relations };
   });
-  return { items: tasks };
+  return { items: tasks, warnings };
+}
+
+/** The Factory a `--direct` item names (cli §5.14.5, 0113 §5): an entry that isn't archived, with the module on and the relation mapped. */
+function taskFactory(workspace: Workspace, config: { properties: Record<string, string> }, value: unknown, index: number): Factory {
+  const refuse = (message: string): never => { throw new BrainError("INPUT_INVALID", message, [{ pointer: `/items/${index}/factory`, message }]); };
+  if (!factoriesOn(workspace.config)) refuse("a task names a Factory only with the Factories module on");
+  if (typeof config.properties.factory !== "string" || config.properties.factory === "") refuse("notion.tasks.properties.factory has no mapping");
+  const factory = factoriesOf(workspace.config).find((entry) => entry.id === value && entry.archived !== true);
+  if (factory === undefined) throw new BrainError("UNKNOWN_ID", `No Factory with id ${String(value)}, or it is archived`, [{ pointer: `/items/${index}/factory`, message: "does not exist" }]);
+  return factory;
 }
 
 /** An open question (schema §4, 0099): no answer, not dropped, not archived. */
@@ -1336,7 +1396,7 @@ function openQuestion(note: Note): boolean {
  * `sync tasks --question` (0099 §3 to §5, cli §5.14.5, capture-and-review §6.4): the one Task that tracks an open question or risk, built from
  * the question. It has Kind Question or Risk, or on a database without Kind a `Question: ` or `Risk: ` title; its Brain ID is the question's.
  */
-export function renderQuestionTask(workspace: Workspace, questionId: string, input: unknown): Record<string, unknown> {
+export function renderQuestionTask(workspace: Workspace, questionId: string, input: unknown): TaskPayloads {
   const question = workspace.get(questionId);
   if (question === undefined) throw new BrainError("UNKNOWN_ID", `No question has id ${questionId}`);
   if (question.type !== "question") throw new BrainError("INPUT_INVALID", `${questionId} is a ${question.type}, not a question`);
@@ -1351,7 +1411,7 @@ export function renderQuestionTask(workspace: Workspace, questionId: string, inp
   const waiting = item.status === "waiting_on";
   if (item.owner !== undefined && (!waiting || typeof item.owner !== "string" || item.owner.trim() === "")) problems.push({ pointer: "/items/0/owner", message: "is the name of the person you wait on, only with waiting_on" });
   assertNoProblems(problems);
-  const config = tasksConfig(workspace); const a = question.attributes;
+  const config = tasksConfig(workspace); const a = question.attributes; const warnings: TaskPayloads["warnings"] = [];
   const properties: Record<string, unknown> = {}; const pending_relations: Array<Record<string, unknown>> = [];
   const put = (key: string, type: string, value: unknown) => { const name = config.properties[key]; if (typeof name === "string" && name !== "") properties[name] = { type, value }; };
   const label = a.kind === "risk" ? "Risk" : "Question";
@@ -1367,8 +1427,7 @@ export function renderQuestionTask(workspace: Workspace, questionId: string, inp
     if (unpublished.length > 0) pending_relations.push({ property: config.properties.project, ids: unpublished });
     put("project", "relation", publishedPages(projects, workspace));
   }
-  const projectAreas = [...new Set(projects.flatMap((id) => { const area = workspace.get(id)?.attributes.area; return typeof area === "string" ? [area] : []; }))];
-  put("area", "relation", publishedPages(projectAreas.length > 0 ? projectAreas : typeof a.area === "string" ? [a.area] : [], workspace));
+  putArea(workspace, put, config, newTaskArea(workspace, projects, a.area), warnings, 0, String(a.title));
   // The backlink: the meeting it was raised in, else the Inbox row of its first source that has one (cli §5.14.5).
   const meeting = typeof a.raised_in === "string" ? workspace.get(a.raised_in) : undefined;
   if (meeting !== undefined) {
@@ -1384,7 +1443,7 @@ export function renderQuestionTask(workspace: Workspace, questionId: string, inp
     }
   }
   put("brain_id", "rich_text", question.id);
-  return { items: [{ database_id: config.database, properties, pending_relations }] };
+  return { items: [{ database_id: config.database, properties, pending_relations }], warnings };
 }
 
 /** A source that has an Inbox row (cli §5.14.4): any kind but minutes, not a file attached to another source. */
@@ -1428,7 +1487,15 @@ function bindTaskItems(note: Note, attributes: Record<string, unknown>, value: u
 
 export function record(workspace: Workspace, input: unknown): { records: Array<Record<string, unknown>>; warnings: Array<{ code: string; message: string; id: string }> } {
   if (!isRecord(input) || !Array.isArray(input.records)) throw new BrainError("INPUT_INVALID", "record input needs a records list"); const records: Array<Record<string, unknown>> = []; const warnings: Array<{ code: string; message: string; id: string }> = [];
+  let config = workspace.config;
   for (const entry of input.records) {
+    // A Factory's result is kept on its `brain.json` entry (cli §5.14.6, 0113 §1).
+    if (isRecord(entry) && typeof entry.id === "string" && isTimestamp(entry.synced_at) && factoryById(config, entry.id) !== undefined) {
+      const next = recordFactory(config, factoryById(config, entry.id)!, entry);
+      if (typeof next === "string") { records.push({ id: entry.id, result: "failed", reason: next, changed: [] }); continue; }
+      config = next; workspace.writeText("brain.json", `${JSON.stringify(config, null, 2)}\n`);
+      records.push({ id: entry.id, result: "recorded", changed: ["brain.json"] }); continue;
+    }
     // A question carries only `task` since 0.16.0: the Task that tracks it (cli §5.14.6, 0099). `task` on any other note is no result of a publish.
     if (isRecord(entry) && typeof entry.id === "string" && (entry.task !== undefined || workspace.get(entry.id)?.type === "question")) { records.push(recordQuestionTask(workspace, entry)); continue; }
     if (!isRecord(entry) || typeof entry.id !== "string" || !isTimestamp(entry.synced_at)) throw new BrainError("INPUT_INVALID", "each record needs id and synced_at"); const syncedAt = normalizeTimestamp(entry.synced_at)!; const note = workspace.get(entry.id); if (note === undefined) { records.push({ id: entry.id, result: "failed", reason: "UNKNOWN_ID", changed: [] }); continue; } const checkpoint = workspace.checkpoint(); try { const doc = workspace.edit(note);
@@ -1436,6 +1503,15 @@ export function record(workspace: Workspace, input: unknown): { records: Array<R
     if (REVIEWED_PAGE_TYPES.has(note.type) && isRecord(entry.published) && entry.published["@trashed"] !== undefined) { if (typeof doc.attributes.notion !== "string" || doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); for (const key of ["notion", "notion_published", "last_synced"]) delete doc.attributes[key]; workspace.save(note.path, doc); if (workspace.newErrors().length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); continue; }
     if (typeof entry.notion === "string") { if (doc.attributes.notion !== undefined && doc.attributes.notion !== entry.notion) throw new Error("NOTION_ID_MISMATCH"); doc.attributes.notion = entry.notion; } if (isRecord(entry.published)) doc.attributes.notion_published = withClearedBaselines({ ...(isRecord(doc.attributes.notion_published) ? doc.attributes.notion_published : {}), ...entry.published }, entry.published); if ((note.type !== "view" || isReport(note) || isWeekly(note)) && note.type !== "proposal") doc.attributes.last_synced = syncedAt; if ((note.type === "meeting" || note.type === "source") && Array.isArray(entry.tasks)) doc.attributes.tasks = [...new Set([...(Array.isArray(doc.attributes.tasks) ? doc.attributes.tasks : []), ...entry.tasks.filter((id): id is string => typeof id === "string")])]; if (entry.task_items !== undefined) bindTaskItems(note, doc.attributes, entry.task_items, entry.tasks); workspace.save(note.path, doc); const errors = workspace.newErrors(); if (errors.length > 0) throw new Error("INVALID_RESULT"); records.push({ id: note.id, result: "recorded", changed: workspace.changedSince(checkpoint) }); if (bodyWithoutReadBack(entry.published)) warnings.push({ code: "NOTION_BODY_MISSING", message: `${note.id}: a body was published without the read-back of its page, so the next plan holds it (cli §5.14.6, §5.14.7)`, id: note.id }); } catch (error) { workspace.restore(checkpoint); records.push({ id: entry.id, result: "failed", reason: error instanceof Error && (error.message === "NOTION_ID_MISMATCH" || error.message === "TASK_ITEM_EXISTS") ? error.message : "INVALID_RESULT", changed: [] }); } }
   return { records, warnings };
+}
+
+/** `brain.json` with a Factory's publish recorded, or the reason it failed (cli §5.14.6). */
+function recordFactory(config: Record<string, unknown>, factory: Factory, entry: Record<string, unknown>): Record<string, unknown> | string {
+  if (Object.keys(entry).some((key) => !["id", "notion", "published", "synced_at"].includes(key)) || (entry.published !== undefined && !isRecord(entry.published))) return "INVALID_RESULT";
+  if (factory.notion !== undefined && entry.notion !== undefined && entry.notion !== factory.notion) return "NOTION_ID_MISMATCH";
+  const next = orderedFactory({ ...factory, notion: (entry.notion ?? factory.notion) as string | undefined, last_synced: normalizeTimestamp(entry.synced_at as string)!, ...(entry.published === undefined ? {} : { published: { ...factory.published, ...entry.published } }) } as Factory);
+  const changed = { ...config, factories: factoriesOf(config).map((other) => (other.id === factory.id ? next : other)) };
+  return loadSchemas().brain(changed) ? changed : "INVALID_RESULT";
 }
 
 /**

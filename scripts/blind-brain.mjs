@@ -15,12 +15,13 @@ if (fixture === undefined || target === undefined || process.argv.length > 4) {
 } else {
   const dir = resolve(target);
   cpSync(join(fixtures, fixture), dir, { recursive: true });
-  // The shipped skills and AGENTS.md, as tests/helpers.ts fixtureCopy installs them.
+  // The shipped skills, AGENTS.md and the sub-agent, as `brain init` installs them.
   for (const skills of [".agents/skills", ".claude/skills"]) {
     rmSync(join(dir, skills), { recursive: true, force: true });
     cpSync(join(ROOT, ".agents/skills"), join(dir, skills), { recursive: true });
   }
-  cpSync(join(ROOT, "templates/brain/AGENTS.md"), join(dir, "AGENTS.md"));
+  // Both are product files, so `brain lint` wants them in every brain.
+  for (const file of ["AGENTS.md", ".claude/agents/ultimate-assistant.md"]) cpSync(join(ROOT, "templates/brain", file), join(dir, file));
 
   const configPath = join(dir, "brain.json");
   const config = JSON.parse(readFileSync(configPath, "utf8"));
