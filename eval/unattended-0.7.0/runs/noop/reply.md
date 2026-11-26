@@ -1,8 +1,10 @@
-Nothing is waiting, so this run made no changes: no commit, no log line and no push.
+Done: nothing waiting. I found no new work and nothing failed, so I wrote nothing: no note or proposal changes, log line, commit or push. I didn't run `brain lint` because nothing changed.
 
-- **Branch:** the brain is on its working branch, `main`.
-- **Inputs:** there are no Notion databases configured, no linked repos and no drop folder, so there are no meetings, Inbox rows or files to take in.
-- **Backlog:** the dry run found nothing to create.
-- **Decisions waiting:** 3 proposals are pending. An unattended run doesn't decide them, so they wait for your next session.
-- **Lint:** I didn't run `brain lint`, because nothing was written.
-- **Setup:** it is still unfinished, 1 of 9 required steps done. The next step is the backup remote.
+- **Checked:** the brain is on `main`, and there were no changes waiting to be committed when I checked. No older notes need to be added to the review list, and no repos are linked.
+- **Not checked:** Notion isn't set up, so I didn't check meetings, the Inbox, Notion edits or weekly review ticks. The drop folder isn't set either, so I didn't check it. To use one, say where it is.
+- **Still waiting for you:** I left these 3 decisions pending, because an unattended run doesn't decide anything:
+  - the new notes from Acme sync (3)
+  - the new note from Acme kickoff (1)
+  - adding Acme's mobile app relaunch, planned for 2027, to its organisation note
+
+Next, in a session where you can answer, say "what needs my decision".

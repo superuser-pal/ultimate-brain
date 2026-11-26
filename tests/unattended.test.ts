@@ -53,22 +53,39 @@ test("status sums the unattended catch-ups since the last attended one, and flag
   const dir = await fixtureCopy(context);
   assert.deepEqual((await run(dir, ["status"])).json.data.unattended, { catch_up: null, backlog: false, weekly: null });
   const log = async (at: string, pairs: string[]) => assert.equal((await brain(["log", "catch-up", "-", ...pairs, "--brain", dir, "--now", at, "--json"])).code, 0);
-  await log("2026-11-28T07:00:00Z", ["mode=unattended", "inputs=10", "left=5", "skipped=0", "waiting=0", "failed=0", "report=no"]);
+  await log("2026-11-28T07:00:00Z", ["mode=unattended", "inputs=10", "left=5", "skipped=0", "failed=0", "report=no"]);
   await log("2026-11-30T18:00:00Z", ["notes_read=12", "seconds=200"]);
-  await log("2026-12-01T07:00:00Z", ["mode=unattended", "inputs=2", "left=3", "skipped=1", "waiting=1", "failed=1", "failures=Notion login", "report=no"]);
-  await log("2026-12-02T07:00:00Z", ["mode=unattended", "inputs=3", "left=0", "skipped=1", "waiting=1", "failed=0", "report=yes"]);
-  await log("2026-12-03T07:00:00Z", ["mode=unattended", "inputs=1", "left=2", "skipped=1", "waiting=2", "failed=1", "failures=Notion login; lint error", "report=yes"]);
+  await log("2026-12-01T07:00:00Z", ["mode=unattended", "inputs=2", "left=3", "skipped=1", "failed=1", "failures=Notion login", "report=no"]);
+  await log("2026-12-02T07:00:00Z", ["mode=unattended", "inputs=3", "left=0", "skipped=1", "failed=0", "report=yes"]);
+  await log("2026-12-03T07:00:00Z", ["mode=unattended", "inputs=1", "left=2", "skipped=1", "failed=1", "failures=Notion login; lint error", "report=yes"]);
   const status = (await run(dir, ["status"])).json.data.unattended;
   assert.deepEqual(status, {
-    catch_up: { since: "2026-11-30T18:00:00Z", runs: 3, inputs: 6, failed: 2, failures: ["Notion login", "lint error"], left: 2, skipped: 1, waiting: 2, last: "2026-12-03T07:00:00Z" },
+    catch_up: { since: "2026-11-30T18:00:00Z", runs: 3, inputs: 6, failed: 2, failures: ["Notion login", "lint error"], left: 2, skipped: 1, waiting: 1, last: "2026-12-03T07:00:00Z" },
     backlog: false,
     weekly: null,
   });
-  await log("2026-12-04T07:00:00Z", ["mode=unattended", "inputs=10", "left=4", "skipped=0", "waiting=0", "failed=0", "report=no"]);
-  await log("2026-12-05T07:00:00Z", ["mode=unattended", "inputs=10", "left=1", "skipped=0", "waiting=0", "failed=0", "report=no"]);
+  await log("2026-12-04T07:00:00Z", ["mode=unattended", "inputs=10", "left=4", "skipped=0", "failed=0", "report=no"]);
+  await log("2026-12-05T07:00:00Z", ["mode=unattended", "inputs=10", "left=1", "skipped=0", "failed=0", "report=no"]);
   assert.equal((await run(dir, ["status"])).json.data.unattended.backlog, true, "left over in the last three runs");
   await log("2026-12-05T18:00:00Z", ["notes_read=3", "seconds=90"]);
   assert.deepEqual((await run(dir, ["status"])).json.data.unattended, { catch_up: null, backlog: true, weekly: null }, "an attended run starts the count again");
+});
+
+test("log counts an unattended catch-up's waiting itself (spec/cli.md §5.11)", async (context) => {
+  const dir = await fixtureCopy(context);
+  const { waiting, held, in_weekly_row } = (await run(dir, ["proposal", "list", "--waiting"])).json.data.counts;
+  assert.deepEqual({ waiting, held, in_weekly_row }, { waiting: 1, held: 0, in_weekly_row: 0 });
+  const line = async (args: string[]) => { const result = await run(dir, ["log", ...args]); assert.equal(result.code, 0, result.stdout); return result.json.data.line as string; };
+  assert.equal(await line(["catch-up", "-", "mode=unattended", "inputs=2", "left=0", "skipped=1", "failed=0", "report=yes", "notes_read=3", "seconds=90"]),
+    `- ${NOW} catch-up - "" mode=unattended inputs=2 left=0 skipped=1 waiting=1 failed=0 report=yes notes_read=3 seconds=90`);
+  assert.equal(await line(["catch-up", "-", "mode=unattended", "inputs=2", "waiting=9", "failed=0", "report=no"]), `- ${NOW} catch-up - "" mode=unattended inputs=2 waiting=1 failed=0 report=no`, "a count given by an older skill is replaced");
+  assert.equal(await line(["catch-up", "-", "mode=unattended", "inputs=2"]), `- ${NOW} catch-up - "" mode=unattended inputs=2 waiting=1`);
+  assert.equal(await line(["catch-up", "-", "notes_read=3", "seconds=90"]), `- ${NOW} catch-up - "" notes_read=3 seconds=90`, "an attended line has no waiting");
+  assert.equal(await line(["weekly", "-", "mode=unattended", "waiting=4"]), `- ${NOW} weekly - "" mode=unattended waiting=4`, "another op keeps its own");
+
+  const pending = (await run(dir, ["proposal", "list", "--waiting"])).json.data.waiting[0];
+  assert.equal((await run(dir, ["apply"], { decisions: [{ proposal: pending.id, action: "reject", decided_at: NOW, decided_by: "chat", note: "no" }] })).code, 0);
+  assert.match(await line(["catch-up", "-", "mode=unattended", "inputs=0", "failed=0"]), / inputs=0 waiting=0 failed=0$/, "the count is of now");
 });
 
 // --- sync: --skip-conflicted and NOT_A_REPORT ------------------------------------------------------

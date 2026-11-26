@@ -1,7 +1,7 @@
-A	_proposals/2026-11-23-acme-website-launch-date-2027-02-2027-03.md
-A	_proposals/2026-11-23-from-acme-content-check-in-acme-website-3-new-notes.md
-A	_proposals/2026-11-23-from-acme-design-review-acme-website-1-new-note.md
-A	_proposals/2026-11-23-maria-lopez-role-product-lead.md
+A	_proposals/2026-12-14-acme-website-launch-date-2027-02-2027-03.md
+A	_proposals/2026-12-14-from-acme-content-check-in-acme-website-3-new-notes.md
+A	_proposals/2026-12-14-from-acme-design-review-acme-website-1-change-and-1-new-note.md
+A	_proposals/2026-12-14-maria-lopez-role-product-lead.md
 M	_proposals/2026-12-14-remove-a-repeated-value-from-aliases-of-lena-hart.md
 M	_proposals/2026-12-14-remove-a-repeated-value-from-aliases-of-mira-lund.md
 M	areas/briefs/clients.md
