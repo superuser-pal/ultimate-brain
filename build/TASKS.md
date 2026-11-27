@@ -388,7 +388,7 @@ A feature release, by explicit roadmap change after the cutoff ([0112](../decisi
 | CC-407 | Obsidian: the CLI, the template and the guide | `src/`, `tests/`, `templates/brain/`, `docs/` | after CC-406 | `todo` |
 | CC-408 | Obsidian: the skills, in 0.19.0's fork release | the fork, then `.agents/skills/` | after CC-406, in CC-381's release; vendored after CC-407 | `todo` |
 | U-49 | Obsidian in your brain | your brain | after 0.19.0 is released | author's task |
-| CC-412 | Plan the follow-up of 0.18.0's smoke-run reviewed reading | this plan | the author's yes of 2026-11-27 | `review` |
+| CC-412 | Plan the follow-up of 0.18.0's smoke-run reviewed reading | this plan | the author's yes of 2026-11-27 | `done` (#513) |
 | CC-413 | The scorer reads an abstention in the brain; Claude Code asks the brain's memory before saying it found nothing | `eval/memory-0.12/`, `tests/`, `docs/releasing.md`, the fork | any time; its fork text goes in CC-381's release | `todo` |
 
 ### CC-376 · The seven checks that open 0.19.0, then its scope review (0112 §15) · `todo`
@@ -471,7 +471,7 @@ A feature release, by explicit roadmap change after the cutoff ([0112](../decisi
 **Output:** the skills' texts for CC-406's contract, written in the fork and vendored with CC-381's one released snapshot (skills-delivery §9.5), never edited here: the setup question and "I read my brain in Obsidian" / "I stopped using Obsidian" in a session (0115 §2); the reports skill drawing a diagram when asked, offering one once for a flow, a structure or a timeline, saving it in `diagrams/` with the image link, redrawing it at a refresh, and what it writes in Notion (§3); the wikilink rule wherever a skill writes a note (§4). The fork's release notes classify each change (skills-integration).
 **Acceptance:** every skill rule of the contract is in one skill (a table in the PR, rule → file); each changed skill keeps its report short (counts, what needs the user, the next action); a native smoke run in Claude Code and one in Codex, by agents, on a synthetic brain, covers: the setup question answered yes, a report asked "with a diagram" (its files in `diagrams/`, the image link, `brain lint` clean) and that report refreshed; the vendored snapshot equals the fork's tag; the leak and PR format checks pass.
 
-### CC-412 · Plan the follow-up of 0.18.0's smoke-run reviewed reading · `review`
+### CC-412 · Plan the follow-up of 0.18.0's smoke-run reviewed reading · `done` (#513)
 **Release:** 0.19.0
 **Changelog:** development only: the follow-up of 0.18.0's smoke-run reviewed reading is planned as CC-413.
 **Output:** planning only, in this file: CC-413's row and its table line, from 0.18.0's reviewed reading (the author's yes of 2026-11-27, decision 0083). CC-412 holds the plan and CC-413 the build, so the build starts on its own branch with `node scripts/task.mjs start CC-413` (the coordinator's answer, 2026-11-27), as CC-387 planned CC-402.
