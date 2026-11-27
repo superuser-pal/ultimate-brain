@@ -16,6 +16,7 @@
 **Amended by:** [0113](0113-factories-and-domain-homes-in-0-18-0-the-fourteen-features-in-0-19-0-espanol-in-0-20-0.md) (2026-11-23): 0.18.0 holds Factories and Domain homes, the fourteen features from the LifeOS study move to 0.19.0 and Español to 0.20.0, all before 1.0.0, by explicit roadmap change after the cutoff
 **Amended by:** [0116](0116-a-personal-context-system-the-key-layer-and-the-access-layer-in-0-20-0.md) (2026-11-27): 0.20.0 holds the access layer (an MCP server that reads under the eligibility rule and writes only as captures, context packs for Claude and ChatGPT, your own skills, the key layer made visible) and Español moves to 0.21.0, both before 1.0.0, by explicit roadmap change after the cutoff; MCP access leaves the post-1.0 list; companies, teams, hosting and a paid layer stay out
 **Amended by:** [0115](0115-obsidian-as-a-reading-room-in-0-19-0.md) (2026-11-27; 0.19.0): 0.19.0 also makes Obsidian an optional reading room, before 1.0.0, by explicit roadmap change after the cutoff
+**Amended by:** [0117](0117-a-factory-starter-for-repo-new-in-0-19-0.md) (2026-11-27; 0.19.0): 0.19.0 also holds a factory starter for `brain repo new`, by explicit roadmap change after the cutoff
 
 ## Context
 
