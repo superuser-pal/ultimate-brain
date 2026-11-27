@@ -30,7 +30,7 @@ test("migration 0031 is 0.18.0's one migration: parts by module, and every step 
   const at = parts.map((p) => migration.indexOf(p));
   at.forEach((i, n) => assert.ok(i >= 0, `${parts[n]} is there`));
   assert.deepEqual([...at].sort((a, b) => a - b), at, "in order");
-  for (const step of ["## Part A · ", "### B1 · ", "### B2 · ", "### B3 · ", "## Part C · ", "### E1 · ", "### E2 · ", "### E3 · ", "### L1 · "]) {
+  for (const step of ["## Part A · ", "### B1 · ", "### B2 · ", "### B3 · ", "## Part C · ", "### E1 · ", "### E2 · ", "### E3 · ", "### E4 · ", "### L1 · "]) {
     const heading = migration.slice(migration.indexOf(step)).split("\n")[0];
     const body = between(migration, step, "\n##");
     assert.match(body, /\*\*Already done\?\*\*/, `${heading}: has its check`);
@@ -41,6 +41,8 @@ test("migration 0031 is 0.18.0's one migration: parts by module, and every step 
     assert.ok(done.length > 20, `${step}: has its check`);
   }
   for (const [part, , skip] of rows(between(migration, "| Part | For |", "\nRun it after"))) assert.ok(skip.length > 0, `${part}: says when a space skips it`);
+  const e4 = between(migration, "### E4 · ", "\n##");
+  assert.ok(e4.indexOf("reads the body back") < e4.indexOf("Only then it sets Description"), "E4: the prompt reaches the body before Description changes");
   assert.match(migration, /change it to `Template version: 0031`/);
   const sentence = "The agent runs the skills of whichever Skills database is in its Tools and access, so keep exactly one there: the one under your top page.";
   for (const path of [MIGRATION, "docs/notion-space-design.md", "notion/brain-assistant.md"]) assert.ok((await read(path)).includes(sentence), `${path} has CC-386's sentence`);
