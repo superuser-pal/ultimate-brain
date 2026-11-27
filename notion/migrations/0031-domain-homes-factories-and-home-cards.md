@@ -126,6 +126,13 @@ The API can't read Tools and access, so only you can see this. The template's co
 1. **Already done?** Tools and access holds exactly one Skills database, the one under your top page ("Brain Assistant Skills" in a space built before 0.14.0). Then change nothing.
 2. **Otherwise,** remove every Skills database that isn't under your top page, and add the one that is when it is missing. Instructions, skills and buttons don't change.
 
+### E4 · Where Write minutes keeps the minutes prompt (CC-399; the agent, or by hand)
+
+The published template up to 0030, and every space duplicated from it, keep Write minutes the other way round from docs/notion-space-design.md §5: the minutes prompt is in its **Description**, and its body is empty. Migration 0030's B3 doesn't name this layout: there nothing names the agent, and replacing Description would lose the prompt. Open **Skills** (on System; "Brain Assistant Skills" in a space built before 0.14.0) and the page **Write minutes**.
+1. **Already done?** Description is the **Description:** line of [../brain-assistant.md](../brain-assistant.md) under "Write minutes" ("The minutes prompt, kept here so you can copy it. …"), and the body holds the minutes prompt. Then change nothing. No Write minutes page: nothing to change.
+2. **The prompt in Description, the body empty:** the agent, with your yes, first adds one paragraph block to the body holding the text block of [../minutes-format.md](../minutes-format.md), word for word, as design §5's list of `rich_text` items, and reads the body back: its items joined are that block. Only then it sets Description to the **Description:** line and reads it back. Never the other order: until the body reads back, Description keeps the prompt. By hand: copy Description's whole text into the page's body, then replace Description with the line.
+3. **Anything else** (the prompt in Description and text in the body as well): change nothing, and report it.
+
 ## The last steps
 
 ### L1 · Template version (by hand, or the agent)
@@ -168,6 +175,7 @@ Part E:
 - [ ] *(you)* In the agent's chat, **Run Weekly review** on a weekly row with an A, a U and a C item and a Focus first task: its answer line holds no row label and no "tick", and "tick C1 for me" is refused.
 - [ ] *(API)* First things first's item **Give it access** ends with the sentence of E2, once, and its tick is as it was.
 - [ ] *(you)* Your agent's Tools and access holds exactly one Skills database, the one under your top page.
+- [ ] *(API)* Where Skills is shared with the integration, Write minutes' Description is its **Description:** line, and its body, read as text, is the minutes prompt of minutes-format.md.
 
 The last steps:
 - [ ] *(API)* The System callout reads `Template version: 0031`.
