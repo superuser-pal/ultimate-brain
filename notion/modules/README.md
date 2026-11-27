@@ -10,6 +10,7 @@ The space is a core (Inbox, Meetings, Projects, Areas, People) plus optional mod
 | Reports | [reports.md](reports.md) | Documents (Reports needs the Documents module): a report is a Documents row with Origin Report; Ask rows on the Inbox |
 | Tasks | [tasks.md](tasks.md) | Tasks, or your own tasks database |
 | Planning | [planning.md](planning.md) | Goals, Key Results |
+| Factories | [factories.md](factories.md) | Factories (0.18.0; offered once, when you link your first repo or connect your first folder) |
 
 The Knowledge module (Decisions, Questions) is retired since 0.16.0: [knowledge.md](knowledge.md) says why and what replaces it.
 
@@ -17,7 +18,7 @@ The Knowledge module (Decisions, Questions) is retired since 0.16.0: [knowledge.
 
 Each file has the same parts, and each step says **who** does it, as in a migration ([../migrations/README.md](../migrations/README.md)):
 - **agent:** the skill does it through the Notion API, with your yes;
-- **Notion AI:** you paste the prompt into Notion AI on the page named, then say "done". The API can't create databases or linked views;
+- **Notion AI:** you paste the prompt into Notion AI on the page named, then say "done". The local Notion MCP has no tool that creates databases or views;
 - **by hand:** you do it in Notion, following the steps. The API can't create buttons or set page layouts.
 
 **Turning a module on:** run its steps in order, then **Verify**. The last agent step stores each new database's id (`brain config set notion.databases.<key> '"<id>"'`); until then the brain skips its notes with `DATABASE_NOT_CONFIGURED`. Stopped halfway? Say "turn on <module>" again: the skill starts from the first step whose Verify item doesn't hold.
