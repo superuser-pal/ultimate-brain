@@ -6,6 +6,7 @@
 **Amends:** [0061](0061-roadmap-and-launch-boundary.md)'s opening scope review with explicit design-principle checks; [0097](0097-easy-setup-on-windows-and-mac-and-markitdown-required.md) §4's platform direction with identical capabilities as the target, retaining its current limitation until the parity epic delivers; [0101](0101-where-notion-ai-and-the-brain-each-write.md)'s operator emphasis with the development agent as the preferred brain-management path
 **Keeps:** the feature cutoff and accepted release scope; Markdown and Git as canonical; Notion ownership and permitted crossings; existing approval, eligibility, automated and native smoke rules; 0101's complete path without Notion AI in 1.0.0; current Claude Code/Codex support and product development roles
 **Amended by:** [0110](0110-the-weekly-row-scheduling-on-mac-and-windows-and-0-16-x-folded-into-0-17-0.md) (2026-11-20; 0.17.0): §5: the parity epic's scheduling part is delivered in 0.17.0; the audit of every other difference stays post-1.0
+**Amended by:** [0116](0116-a-personal-context-system-the-key-layer-and-the-access-layer-in-0-20-0.md) (2026-11-27): §8, keep the key context lean (a compact key layer you review in the loop, everything else underneath); §6: apps reach the brain through the access layer, reading under the eligibility rule and writing only as captures, and the development agent stays the primary operator
 
 ## Context
 

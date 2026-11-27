@@ -9,6 +9,7 @@
 **Amended by:** [0110](0110-the-weekly-row-scheduling-on-mac-and-windows-and-0-16-x-folded-into-0-17-0.md) (2026-11-20; 0.17.0): §1: no more 0.16.x patches after 0.16.2, everything pending ships in 0.17.0, a trust or data-loss fix still ships at once; §4: 0.17.0 also holds the weekly row with its clean-up and scheduling on Mac and Windows, still one Notion migration
 **Amended by:** [0112](0112-0-18-0-fourteen-features-and-espanol-in-0-19-0.md) (2026-11-22): §5's Español ships in 0.19.0, its rules unchanged; 0.18.0 holds fourteen features from the LifeOS study; three feature releases come before 1.0.0, which is cut after 0.19.0 (§6 to §8 unchanged)
 **Amended by:** [0113](0113-factories-and-domain-homes-in-0-18-0-the-fourteen-features-in-0-19-0-espanol-in-0-20-0.md) (2026-11-23): §5's Español ships in 0.20.0, its rules unchanged; 0.18.0 holds Factories and Domain homes and 0.19.0 the fourteen features; 1.0.0 is cut after 0.20.0 (§6 to §8 unchanged)
+**Amended by:** [0116](0116-a-personal-context-system-the-key-layer-and-the-access-layer-in-0-20-0.md) (2026-11-27): §5's Español ships in 0.21.0, its rules unchanged, after the access layer in 0.20.0; 1.0.0 is cut after 0.21.0 (§6 to §8 unchanged); §2's invitations (U-31, U-32, U-28) go ahead on the latest release
 
 ## Context
 

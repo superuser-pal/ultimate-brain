@@ -1,6 +1,6 @@
 # Product design principles
 
-Adopted by [0104](../decisions/0104-product-design-principles.md). Apply these principles when ideating, planning, designing, developing, reviewing and releasing Ultimate Brain features. They guide trade-offs within the existing trust rules and accepted roadmap.
+Adopted by [0104](../decisions/0104-product-design-principles.md); §8 added by [0116](../decisions/0116-a-personal-context-system-the-key-layer-and-the-access-layer-in-0-20-0.md). Apply these principles when ideating, planning, designing, developing, reviewing and releasing Ultimate Brain features. They guide trade-offs within the existing trust rules and accepted roadmap.
 
 ## 1. Simple over complicated
 
@@ -35,7 +35,7 @@ The user's everyday tools are Notion and a development agent. Prefer completing 
 
 ## 6. Make the development agent the primary brain operator
 
-Prefer Claude Code or Codex for brain management and workflows. Notion AI and Notion agents are optional conveniences within their defined Notion boundaries; they do not become required operators or another canonical knowledge store. [0101](../decisions/0101-where-notion-ai-and-the-brain-each-write.md) still governs their writes and places the complete path without Notion AI in 1.0.0. Additional providers, including Gemini, remain future work rather than newly promised support.
+Prefer Claude Code or Codex for brain management and workflows. Notion AI and Notion agents are optional conveniences within their defined Notion boundaries; they do not become required operators or another canonical knowledge store. [0101](../decisions/0101-where-notion-ai-and-the-brain-each-write.md) still governs their writes and places the complete path without Notion AI in 1.0.0. Additional providers, including Gemini, remain future work rather than newly promised support. Apps such as the Claude and ChatGPT apps reach the brain through the access layer ([0116](../decisions/0116-a-personal-context-system-the-key-layer-and-the-access-layer-in-0-20-0.md) §3, from 0.20.0): they read under the [eligibility contract](../spec/eligibility.md) and write only as captures, which pass Select and Agree like any other source. An app that reads or proposes is not an operator.
 
 ## 7. Offer identical capabilities on macOS and Windows
 
@@ -45,11 +45,22 @@ Existing differences remain documented until resolved by the [capability-parity 
 
 For a release needing manual Windows acceptance, follow [the release procedure](releasing.md#windows-acceptance-follow-up): create or update a task in the existing Notion Tasks database and report outstanding testing as a warning. It does not block publication or replace existing automated and native smoke gates.
 
+## 8. Keep the key context lean
+
+The brain keeps a **key layer**: what truly matters to the user day to day. It is each active Area and Project's state (brief, status, open decisions, what is next), My rules, the people the user works with now and the approved memories. Everything else sits **underneath**: sources, research, files, finished work and long reports are kept, cited and searchable, but they are not loaded by default or treated as important ([0116](../decisions/0116-a-personal-context-system-the-key-layer-and-the-access-layer-in-0-20-0.md) §4).
+
+- New material lands underneath and rises into the key layer only through the user's agreement in the session.
+- The key layer stays compact and clean, and the user reviews it in the loop: Maintain says what needs attention (a stale brief, an idle project, a person no longer worked with).
+- The key layer is content the agent and the user manage through the loop, not code: changing what is in it takes a yes, not a release.
+- Reuse what exists: the hybrid PARA containers and their briefs, the Area and Project pages in Notion, `archive/`, and the opening context pack of [0074](../decisions/0074-scoped-memory-handovers-and-bounded-recall.md), generated from this layer.
+
+In planning, a feature that brings material into the brain says which layer it lands in and how it would rise; a feature that adds to the key layer says what keeps it compact. The key layer is made visible, and Maintain's checks of it are built, in 0.20.0.
+
 ## Applying the principles
 
 | Stage | Evidence kept with the work |
 |---|---|
-| Ideation and planning | Simplest sufficient approach; relevant database and tool reuse choices; shortest user path; macOS and Windows impact |
+| Ideation and planning | Simplest sufficient approach; relevant database and tool reuse choices; shortest user path; macOS and Windows impact; which layer new material lands in |
 | Design | Lifecycle and ownership in the existing specs; task acceptance criteria for the applicable principles |
 | Development and PR review | Implementation and validation match the agreed design; justified departures are recorded and reconciled with accepted decisions |
 | Release | Applicable manual Windows test task and an explicit warning for outstanding testing, following the release procedure |
