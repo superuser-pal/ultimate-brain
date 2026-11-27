@@ -96,7 +96,7 @@ test("the design, the views guide and the module guides agree on the Tasks butto
   const guide = await read("notion/views-guide.md");
   assert.match(guide, /^\| Keep \| Keep as document \| Tasks \| Document asked → checked \(nothing else: decision 0100\) \|/m);
   assert.match(guide, /^\| Tasks \| Keep, Status, Due, Kind \| Panel · Document asked, /m);
-  assert.match(guide, /^\| Inbox \| .* \| Main · Document asked, Only keep, Kind, Changed from, What changed, /m);
+  assert.match(guide, /^\| Inbox \| .* \| Main · Domain, Document asked, Only keep, Kind, Changed from, What changed, /m);
   assert.match(guide, /^\| Documents \| .* Asked in, Task, Origin, Summary \|/m);
   assert.match(guide, /Kind Changed\) shows here too/);
   const tasks = await read("notion/modules/tasks.md");

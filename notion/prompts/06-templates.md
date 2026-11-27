@@ -2,7 +2,7 @@
 
 Paste into Notion AI. Before: [Prompt 5](05-ownership.md). Next: [Prompt 7](07-spaces-views.md).
 
-Each template is the database's default. Every linked view sits under an H3 heading named by the question it answers, has its database title hidden, and shows only rows related to the page (docs/notion-space-design.md §4). Where a block lists several views, they appear as view tabs on that one linked view. On project pages, the brain writes only inside the "Brief" and "Decision log" toggle headings (decision 0026), and on area pages inside "Brief" (decision 0041): a project's or area's decisions and its open questions and risks show there, since there is no Decisions or Questions database (decision 0099); for connected work and linked repos it also appends "Workflow" and "Repo tasks · <repo>" toggles itself, so no template holds them (decision 0059). First delete the lines of modules you didn't choose ([CHECKLIST](../CHECKLIST.md)); a tag can sit in front of an indented line, so keep the indent after it. Existing space? Use the migrations instead ([migration 0010](../migrations/0010-modules-documents-buttons-area-homes.md) for the area home).
+Each template is the database's default. Every linked view sits under an H3 heading named by the question it answers, has its database title hidden, and shows only rows related to the page (docs/notion-space-design.md §4). Where a block lists several views, they appear as view tabs on that one linked view. On project pages, the brain writes only inside the "Brief" and "Decision log" toggle headings (decision 0026), and on area pages inside "Brief" (decision 0041): a project's or area's decisions and its open questions and risks show there, since there is no Decisions or Questions database (decision 0099); for connected work and linked repos it also appends "Workflow" and "Repo tasks · <repo>" toggles itself, so no template holds them (decision 0059). First delete the lines of modules you didn't choose ([CHECKLIST](../CHECKLIST.md)); a tag can sit in front of an indented line, so keep the indent after it. The brain also writes a Factory page's "Overview" toggle heading (decision 0113 §6). The Domains template, the Domain's home, isn't here: it is built by hand ([views-guide.md](../views-guide.md) §9a). Existing space? Use the migrations instead ([migration 0010](../migrations/0010-modules-documents-buttons-area-homes.md) for the area home).
 
 ```text
 [Tasks] When mapping your own Tasks database, substitute its mapped status property and Done and Won't Do option names in every Tasks filter below.
@@ -52,6 +52,10 @@ Create a default page template for each database below. Each item "Heading: data
 [Orgs]   "Who works there?": People where Org is this page, showing Name, Role.
 [Orgs]   "Which projects?": Projects where Client is this page, showing Name, Status, Countdown.
 [Orgs]   Then a toggle "My notes".
+[Factories] - Factories:
+[Factories]   First a toggle heading 2 "Overview" containing one empty paragraph.
+[Factories] [Tasks]   "What should happen next here?": a Board of Tasks grouped by Status, where Factory is this page and (Last edited time is within the past month, or Status is not Done and Status is not Won't Do), sorted Due ascending, showing Name, Due, Project.
+[Factories]   Then a toggle "My notes".
 - Inbox, a second template named "Voice note" (not the default; Brain Status New, Kind Capture; decision 0055, notion/voice-format.md):
   A gray callout: "All subjects included unless marked Meeting only. Mark Ready to confirm. Creating the summary never creates a task." followed by a gray line "Record with your phone or Notion, paste the transcript into the Transcript toggle, then ask Notion Brain Assistant: Voice summary."
   A heading 2 "[s1] Voice note", the line "Selection: Use in brain", and three heading 3s "Highlights", "Commitments", "Ideas to explore", each empty.
@@ -62,6 +66,7 @@ Set each of these templates as the database default, except the Inbox "Voice not
 ## Verify
 - [ ] Create a new Project: the gray hint line ("The brain writes only inside its toggles: …") comes first, then "Brief" and "Decision log" as **toggle** headings (with an arrow), then a headed view for each line you kept, and "My notes". Delete the test project.
 - [ ] Create a new Area: it starts with a "Brief" toggle heading, then "What needs me here?" with its tabs (Today only with Tasks), then a headed view for each line you kept, and its page header shows the "via projects" rollups (set in the page layout, [views-guide.md](../views-guide.md) §9). Delete the test area.
+- [ ] (Factories) Create a new Factory: it starts with an "Overview" **toggle** heading, then (Tasks) the board "What should happen next here?", filtered to Factory is this page, and "My notes". Delete the test Factory. If Notion AI got the board or its filter wrong, build it by hand ([modules/factories.md](../modules/factories.md), step 5).
 - [ ] No template shows a view of a database you left out.
 - [ ] No template has a callout that prints "[Summary]", "[Role]" or "Why".
 - [ ] Every template listed above is the default for its database, except the Inbox "Voice note".

@@ -78,8 +78,9 @@ test("migration 0028's Domains part: rollups, Type after a yes, the template vie
 test("the Domains page template lists projects, meetings and documents, and the template's Example Domain lists all three", async () => {
   const guide = await read("notion/views-guide.md");
   const section = guide.slice(guide.indexOf("## 9a. The Domains page template"), guide.indexOf("## 10. Navigation"));
-  for (const database of ["| Projects | Projects |", "| Meetings | Meetings |", "| Documents | Documents |"]) assert.ok(section.includes(database));
-  assert.equal(section.match(/\*\*Domain\*\* contains \*\*This page\*\*/g)?.length, 3);
+  // Since 0.18.0 it is the Domain's home (decision 0113 §8): every view also holds the one Domain filter.
+  for (const database of ["| Projects | Projects |", "| Past | Meetings |", "| Documents | Documents |"]) assert.ok(section.includes(database));
+  assert.match(section, /Every filter also holds the Domain filter:\*\* \*\*Domain\*\* contains \*\*This page\*\*/);
   const design = await read("docs/notion-space-design.md");
   const row = design.split("\n").find((l) => l.startsWith("| Domains | Areas and"));
   assert.ok(row && row.includes("Domain contains This page") && row.includes("No Type"));

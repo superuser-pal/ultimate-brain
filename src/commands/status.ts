@@ -124,7 +124,7 @@ function readNotion(config: Record<string, unknown>): { configured: string[]; mi
   const notion = config.notion as Record<string, unknown>;
   const configured: string[] = [];
   const missing: string[] = [];
-  for (const key of ["domains", "areas", "goals", "key_results", "projects", "meetings", "people", "orgs", "inbox", "documents"]) {
+  for (const key of ["domains", "areas", "goals", "key_results", "projects", "meetings", "people", "orgs", "inbox", "documents", ...(modulesOf(config).factories ? ["factories"] : [])]) {
     (databaseId(config, key) !== "" ? configured : missing).push(key);
   }
   const tasks = notion.tasks as Record<string, unknown>;

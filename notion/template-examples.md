@@ -14,15 +14,16 @@ Every row is invented. They tell one story with synthetic names only: a kickoff 
 | 4 | People | `Example · Sam Rivera` | Role "Marketing lead" | Org → 3 |
 | 5 | Projects | `Example · Website refresh` | | Area → 2 |
 | 6 | Meetings | `Example · Kickoff with Northwind` | Brain Status New; Date the day you build it; the minutes below | Project → 5, Area → 2, Attendees → 4 |
-| 7 | Tasks | `Example · Send the project plan` | Status To Do; Document asked unticked | Project → 5, Meeting → 6 |
-| 8 | Tasks | `Example · Brand guidelines from Sam` | Status Waiting On; Document asked unticked | Project → 5, Meeting → 6 |
+| 7 | Tasks | `Example · Send the project plan` | Status To Do; Document asked unticked | Project → 5, Meeting → 6, Area → 2, Factory → 14 |
+| 8 | Tasks | `Example · Brand guidelines from Sam` | Status Waiting On; Document asked unticked | Project → 5, Meeting → 6, Area → 2 |
 | 9 | Inbox | `Example · Notes from a call with Sam` | Kind Capture, Brain Status Done, Summary below; Document asked unticked, Only keep empty, Changed from and What changed empty, Brain ID empty | Project → 5, People → 4 |
-| 10 | Tasks | `Example · Can the site go live by the end of March?` | Status Waiting On, Kind Question; Document asked unticked, Brain ID empty | Project → 5, Meeting → 6 |
+| 10 | Tasks | `Example · Can the site go live by the end of March?` | Status Waiting On, Kind Question; Document asked unticked, Brain ID empty | Project → 5, Meeting → 6, Area → 2 |
 | 11 | Documents | `Example · Website refresh brief` | Origin Kept, Lifecycle Reviewed, Summary below; Accepted unticked, Accepted at empty, Refresh asked unticked, What to fix empty, Task empty, Brain ID empty | Project → 5, Area → 2, Sources → 9 |
 | 12 | Goals | `Example · Launch three client websites this year` | Status Active, Why below | Area → 2, Projects → 5 |
 | 13 | Key Results | `Example · Sites launched` | Kind Number, Start 0, Current 1, Target 3 | Goal → 12 |
+| 14 | Factories | `Example · Northwind website` | Workflow empty, Overview as of the day you build it, Archived unticked, Brain ID empty; the Overview below | Area → 2, Projects → 5 |
 
-Rows 1 to 7 are 0084's; rows 8, 9 and 11 to 13 are 0087's; row 10 is the kickoff's open question tracked as a task (decision 0099 §3 to §5, since 0.16.0). The Skills database (Notion Brain Assistant's skills) has no Example row. Every Brain ID stays empty: no Example row is ever a brain note.
+Rows 1 to 7 are 0084's; rows 8, 9 and 11 to 13 are 0087's; row 10 is the kickoff's open question tracked as a task (decision 0099 §3 to §5, since 0.16.0); row 14 is the folder where the website is built (decision 0113, since 0.18.0): no brain entry stands behind it, so no session or catch-up ever reads or writes it. The Skills database (Notion Brain Assistant's skills) has no Example row. Every Brain ID stays empty: no Example row is ever a brain note.
 
 There are no Decisions or Questions rows: those databases were retired in 0.16.0 (decision 0099), and the kickoff's decision and question live in the brain, shown in the project's Brief and Decision log. Row 10 is what the minutes' `Track: Waiting On —` on the question's line makes once the meeting is ingested (spec/capture-and-review.md §6.4); the examples show it at once, so the Tasks page's Questions tab has something in it.
 
@@ -114,6 +115,19 @@ Out of scope: the blog, which stays as it is.
 Launch: by the end of March, if the brand guidelines arrive in time.
 ```
 
+### Row 14: the Factory's Overview
+
+Inside the toggle heading **Overview** that the Factory template puts first, as plain paragraphs, in the form the brain writes (spec/connected-workflows.md §9.1). The date is the row's Overview as of. Invented, like the rest:
+
+```text
+As of 23 Nov 2026, 18:40 · from the last session
+Plan: Refresh the home, services and contact pages; the blog stays as it is. Kept in TASKS.md.
+Building now: Services page
+Next: Contact page
+Done lately: Home page (20 Nov)
+1 completed · 2 open (1 in progress, 1 to do) · 33%
+```
+
 ### Row 12: the Goal
 
 **Why** (property): `Each site launched is a reference for the next client.`
@@ -195,6 +209,10 @@ Documents "Example · Website refresh brief":
 
 There is no prompt 6 since 0.16.0: it wrote the Review row's page, which went with the Review database.
 
+### Row 14 (agent, through the API, with your yes; or by hand)
+
+Only when no Factories row has that title. **The agent** creates it from the Factories database's default template, sets its properties, reads the page back until its Overview toggle is there, and writes row 14's Overview inside that toggle. **By hand:** **New** in Factories, with the default template, then the same. Nothing is written outside the toggle. Set "As of" in the text and Overview as of to the same date and time.
+
 ### Step 7: the relations, and the properties Notion AI missed (agent, through the API, with your yes; or by hand)
 
 Notion AI creates the rows but doesn't reliably set relations, so this step sets them outside Notion AI. **The agent** (the `brain-notion-change` skill, on the copy, after your yes) finds each row on the copy's Brain Data by its exact title, sets what's missing below, and reads every row back: the API can answer 200 and still ignore a write. **By hand:** open each row and pick the related rows in the property. Only fill what is empty: a value already there stays.
@@ -215,6 +233,10 @@ The relations of prompt 4's rows. Each relation points to the row with exactly t
 | Goals `Example · Launch three client websites this year` | Area | `Example · Clients` |
 | | Projects | `Example · Website refresh` |
 | Key Results `Example · Sites launched` | Goal | `Example · Launch three client websites this year` |
+| Factories `Example · Northwind website` | Area | `Example · Clients` |
+| | Projects | `Example · Website refresh` |
+| Tasks `Example · Send the project plan` | Factory | `Example · Northwind website` |
+| The three Example Tasks | Area | `Example · Clients` (since 0.18.0: the Area the brain gives a task from its Project, decision 0114) |
 
 What prompt 2 can miss, set the same way:
 
@@ -230,10 +252,10 @@ Then check prompt 2's other relations against "The story" (Domain on the Area, O
 ## Check by hand
 
 - Brain Data starts with the callout, word for word.
-- Each of the thirteen rows exists once, with its title exactly as in "The story" (the prefix `Example · ` with the middle dot), its state and every relation of step 7 and "The story"; every Brain ID is empty. Sam's Role is Marketing lead, Northwind's Relationship is Client, and the Meeting has its Date and Area, and the Document its Area.
+- Each of the fourteen rows exists once, with its title exactly as in "The story" (the prefix `Example · ` with the middle dot), its state and every relation of step 7 and "The story"; every Brain ID is empty. Sam's Role is Marketing lead, Northwind's Relationship is Client, and the Meeting has its Date and Area, and the Document its Area.
 - The Meeting is **New**, and its page still has the template's blocks (the "Before setting Ready" callout, the notice, the Meeting notes block and the toggles), with the minutes below them. The question's Task is **Waiting On** with Kind **Question**. The Inbox row is **Done**, and its Changed from and What changed are empty. Nothing on the Document is ticked, and its Task is empty. No task's Document asked is ticked: a ticked one would be kept as a Document by the next catch-up.
-- The pages link to each other: the Project page lists the Meeting, the three Tasks, the Inbox row and the Document; the Project, the Meeting and the Document each show Domain `Example · Work`, and the `Example · Work` page lists all three in its views (decision 0105); the Tasks page lists the question's Task under Questions; Plan shows the Goal at 33%.
-- The coordinator's read-only scan (TEMPLATE.md, step 10) lists these thirteen rows as Example rows, and nothing else.
+- The pages link to each other: the Project page lists the Meeting, the three Tasks, the Inbox row and the Document; the Project, the Meeting and the Document each show Domain `Example · Work`, and the `Example · Work` page lists all three in its views (decision 0105), with the Goal and the Factory (decision 0113); the Factory's page shows its Overview, and `Example · Send the project plan` on its board under To Do; Projects → Factories lists it; the Tasks page lists the question's Task under Questions; Plan shows the Goal at 33%.
+- The coordinator's read-only scan (TEMPLATE.md, step 10) lists these fourteen rows as Example rows, and nothing else.
 
 ## Updating a copy to 0.16.0
 
@@ -252,3 +274,10 @@ After migration 0028 has added the Domain rollups and the Domains page template'
 1. **Row 11:** set the Document's Area to `Example · Clients` if it is empty (migration 0028, B5; step 7 above).
 2. **Row 1:** `Example · Work` keeps its page. If it was made before the template's views, apply the Domains template to it, or add the three views by hand ([views-guide.md](views-guide.md) §9a).
 3. **Check by hand** as above: `Example · Work`'s page lists the Project, the Meeting and the Document, and shows no Type.
+
+## Updating a copy to 0.18.0
+
+After migration 0031 has added the Domain rollups, the Domains page template, Home's Domains tab and the Factories database with its template (parts A to D):
+1. **Row 14:** create it as "Row 14" above says, with its two relations, and set **Factory** on row 7 and **Area** on the three Example tasks (step 7's table).
+2. **Row 1:** `Example · Work`'s page gets the Domain's home (migration 0031, B2).
+3. **Check by hand** as above: fourteen rows on Brain Data; `Example · Work`'s page lists the Area, the Project, the Goal, the Factory, the Meeting and the Document, and `Example · Send the project plan` under No date; its Inbox view is empty (the Example Inbox row has no Area).

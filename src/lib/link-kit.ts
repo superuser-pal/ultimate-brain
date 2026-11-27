@@ -6,7 +6,7 @@ import { BrainError } from "./errors.ts";
 import { escapePointer, isRecord } from "./input.ts";
 import { modulesOf } from "./modules.ts";
 import type { Note } from "./notes.ts";
-import { expandPath, type LinkedRepo } from "./repos.ts";
+import { expandPath, projectsOf, type LinkedRepo } from "./repos.ts";
 import { loadSchemas } from "./schemas.ts";
 
 // The link kit of spec/linked-repos.md §2 (decision 0066): one file in a linked repo that says how the hub reads it.
@@ -26,8 +26,9 @@ export type TaskSource =
 export interface Kit {
   kit_version: 1;
   name: string;
-  placement: { area: string; domain?: string; project?: string };
+  placement: { area: string; domain?: string; project?: string; projects?: string[] };
   knowledge: { patterns: string[]; never_read?: string[] };
+  plan?: string[];
   tasks?: { mode: "connected" | "tracked-in-repo"; source: TaskSource; status_map?: Record<string, Meaning> };
   methodology: { summary: string; files?: string[] };
   starter?: { name: "generic"; version: string };
@@ -44,14 +45,22 @@ export function kitHash(bytes: string | Uint8Array): string {
 export const shortHash = (hash: string): string => hash.slice("sha256:".length, "sha256:".length + 12);
 
 const ORDER: Record<string, readonly string[]> = {
-  "": ["kit_version", "name", "placement", "knowledge", "tasks", "methodology", "starter"],
-  "/placement": ["area", "domain", "project"],
+  "": ["kit_version", "name", "placement", "knowledge", "plan", "tasks", "methodology", "starter"],
+  "/placement": ["area", "domain", "project", "projects"],
   "/knowledge": ["patterns", "never_read"],
   "/tasks": ["mode", "source", "status_map"],
   "/tasks/source": ["kind", "path", "format", "pattern", "repo", "project"],
   "/methodology": ["summary", "files"],
   "/starter": ["name", "version"],
 };
+
+/** A kit of 0.17.0 as the hub writes it from 0.18.0 (§2.2): `placement.project` becomes `projects` with that one id. */
+function withProjects(kit: Record<string, unknown>): Record<string, unknown> {
+  const { placement } = kit;
+  if (!isRecord(placement) || placement.project === undefined || placement.projects !== undefined) return kit;
+  const { project, ...rest } = placement;
+  return { ...kit, placement: { ...rest, projects: [project] } };
+}
 
 /** The kit as the hub writes it (§2.1): 2-space indent, keys in contract order, lists and `status_map` in input order, a trailing newline. */
 export function serializeKit(kit: Record<string, unknown>): string {
@@ -65,7 +74,7 @@ export function serializeKit(kit: Record<string, unknown>): string {
     return out;
   };
   // JSON.stringify writes non-ASCII characters as themselves.
-  return `${JSON.stringify(order(kit, ""), null, 2)}\n`;
+  return `${JSON.stringify(order(withProjects(kit), ""), null, 2)}\n`;
 }
 
 // --- Path patterns (§2.1a) ---------------------------------------------------------------------------------------------
@@ -173,7 +182,7 @@ export function schemaProblems(kit: unknown): KitProblem[] {
     if (error.keyword === "additionalProperties") { pointer = `${pointer}/${escapePointer(String(error.params.additionalProperty))}`; message = "unknown key"; }
     else if (error.keyword === "required") message = `missing ${String(error.params.missingProperty)}`;
     else if (error.keyword === "oneOf") message = "is not a valid task source";
-    else if (error.keyword === "not") message = "status_map is only allowed with tracked-in-repo";
+    else if (error.keyword === "not") message = pointer === "/placement" ? "project and projects can't both be there" : "status_map is only allowed with tracked-in-repo";
     else if (error.keyword === "const" && pointer === "/kit_version") message = `kit version ${JSON.stringify((kit as Record<string, unknown>).kit_version)} needs a newer brain`;
     if (!problems.some((problem) => problem.pointer === pointer && problem.message === message)) problems.push({ pointer, message });
   }
@@ -194,12 +203,15 @@ export function patternProblems(kit: Kit): KitProblem[] {
   return [];
 }
 
-/** The never-read checks that need no brain (§2.2): a methodology file or the task source path that `never_read` matches. */
+/** The never-read checks that need no brain (§2.2): a methodology file, a plan file or the task source path that `never_read` matches. */
 function neverReadProblems(kit: Kit): KitProblem[] {
   const problems: KitProblem[] = [];
   const never = kit.knowledge.never_read;
   (kit.methodology.files ?? []).forEach((file, index) => {
     if (matchesAny(never, file)) problems.push({ pointer: `/methodology/files/${index}`, message: `${file} matches never_read` });
+  });
+  (kit.plan ?? []).forEach((file, index) => {
+    if (matchesAny(never, file)) problems.push({ pointer: `/plan/${index}`, message: `${file} matches never_read` });
   });
   const source = kit.tasks?.source;
   if (source?.kind === "markdown" && matchesAny(never, source.path)) problems.push({ pointer: "/tasks/source/path", message: `${source.path} matches never_read` });
@@ -230,11 +242,10 @@ export async function hubProblems(kit: Kit, hub: HubContext, options: KitCheckOp
   const byId = new Map(hub.notes.map((note) => [note.id, note]));
   const area = byId.get(kit.placement.area);
   if (area === undefined || area.type !== "area") problems.push({ pointer: "/placement/area", message: `${kit.placement.area} is not an area in the brain` });
-  if (kit.placement.project !== undefined) {
-    const project = byId.get(kit.placement.project);
-    if (project === undefined || project.type !== "project") problems.push({ pointer: "/placement/project", message: `${kit.placement.project} is not a project in the brain` });
-    else if (project.attributes.area !== kit.placement.area) problems.push({ pointer: "/placement/project", message: `${kit.placement.project} belongs to ${String(project.attributes.area ?? "no area")}, not ${kit.placement.area}` });
-  }
+  // A Factory serves Projects of any Area (0113 §2): only that each one exists is checked.
+  projectsOf(kit.placement).forEach((id, index) => {
+    if (byId.get(id)?.type !== "project") problems.push({ pointer: kit.placement.projects === undefined ? "/placement/project" : `/placement/projects/${index}`, message: `${id} is not a project in the brain` });
+  });
   if (kit.placement.domain !== undefined && modulesOf(hub.config).domains) {
     const domain = byId.get(kit.placement.domain);
     if (domain === undefined || domain.type !== "domain") problems.push({ pointer: "/placement/domain", message: `${kit.placement.domain} is not a domain in the brain` });

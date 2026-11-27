@@ -40,16 +40,20 @@ It is derived from [docs/notion-space-design.md](../docs/notion-space-design.md)
 
 Nothing sits above the two columns (#143, decision 0053).
 **Left column:** navigation, then a small heading "Needs you" with one short list (view 2). You decide what the brain proposes in your agent session, not here (decision 0096), except the weekly row's actions and clean-up, which you tick in that row (decision 0110); the week's review is an Inbox row, Kind Weekly, in the Inbox tab ([the weekly row](#the-weekly-row)).
-**Right column:** the buttons in a row, then "What's on today?" as a tabs block (views 0, 0b, 3–5, 5b), then "What did the brain take in?" as a second tabs block (views 6–7).
+**Right column:** the buttons in a row, then "What's on today?" as a tabs block (views 0 to 5b), then "What did the brain take in?" as a second tabs block (views 6–7).
+
+**With the Domains module** (decision 0113 §10), two things change and nothing else: the first tab is **Domains** (views 0c, 0d) instead of Areas, and there is no Projects tab. Your day is never split by Domain: Tasks, Meetings and Inbox keep every Domain together. A duplicate of the template holds both sets (Domains, Areas, Tasks, Meetings, Projects, Inbox): with Domains on, delete Areas and Projects; with Domains off, ignore or delete Domains.
 
 | # | Tab | View name | Database | Layout | Filter | Sort | Show | Use case |
 |---|---|---|---|---|---|---|---|---|
-| 0 | Areas | How are my areas? | Areas | List | Archived is unchecked | Name | Name, At a glance | Your areas, each line readable on its own: "Day job · 1 meeting · 2 due", or "all clear" (#145). Open one for its home (0050). The first tab |
-| 0b | Areas | What's due across areas? *(Tasks)* | Tasks | List, 5 rows | Status is not Done · Status is not Won't Do · Due is on or before today | Due, ascending | Name, Area, Due | Due today or overdue, in every area |
+| 0c | Domains *(Domains)* | Which domain? | Domains | Gallery, *Card preview* None | Archived is unchecked | Name | Name, Summary | One card per Domain: click it for that Domain's home (§9a). The first tab |
+| 0d | Domains *(Domains)* | Which areas have no domain? | Areas | List | Domain is empty · Archived is unchecked | Name | Name, At a glance | Below the cards: the Areas on no Domain's home. Open one and give it a Domain, or leave it |
+| 0 | Areas *(Domains off)* | How are my areas? | Areas | List | Archived is unchecked | Name | Name, At a glance | Your areas, each line readable on its own: "Day job · 1 meeting · 2 due", or "all clear" (#145). Open one for its home (0050). The first tab |
+| 0b | Areas *(Domains off)* | What's due across areas? *(Tasks)* | Tasks | List, 5 rows | Status is not Done · Status is not Won't Do · Due is on or before today | Due, ascending | Name, Area, Due | Due today or overdue, in every area |
 | 2 | — | Which minutes need review? | Meetings | List, 5 rows | Brain Status is New · Date is on or before today | Date, descending | Name | Minutes to check before the brain may ingest them. Upcoming meetings stay out |
 | 3 | Tasks *(Tasks)* | What's due today? | Tasks | List | Status is To Do or Doing · Due is on or before today | Due, ascending | Name, Project, Due | Today's work, overdue first |
 | 4 | Meetings | Which meetings are today? | Meetings | List | Date is today | Date, ascending | Name, Date, Project | Today's meetings, with time and project |
-| 5 | Projects | What's active? | Projects | Gallery (small cards) | Status is Active · Archived is unchecked | Priority (High→Low), then Name | Name, Countdown, *(Orgs)* Client, *(Tasks)* Task Progress | What you're working on, and how far along each is |
+| 5 | Projects *(Domains off)* | What's active? | Projects | Gallery (small cards) | Status is Active · Archived is unchecked | Priority (High→Low), then Name | Name, Countdown, *(Orgs)* Client, *(Tasks)* Task Progress | What you're working on, and how far along each is |
 | 5b | Inbox | What's in my inbox? | Inbox | List | Brain Status is New or Ready | Created, ascending | Name, Kind, Brain Status | Rows waiting for the brain, oldest first: set one Ready when it can be taken in. The week's review (Kind Weekly) and a catch-up's summary (Kind Catch-up) show here until they are Done; they are never taken in. On the week's review, tick what you agree with and set it Ready ([the weekly row](#the-weekly-row)). A changed version of a document waiting for your check (Kind Changed) shows here too: read it, edit it if you want, then say *go* in your agent session or set it Ready (decision 0098 §4). The last tab; the buttons and the boxes they tick are on each row's page (#146) |
 | 6 | Came in | What came in lately? | Inbox | List, 10 rows | Brain Status is Done | Created, descending | Name, Kind, Project | The Brain feed (0043): every document, email and capture the brain took in, newest first (reports are in Documents since 0.9.1) |
 | 7 | Meetings | Which meetings did it take in? | Meetings | List, 10 rows | Brain Status is Done | Ingested At, descending | Name, Date, Project | The meetings the brain ingested, newest first. Together with view 6, everything the brain did |
@@ -118,6 +122,7 @@ A space built before 0.16.2 named these Not Reviewed, Reviewed and Ingested; [mi
 | 2 | By area | What's in each area? | Board | Archived is unchecked · Status is not Done | Priority (High→Low) | Area (show "No area") | Name, Status, Countdown | Balance across areas; link projects with no area |
 | 3 | Deadlines | What's due soon? | Timeline (by Dates) | Status is Active or Planned · Archived is unchecked | Dates (end), ascending | — | Name, Countdown | Deadlines in order; the timeline shows overlap |
 | 4 | Gone quiet | Which projects have gone quiet? | Table | Status is Active · Last edited time is **before** *one month ago* (relative) | Last edited time, ascending | — | Name, Last edited time, Last Synced | Active projects nobody has touched in 30 days. Restart, pause (On Hold) or close each one |
+| 5 | Factories *(Factories)* | Where is work being built? | Table of **Factories** | Archived is unchecked | Overview as of, descending | — | Name, Area, Projects, Workflow, Overview as of | Every folder where agents build, the newest overview first. Open one to see what is being built and to write the next task (§9b) |
 
 **Key Facts** (for example "Budget: 80000 EUR · Launch date: 2027-02") is kept current by the brain and sits first in the project page's panel.
 
@@ -230,35 +235,75 @@ The name and the label differ, so the layout doesn't show the same text twice (#
 
 | Database | Heading (in order) | Property group: where · order | Hidden | Backlinks | Why |
 |---|---|---|---|---|---|
-| Areas | At a glance | Panel · Meetings to review, Due, Summary, People via projects, Clients via projects, Goals, Projects, Meetings, Documents, Inbox, Tasks, Archived, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced | Off | The area's home (0050): its counts as one line in the heading, everything else in its views |
-| Goals | Status, Progress, Countdown | Panel · Deadline, Why, Area, Key Results, Projects, Summary, Archived | Brain ID, Last Synced | Off | Progress and status at a glance |
+| Areas | At a glance | Panel · Meetings to review, Due, Summary, People via projects, Clients via projects, Goals, Projects, Meetings, Documents, Inbox, Tasks, Factories, Archived, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced | Off | The area's home (0050): its counts as one line in the heading, everything else in its views |
+| Goals | Status, Progress, Countdown | Panel · Deadline, Why, Area, Domain, Key Results, Projects, Summary, Archived | Brain ID, Last Synced | Off | Progress and status at a glance |
 | Key Results | Progress, Current, Target | Main · Goal, Kind, Start, Unit, Done, Due | — | Off | No body; you edit Current in the heading |
-| Projects | Status, Priority, Countdown, Task Progress | Panel · Dates, Key Facts, Client, Area, Domain, Goal, People, Summary, Archived, Meetings, Documents, Inbox, Tasks, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced, Last edited time | Off | Body = Brief + Decision log toggles; Key Facts first in the panel. The Workflow settings close the panel (decision 0059) |
+| Projects | Status, Priority, Countdown, Task Progress | Panel · Dates, Key Facts, Client, Area, Domain, Goal, People, Summary, Archived, Meetings, Documents, Inbox, Tasks, Factories, Workflow, Work type, Logging level, Log artifacts | Brain ID, Last Synced, Last edited time | Off | Body = Brief + Decision log toggles; Key Facts first in the panel. The Workflow settings close the panel (decision 0059) |
 | Meetings | Brain Status, Date, Project | Panel · Attendees, Area, Domain, Tasks | Brain ID, Ingested At | Off | Brain Status is the one field you change per meeting |
 | People | Role, Org | Panel · Email, Projects, Meetings, Sources, Summary, Lifecycle | Brain ID, Last Synced | On hover | Who they are and where they work |
-| Domains | Archived | Panel · Areas, Org, Summary | Brain ID, Last Synced | Off | No Type (decision 0105): a Domain's Name and Summary say what kind of context it is. The body lists its projects, meetings and documents (§9a) |
+| Domains | Archived | Panel · Areas, Org, Summary | Brain ID, Last Synced | Off | No Type (decision 0105): a Domain's Name and Summary say what kind of context it is. The body is the Domain's home (§9a) |
 | Orgs | Relationship, Website | Panel · Meetings via projects, People, Projects, Summary, Archived | Brain ID, Last Synced | On hover | — |
-| Inbox | Keep, Tidy, Brain Status, Project, Area | Main · Document asked, Only keep, Kind, Changed from, What changed, Summary, Documents, People, Tasks, Report | Brain ID, Last Synced, Created | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043); on a changed version (Kind Changed), the text you check (0098 §4) |
+| Inbox | Keep, Tidy, Brain Status, Project, Area | Main · Domain, Document asked, Only keep, Kind, Changed from, What changed, Summary, Documents, People, Tasks, Report | Brain ID, Last Synced, Created | Off | What came in, and what the brain made from it. The body is the brain's digest, and the "Full text" toggle when you chose it (0043); on a changed version (Kind Changed), the text you check (0098 §4) |
 | Documents | Write, Update, Accept, Lifecycle, Project, Area, Sources | Panel · Domain, Accepted, Accepted at, Refresh asked, What to fix, Asked in, Task, Origin, Summary | Brain ID, Last Synced, Created time, Last edited time | Show always | The body is brain-written, or yours on a promoted Document (0049) |
-| Tasks | Keep, Status, Due, Kind | Panel · Document asked, Project, Area, Meeting, Source | Brain ID, Last edited time | Off | Only if you use the default Tasks database |
+| Tasks | Keep, Status, Due, Kind | Panel · Document asked, Project, Area, Domain, Factory, Meeting, Source | Brain ID, Last edited time | Off | Only if you use the default Tasks database |
+| Factories | Workflow, Area, Projects | Panel · Domain, Tasks, Overview as of, Archived | Brain ID, Last Synced | Off | The Overview and your board are the page (§9b). Pause work there with Workflow |
 
-**Domain on Projects, Meetings and Documents** (decision 0105) is the rollup of Prompt 3: Notion computes it from the Area, and you never edit it. With the Domains module on, it sits in the panel right after Area (on Documents, first in the panel, since Area is pinned); with it off, hide it.
+**Domain on Projects, Meetings, Documents, Tasks, Inbox, Goals and Factories** (decisions 0105, 0113, 0114) is the rollup of Prompt 3: Notion computes it from the Area, and you never edit it. With the Domains module on, it sits in the property group right after Area (on Documents, Inbox and Factories, first in the group, since Area is pinned); with it off, hide it.
 
 **Hide system properties everywhere.** Brain ID, Last Synced, Created time and Last edited time are plumbing (owner "system"). Hide them in every view and layout, except where a view lists one to show (for example Last edited time in "Which projects have gone quiet?"). Don't delete them, because the brain matches records by Brain ID.
 
-## 9a. The Domains page template (decision 0105)
+## 9a. The Domains page template: a Domain's home (decisions 0105, 0113 §8)
 
-A Domain page lists that Domain's projects, meetings and documents. The API can't build a page template's views, so this is by hand. Open **Domains** → the **New** arrow (▾) → the default template (create one if there is none, and set it as the default) → **Edit**. Under the title, the page shows **Areas** and, with Orgs, **Org**, and no Type. Then add three linked views, each under an H3 heading, with *Show database title* off:
+*(Domains)* A Domain's page is that Domain's home: what needs you, your areas, tasks, projects, goals, factories, meetings and documents of that Domain. It is a page template, so it is built by hand. Open **Domains** → the **New** arrow (▾) → the default template (create one if there is none, and set it as the default) → **Edit**. Under the title, the page shows **Areas** and, with Orgs, **Org**, and no Type. Then the blocks below, in this order, each under an H3 heading with *Show database title* off. **Every filter also holds the Domain filter:** **Domain** contains **This page**.
 
-| Heading | View name | Database | Filter | Sort | Show | Module |
-|---|---|---|---|---|---|---|
-| Which projects? | Projects | Projects | **Domain** contains **This page** | Name | Name, Status, Area | core |
-| Which meetings? | Meetings | Meetings | **Domain** contains **This page** | Date descending | Name, Date, Area | core |
-| What do we know? | Documents | Documents | **Domain** contains **This page** | Last edited time descending | Name, Origin, Area | Documents |
+| Heading | View name | Database | Layout | Filter, besides **Domain** contains **This page** | Sort | Show | Module |
+|---|---|---|---|---|---|---|---|
+| What needs me here? | Today | Tasks | List | Status is not Done · Status is not Won't Do · Due is on or before today | Due, ascending | Name, Project, Due | Tasks |
+| | Meetings to review | Meetings | List | Brain Status is New · Date is on or before today | Date, descending | Name, Date, Project | core |
+| | Inbox | Inbox | List | Brain Status is New or Ready | Created, ascending | Name, Kind, Brain Status | core |
+| How are my areas? | Areas | Areas | List | Archived is unchecked | Name | Name, At a glance | core |
+| What's on my plate here? | Due | Tasks | List | Status is To Do or Doing · Due is on or before today | Due, ascending | Name, Project, Due | Tasks |
+| | Upcoming | Tasks | List | Status is To Do or Doing · Due is after today | Due, ascending | Name, Project, Due | Tasks |
+| | No date | Tasks | List, grouped by Project | Status is To Do or Doing · Due is empty | Name | Name, Project | Tasks |
+| What's active here? | Projects | Projects | List | Status is Active or Planned · Archived is unchecked | Name | Name, Status, Area | core |
+| What am I working toward here? | Goals | Goals | List | Status is Active · Archived is unchecked | Deadline, ascending | Name, Progress, Countdown | Planning |
+| Where is work being built? | Factories | Factories | List | Archived is unchecked | Name | Name, Area, Workflow | Factories |
+| Which meetings? | Upcoming | Meetings | List | Date is on or after today | Date, ascending | Name, Date, Project | core |
+| | Past | Meetings | List | Date is before today | Date, descending | Name, Date, Project | core |
+| What do we know? | Documents | Documents | List | Origin is not Report | Last edited time, descending | Name, Origin, Area | Documents |
 
-Then a toggle **My notes**. **Domain** here is the rollup on each database, not Areas · Domain. *This page* appears in the filter's value menu only while you edit a page template.
+Then a toggle **My notes**.
 
-A row is on a Domain page when its Area has that Domain. A row with no Area, or whose Area has no Domain, is on none: a meeting or Document gets its Area from its projects at the ingest, when they share one (decision 0105 §2). A Domain page made before the template changed keeps its old body: apply the template from the page, or add the three views by hand.
+- **What needs me here?** is a tabs block (`/tabs`), one tab per view, with the view's name as its label. **What's on my plate here?** and **Which meetings?** are one linked view each, holding their views in that order.
+- **Domain** is the rollup on each database; on Areas it is the relation Areas · Domain. *This page* is offered in the filter's value menu only while you edit a page template.
+- A row of a module you left off is left out. **Your own Tasks database** (0018): use your Status, Done and Won't Do names, and leave its views out when it has no Domain.
+
+**What is on it:** a row whose Area has this Domain. A row with no Area, or whose Area has no Domain, is on no Domain's home: a meeting or Document gets its Area from its projects at the ingest, when they share one (decision 0105 §2), and an unfinished task at a catch-up, from its Project or its Factory (decision 0114). Catch-up and Weekly rows have no Area: they are in Home's Inbox tab.
+
+**Add a row where its Area is known:** open the Area from "How are my areas?". A row added in a Domain's home has no Area yet, since the Domain is computed, so it leaves the view.
+
+A Domain page made before the template changed keeps its old body: [migration 0031](migrations/0031-domain-homes-factories-and-home-cards.md), part B, gives it the new one.
+
+## 9b. Factories (decision 0113 §1, §3, §6)
+
+*(Factories)* A Factory is a working folder where agents build. The brain makes its row; you write what you want done there as tasks, and read what is being built.
+
+**The database's views,** on Factories in Brain Data:
+
+| View name | Layout | Filter | Sort | Group | Show |
+|---|---|---|---|---|---|
+| Open | Table | Archived is unchecked | Name | Area (show "No area") | Name, Projects, Workflow, Overview as of |
+| Archived | Table | Archived is checked | Name | — | Name, Area, Overview as of |
+
+**The Factory page's template,** the default, named Factory ([modules/factories.md](modules/factories.md) step 5 builds it):
+
+| Part | What it holds |
+|---|---|
+| **Overview** | A toggle heading 2, empty in the template. The brain writes in it at the end of each session there and at a catch-up: what is being built, what comes next, what was done lately, with its date. Don't write in it: it is replaced, and never read back |
+| **What should happen next here?** *(Tasks)* | An H3 heading, then a linked view of Tasks named Tasks: Board grouped by Status · **Factory** contains **This page**, and (Last edited time is within *Past month* (relative), **or** Status is not Done and Status is not Won't Do) · sort Due, ascending · cards show Name, Due, Project |
+| **My notes** | A toggle. Yours |
+
+**Writing a task for a Factory:** add a task in that board (or set **Factory** on any task) and leave it To Do. The next session in that folder lists it and agrees with you how to do it.
 
 ---
 
@@ -284,5 +329,7 @@ A row is on a Domain page when its Area has that Domain. A row with no Area, or 
 - [ ] Quick capture creates an Inbox row with Kind Capture and Brain Status Ready; New meeting and New project open a page with the default template.
 - [ ] (Tasks) New task, next to New project, opens a new Tasks row with Kind Task, the default Status and no project or due date.
 - [ ] Brain ID and Last Synced are hidden in every view and page layout.
-- [ ] A Domain made from the Domains template lists that Domain's projects, meetings and (Documents) documents, and no page or view shows a Domains · Type.
+- [ ] (Domains) A Domain made from the Domains template is that Domain's home: §9a's headings, in order, with that Domain's rows only; no page or view shows a Domains · Type.
+- [ ] (Domains) Home's first tab is Domains: one card per Domain, and "Which areas have no domain?" below; there is no Areas or Projects tab.
+- [ ] (Factories) A new Factory opens with Overview, the board of its own tasks and My notes; the Projects Space has the tab Factories.
 - [ ] Editing Tier 1 nav on System updates every Space.
