@@ -5,6 +5,7 @@ import { isProductRepository } from "./brain-path.ts";
 import { parseMarker, type RepoMarker } from "./brain-marker.ts";
 import type { Warning } from "./command.ts";
 import { BrainError } from "./errors.ts";
+import { factoriesOf } from "./factories.ts";
 import { applyLinkedRepo, END, hasAgentImport, plannedAction, planLinkedRepo, START, type LinkSource, type PlannedFile } from "./managed-block.ts";
 import type { Note } from "./notes.ts";
 import { expandPath, linkedRepos } from "./repos.ts";
@@ -13,7 +14,7 @@ import { sha256, TREES, type Manifest } from "./skills-snapshot.ts";
 
 /**
  * The linked projects one `brain upgrade` reaches (spec/cli.md §5.15 step 9; eligibility.md §11; decision 0077 §4): every `repos` entry of
- * brain.json, refreshed as `brain link` writes it, or reported unfinished with its reason and left exactly as it was.
+ * brain.json, then every plain folder's Factory that isn't archived, refreshed as `brain link` writes it, or reported unfinished with its reason and left exactly as it was.
  */
 
 export type ProjectState = "upgraded" | "unchanged" | "unfinished" | "not_linked";
@@ -59,7 +60,8 @@ export async function planProjects(input: ProjectsInput): Promise<ProjectPlan[]>
   const source: LinkSource = { source: "brain", manifest: input.manifest, folder: input.folder, skills };
   const brainReal = await realpath(input.brainRoot);
   const plans: ProjectPlan[] = [];
-  for (const entry of linkedRepos(input.config)) {
+  const folders = factoriesOf(input.config).filter((entry) => entry.path !== undefined && entry.archived !== true);
+  for (const entry of [...linkedRepos(input.config), ...folders]) {
     const name = typeof entry.name === "string" ? entry.name : "";
     const stored = typeof entry.path === "string" ? entry.path : "";
     const report: ProjectReport = { name, path: stored, state: "unchanged", reason: null, message: null, files: [] };
@@ -108,7 +110,7 @@ async function planProject(report: ProjectReport, stored: string, source: LinkSo
   let plan: Awaited<ReturnType<typeof planLinkedRepo>>;
   try {
     // No options, so the project keeps its placement; its `repo` name is passed back, since `link` would reset it to the folder's name.
-    plan = await planLinkedRepo(root, { notes: input.notes, config: input.config, source, options: parsed.repo === undefined ? {} : { "repo-name": parsed.repo } });
+    plan = await planLinkedRepo(root, { notes: input.notes, config: input.config, brainRoot: input.brainRoot, home: input.homeDirectory, source, options: parsed.repo === undefined ? {} : { "repo-name": parsed.repo } });
   } catch (error) {
     if (error instanceof BrainError) throw new Unfinished("refused", error.message);
     throw error;

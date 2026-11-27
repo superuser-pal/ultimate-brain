@@ -3,10 +3,9 @@
  * task gets (cli §5.14.5) and the fill list `sync plan` gives for the unfinished tasks with no Area the agent's read passes in (cli §5.14.2).
  * Nothing of a task is stored, and nothing is read from Notion here.
  */
-import { isRecord } from "./input.ts";
+import { factoriesOf, factoriesOn, factoryArea, type Factory } from "./factories.ts";
 import { compareCodePoints, type Note } from "./notes.ts";
 import { taskProperty } from "./notion-change.ts";
-import { linkedRepos } from "./repos.ts";
 import { taskState, type TaskRow } from "./tracked-tasks.ts";
 import type { Workspace } from "./workspace.ts";
 
@@ -26,16 +25,6 @@ export interface TaskAreaUnset {
   title: string;
   reason: "DIFFERENT_AREAS" | "NOT_IN_BRAIN";
 }
-
-/** Factories is on only when `brain.json` says so (schema §12). */
-export const factoriesOn = (config: Record<string, unknown>): boolean => isRecord(config.modules) && config.modules.factories === true;
-
-/** A `factories` entry of `brain.json` (schema §12), as a task's Area reads it. */
-export interface Factory { id: string; repo?: string; area?: string; archived?: true; notion?: string }
-export const factoriesOf = (config: Record<string, unknown>): Factory[] => (Array.isArray(config.factories) ? config.factories.filter(isRecord) : []) as unknown as Factory[];
-
-/** A Factory's Area (schema §12): its linked repo's, or the entry's own for a plain folder and for an unlinked repo. */
-const factoryArea = (config: Record<string, unknown>, factory: Factory): string | undefined => factory.area ?? linkedRepos(config).find((repo) => repo.name === factory.repo)?.area;
 
 const distinct = (areas: ReadonlyArray<unknown>): string[] => [...new Set(areas.filter((area): area is string => typeof area === "string"))];
 

@@ -99,7 +99,7 @@ test("a new brain starts with Documents, Reports and Tasks on, Planning and Doma
   const config = JSON.parse(await readFile(join(target, "brain.json"), "utf8"));
   assert.deepEqual(config.modules, { domains: false, orgs: true, documents: true, reports: true, tasks: true, planning: false }, "no Knowledge module since 0.16.0 (0099)");
   const { data } = await status(target, home);
-  assert.deepEqual(data.modules, { domains: false, orgs: true, documents: true, reports: true, tasks: true, planning: false });
+  assert.deepEqual(data.modules, { domains: false, orgs: true, documents: true, reports: true, tasks: true, planning: false, factories: false });
 });
 
 test("a brain made before 0.14.0 keeps its modules: absent keys keep their old defaults, an absent block keeps every module but Domains; a knowledge key is not a module (schema §12, 0099)", async (context) => {
@@ -110,10 +110,10 @@ test("a brain made before 0.14.0 keeps its modules: absent keys keep their old d
     { domains: false, knowledge: true, orgs: true },
   ]) {
     await editConfig(target, (config) => { config.modules = block; });
-    assert.deepEqual((await status(target, home)).data.modules, { domains: false, orgs: true, documents: false, reports: false, tasks: false, planning: false });
+    assert.deepEqual((await status(target, home)).data.modules, { domains: false, orgs: true, documents: false, reports: false, tasks: false, planning: false, factories: false });
   }
   await editConfig(target, (config) => { delete config.modules; });
-  assert.deepEqual((await status(target, home)).data.modules, { domains: false, orgs: true, documents: true, reports: true, tasks: true, planning: true });
+  assert.deepEqual((await status(target, home)).data.modules, { domains: false, orgs: true, documents: true, reports: true, tasks: true, planning: true, factories: false });
 });
 
 // --- config (cli.md §5.3, schema §12) ---

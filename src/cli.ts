@@ -31,6 +31,7 @@ import { syncApplyCommand, syncPlanCommand, syncSnapshotCommand, syncRecordComma
 import { viewsCommand } from "./commands/views.ts";
 import { WEEKLY_COMMANDS } from "./commands/weekly.ts";
 import { CLEANUP_COMMANDS } from "./commands/cleanup.ts";
+import { FACTORY_COMMANDS } from "./commands/factory.ts";
 import { WORKFLOW_COMMANDS } from "./commands/workflow.ts";
 import { runCommand, type CliIo, type Command, type RunEnvironment } from "./lib/command.ts";
 import { exitCodeFor } from "./lib/errors.ts";
@@ -45,7 +46,7 @@ export const COMMANDS: readonly Command[] = [
   initCommand, statusCommand, configGetCommand, configSetCommand, configUnsetCommand, idNewCommand, indexCommand, lintCommand, logCommand, noteNewCommand, proposalNewCommand, proposalListCommand, proposalBacklogCommand, proposalReviseCommand, proposalSettleCommand, sourceFullTextCommand, sourceDiffCommand, sourceExtractPlanCommand, sourceCleanupPlanCommand, sourceCleanupProposeCommand, sourceCheckCommand, sourceExtractCommand, minutesCheckCommand, minutesRowCommand, recoverCommand, reportNewCommand, reportFixCommand, repoAddCommand, repoChangesCommand, repoRecordCommand, repoKitCheckCommand, repoKitWriteCommand, repoRefreshCommand, repoShowCommand, repoHealthCommand, repoTasksCommand, repoUnlinkCommand, repoNewCommand, questionDropCommand, applyCommand,
   assistantFindingsCommand, assistantDismissCommand,
   syncTrackedCommand, syncSnapshotCommand, syncPlanCommand, syncApplyCommand, syncRenderCommand, syncTasksCommand, syncRecordCommand, viewsCommand, linkCommand, queryCommand, reflectCommand, recallCommand, upgradeCommand, modulesListCommand, modulesOnCommand, modulesOffCommand,
-  scheduleInstallCommand, scheduleListCommand, scheduleRemoveCommand, ...WEEKLY_COMMANDS, ...CLEANUP_COMMANDS, ...WORKFLOW_COMMANDS,
+  scheduleInstallCommand, scheduleListCommand, scheduleRemoveCommand, ...WEEKLY_COMMANDS, ...CLEANUP_COMMANDS, ...WORKFLOW_COMMANDS, ...FACTORY_COMMANDS,
 ];
 
 export const HELP_TEXT = `Usage: brain <command> [options]

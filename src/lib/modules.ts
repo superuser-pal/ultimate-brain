@@ -1,7 +1,7 @@
 import { isRecord } from "./input.ts";
 
 /** The optional modules of spec/schema.md §12 (decision 0048), in contract order. Knowledge is retired in 0.16.0 (0099): a stored key is never read. */
-export const MODULES = ["domains", "orgs", "documents", "reports", "tasks", "planning"] as const;
+export const MODULES = ["domains", "orgs", "documents", "reports", "tasks", "planning", "factories"] as const;
 
 /** The module retired in 0.16.0 (0099 §1): decisions and questions are always extracted and never published as rows. */
 export const RETIRED_MODULE = "knowledge";
@@ -15,6 +15,7 @@ export const MODULE_DEFAULTS: Readonly<Record<ModuleName, boolean>> = {
   reports: false,
   tasks: false,
   planning: false,
+  factories: false,
 };
 
 /**
@@ -28,6 +29,7 @@ export const MODULE_DATABASES: Readonly<Record<ModuleName, readonly string[]>> =
   reports: ["documents"],
   tasks: [],
   planning: ["goals", "key_results"],
+  factories: ["factories"],
 };
 
 const MODULE_FOR_TYPE: Readonly<Record<string, ModuleName>> = {
@@ -41,11 +43,22 @@ export function isModuleName(value: string): value is ModuleName {
   return (MODULES as readonly string[]).includes(value);
 }
 
-/** The switches as `brain.json` stores them: every module except Domains when the block is absent, else each absent key at its default. */
+/** The switches as `brain.json` stores them: every module except Domains and Factories when the block is absent, else each absent key at its default. */
 export function storedModules(config: Record<string, unknown>): Record<ModuleName, boolean> {
   const block = config.modules;
-  if (!isRecord(block)) return Object.fromEntries(MODULES.map((name) => [name, name !== "domains"])) as Record<ModuleName, boolean>;
+  if (!isRecord(block)) return Object.fromEntries(MODULES.map((name) => [name, name !== "domains" && name !== "factories"])) as Record<ModuleName, boolean>;
   return Object.fromEntries(MODULES.map((name) => [name, typeof block[name] === "boolean" ? block[name] : MODULE_DEFAULTS[name]])) as Record<ModuleName, boolean>;
+}
+
+/** Whether Factories was ever answered: its key is written only by a switch, so an absent one means "never asked" (schema §12, 0113 §1). */
+export function factoriesAsked(config: Record<string, unknown>): boolean {
+  return isRecord(config.modules) && typeof config.modules.factories === "boolean";
+}
+
+/** The stored switches as a block to write back: the same, without `factories` while it was never asked (cli.md §5.15 step 5, §5.20). */
+export function storedBlock(config: Record<string, unknown>): Partial<Record<ModuleName, boolean>> {
+  const { factories, ...rest } = storedModules(config);
+  return factoriesAsked(config) ? { ...rest, factories } : rest;
 }
 
 /** Which modules are on: the stored switches, with Reports off while Documents is off (schema §12, 0071). */
@@ -83,14 +96,23 @@ export function databaseId(config: Record<string, unknown>, key: string): string
   return typeof value === "string" ? value : "";
 }
 
-/** The Notion pieces a module still lacks: its empty database ids, and `tasks` when the tasks database is unset. */
+/** How `missing` names the Factory relation of the Tasks database: a property, not a database (cli.md §5.20). */
+export const TASKS_FACTORY = "tasks.factory";
+
+/** The Tasks database's Factory relation, `notion.tasks.properties.factory` (0113 §3); "" when unmapped. */
+export function taskFactoryProperty(config: Record<string, unknown>): string {
+  const tasks = isRecord(config.notion) && isRecord(config.notion.tasks) ? config.notion.tasks : {};
+  const value = isRecord(tasks.properties) ? tasks.properties.factory : undefined;
+  return typeof value === "string" ? value : "";
+}
+
+/** The Notion pieces a module still lacks: its empty database ids, `tasks` when the tasks database is unset, and Factories' relation on Tasks. */
 export function missingFor(config: Record<string, unknown>, module: ModuleName): string[] {
   const missing = MODULE_DATABASES[module].filter((key) => databaseId(config, key) === "");
-  if (module === "tasks") {
-    const notion = config.notion;
-    const tasks = isRecord(notion) && isRecord(notion.tasks) ? notion.tasks : {};
-    if (typeof tasks.database !== "string" || tasks.database === "") missing.push("tasks");
-  }
+  const notion = config.notion;
+  const tasks = isRecord(notion) && isRecord(notion.tasks) ? notion.tasks : {};
+  if (module === "tasks" && (typeof tasks.database !== "string" || tasks.database === "")) missing.push("tasks");
+  if (module === "factories" && modulesOf(config).tasks && taskFactoryProperty(config) === "") missing.push(TASKS_FACTORY);
   return missing;
 }
 
@@ -98,7 +120,7 @@ export function missingFor(config: Record<string, unknown>, module: ModuleName):
  * A copy of `config` with `block` as its `modules` block: in place when it has one, else after
  * `settings`, or after `budgets` when there is no `settings`, or at the end (spec/cli.md §5.15 step 5).
  */
-export function withModules(config: Record<string, unknown>, block: Record<ModuleName, boolean>): Record<string, unknown> {
+export function withModules(config: Record<string, unknown>, block: Partial<Record<ModuleName, boolean>>): Record<string, unknown> {
   const anchor = "modules" in config ? "modules" : "settings" in config ? "settings" : "budgets" in config ? "budgets" : null;
   const next: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(config)) {

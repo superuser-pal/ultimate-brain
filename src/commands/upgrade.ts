@@ -12,7 +12,7 @@ import { atomicWriteFile, ensureDirectory } from "../lib/fs-safe.ts";
 import { appendLog } from "../lib/log.ts";
 import { isRecord } from "../lib/input.ts";
 import { lintBrain } from "../lib/lint.ts";
-import { modulesOf, storedModules, withModules } from "../lib/modules.ts";
+import { storedBlock, storedModules, withModules } from "../lib/modules.ts";
 import { compareCodePoints, NOTE_FOLDERS, parseNote, scanNotes, type Note } from "../lib/notes.ts";
 import { planStructureText, readAgentsMarkdown, structureBlock } from "../lib/structure.ts";
 import { indexNotes, loadSuppressions, type Loaded } from "../lib/suppressions.ts";
@@ -158,7 +158,7 @@ export const upgradeCommand: Command = {
           if (changed) config = { ...config, notion: { ...notion, databases } };
         }
         if (isRecord(config) && !("modules" in config)) {
-          config = withModules(config, modulesOf(config));
+          config = withModules(config, storedBlock(config));
           changed = true;
         }
         // 0.16.0: the Knowledge module is retired (0099 §1); its key goes, whatever its value. The decisions and questions database ids stay:
@@ -170,7 +170,7 @@ export const upgradeCommand: Command = {
         // 0.9.1: a report is a Documents row, so Reports needs Documents on (0071).
         const stored = storedModules(config);
         if (stored.reports && !stored.documents) {
-          config = withModules(config, { ...stored, documents: true });
+          config = withModules(config, { ...storedBlock(config), documents: true });
           changed = true;
           warnings.push({ code: "DOCUMENTS_TURNED_ON", message: `Reports now live in Documents, so the Documents module is on. Apply Notion migration 0019 before the next publish: ${join(installedProduct().root, "notion", "migrations", "0019-reports-move-to-documents.md")}` });
         }
