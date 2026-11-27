@@ -5,6 +5,7 @@
 **Release:** 0.19.0
 **Amends:** [0112](0112-0-18-0-fourteen-features-and-espanol-in-0-19-0.md) (0.19.0 holds one more feature, beside its fourteen); [0061](0061-roadmap-and-launch-boundary.md) (release scope: an explicit roadmap change after the cutoff); [0071](0071-a-simpler-notion.md) (a report may carry a diagram)
 **Keeps:** Markdown and Git canonical, Notion as the human interface and the place where you act ([0101](0101-where-notion-ai-and-the-brain-each-write.md)); [0002](0002-link-syntax.md) (standard relative Markdown links and no `[[wikilinks]]` in a note the brain writes; Obsidian an optional viewer); the vision's "Obsidian is never required"; [0015](0015-notion-access-via-mcp.md) (the brain's program reads no Notion); [0049](0049-documents.md) and [0100](0100-keep-a-task-as-a-document.md) (your own text is kept as a Document); [0091](0091-other-peoples-text-keeps-its-links.md); [0103](0103-first-things-first-and-upgrades-with-unrelated-work.md) (an upgrade works around unrelated uncommitted work); [0104](0104-product-design-principles.md); every rule of 0112 and 0113
+**Amended by:** [0117](0117-a-factory-starter-for-repo-new-in-0-19-0.md) (2026-11-27; 0.19.0): 0.19.0 also holds a factory starter for `brain repo new`; this decision's rules don't change
 
 ## Context
 
