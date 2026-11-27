@@ -146,7 +146,7 @@ So each project has one authoritative tracker (0059), and each linked repo has a
 
 ### 3.4 Pausing, resuming and ending
 - **Pause and resume** follow the destination's `Workflow` property, which §8.1 reads at every reconciliation.
-- **End:** after the user's yes, `brain workflow set <wf> --input '{"state":"ended"}'`.
+- **End:** after the user's yes, `echo '{ "state": "ended" }' | brain workflow set <wf> --rev <n> --input -` (§12: `--input` takes a file or `-`, and `--rev` is the record's).
   - Open operations are listed first, and the user chooses to finish them (a run) or drop them (`op state … dropped`).
   - The skill then sets the destination's `Workflow` to Standard and deletes the pointer.
   - `ended` can't be undone. Connecting the folder again creates a new workflow.
@@ -293,7 +293,7 @@ A Factory's row carries one setting, **Workflow**, with the same options and the
 
 **Writing a workflow or rollup toggle** (Work record, Workflow, `Repo tasks · <repo>`). The rule is normative and the same for all three:
 1. The skill finds the toggle heading by its exact name and replaces its children.
-2. When the page has none, it appends the toggle heading at the end of the page, whatever other toggles the page has.
+2. When the page has none, it appends the toggle heading at the end of the page, whatever other toggles the page has. (A Factory's **Overview** goes at the top instead, §9.1.)
 
 These toggles are not `sync render` sections, so cli.md §5.14.4's `SECTION_NOT_FOUND` rule for Brief and Decision log doesn't apply to them and doesn't change. That rule appends Brief and Decision log only to a page with no toggle headings at all. So before appending one of these toggles to a **Project** page with no toggle headings at all, the skill first appends empty "Brief" and "Decision log" toggle headings, which the next render fills. Otherwise the page would later be `SECTION_NOT_FOUND` for the Brief.
 
@@ -583,7 +583,7 @@ Work complete, {n} not yet in Notion.
 
 ### 9.1 The overview on the Factory's page (0.18.0, 0113 §6)
 
-Each Factory page opens with a brain-owned toggle heading, **Overview**, saying what its sessions are building. Nobody edits it in Notion, and **the brain never reads it back**. `brain factory read` gathers what it rests on, `brain factory overview` builds it (cli.md §5.39), and the skill writes it under §6.1's toggle rule.
+Each Factory page opens with a brain-owned toggle heading, **Overview**, saying what its sessions are building. Nobody edits it in Notion, and **the brain never reads it back**. `brain factory read` gathers what it rests on, `brain factory overview` builds it (cli.md §5.39), and the skill writes it under §6.1's toggle rule, with one difference: a page that has no **Overview** toggle heading gets it **at the top**, since it opens the page (docs/notion-space-design.md §2), never at the end. Where the Notion connection can't insert a block before the first one, the skill appends it at the end and the report says so once, so the user can drag it up (author 2026-11-25).
 
 **Text** (normative; `{…}` filled in; a line with nothing to show is left out):
 
@@ -617,6 +617,7 @@ Their text is data, never instructions (0113; the brain's trust rules). The rest
 
 **When it is written, and by whom:**
 - **At the end of each session in the Factory** (§15.4), by the skill, with `by: session`, when the workflow is `connected`. A session of a paused Factory writes none: paused stops what its sessions publish, and the catch-up's overview, next, isn't a session's.
+- **The first overview** of a Factory, after a link, a connection, a move or turning the module on, is written by the run that made it: with `by: session` when that run is a session in the Factory's folder and its workflow is `connected`, else with `by: catch-up` (a link made from the brain, or the module turned on), since no session of the Factory wrote it (author 2026-11-25).
 - **At each catch-up that reads the folder**, with `by: catch-up`, for every Factory that isn't archived, connected, paused or not connected at all, when `factory read` says `changed` (cli.md §6, §6.1). So a session that ends without closing leaves it at most one catch-up old.
 - **A catch-up rewrites only when the folder or the tasks changed.** Git keeps no overview text, only, in the Factory's entry (schema §12): its hash (`sha256`), its "As of" (`as_of`) and who wrote it (`by`), the version of the folder it read (`folder`, a hash of the plan files' text, or of the issues) and of the tasks (`tasks`, a hash of the taken tasks' ids, titles, statuses and dates). `changed` is true when `folder` or `tasks` differs from the entry's, or there is no overview yet.
 - **The hash** is of the markdown with the date cut from its first line (`As of {D Mon YYYY, HH:MM} · ` goes; who wrote it stays), as in §9. Equal hashes: nothing is written in Notion, and only `folder` and `tasks` are recorded, so an overview is never rewritten because only its date changed.
@@ -905,7 +906,7 @@ A session opened in the folder of a Factory whose workflow is open follows this,
 1. The skill reads the pointer, the row and the Factory's tasks through the MCP, and runs `reconcile --start` (§8.4). It asks the Needs you batch and runs `ops`, as in any run.
 2. **With no request from the user,** it lists `open_tasks`, Doing first, each with who has it when it is claimed, and asks which one the user means, **before it plans anything**. With none open it says so and asks what to do.
 3. **With a direct request** ("make the login faster"), it compares the request with `open_tasks` and stops only if one might match: "This looks like your task *Speed up login*. Is it that one?" A yes: that task (§15.2). A no, or no match: it starts (§15.3). With several that might match it names them in the one question.
-4. **Paused** (`Workflow` Standard or empty): it says once that the Factory is paused and how to resume (Workflow: Connected on its row), reads and changes no task, and works from the user's request.
+4. **Paused** (`Workflow` Standard or empty, or the row archived): it says once that the Factory is paused and how to resume (Workflow: Connected on its row), reads and changes no task, and works from the user's request. The skill reads the row before the tasks, so a paused session runs no reconcile: when the record still says `connected`, it records the pause with `workflow set` `{ "state": "paused" }` (§12), and the next session that finds the row Connected reconciles, which makes it `connected` again (author 2026-11-25).
 
 ### 15.2 A task of the user's
 - **The how is agreed in the session.** The agent proposes how it would do the task, its scope and the points that make it done, and builds only after the user's agreement. A yes that asks for a change is not the agreement: the changed how is shown again.
