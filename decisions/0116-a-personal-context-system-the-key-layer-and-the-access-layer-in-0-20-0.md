@@ -117,7 +117,7 @@ It is decomposed after its own opening scope review, which also settles: which a
   - U-28, U-31 and U-32 go ahead on the latest release.
 - "Amended by 0116" lines in 0061, 0104, 0106 and 0113.
 - No spec, CLI, skill, template, Notion or CHANGELOG change in this decision's own PR.
-- The author's pitch material, outside this repo, is not changed by this decision; what it would need to match is listed in the PR.
+- The author's pitch material, outside this repo, is not changed by this decision; what it would need to match was given to the author in the session, not recorded here.
 
 ## Evidence
 
