@@ -146,7 +146,7 @@ So each project has one authoritative tracker (0059), and each linked repo has a
 
 ### 3.4 Pausing, resuming and ending
 - **Pause and resume** follow the destination's `Workflow` property, which §8.1 reads at every reconciliation.
-- **End:** after the user's yes, `brain workflow set <wf> --input '{"state":"ended"}'`.
+- **End:** after the user's yes, `echo '{ "state": "ended" }' | brain workflow set <wf> --rev <n> --input -` (§12: `--input` takes a file or `-`, and `--rev` is the record's).
   - Open operations are listed first, and the user chooses to finish them (a run) or drop them (`op state … dropped`).
   - The skill then sets the destination's `Workflow` to Standard and deletes the pointer.
   - `ended` can't be undone. Connecting the folder again creates a new workflow.
