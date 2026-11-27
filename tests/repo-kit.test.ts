@@ -1239,7 +1239,7 @@ test("repo new writes exactly the starter's files with the placeholders filled a
   const summary = kit.methodology.summary;
   const expected: Record<string, string> = {
     "README.md": `# acme-api\n\n${summary}\n`,
-    "AGENTS.md": `# How work is done here\n\n${summary}\n\n- Record a decision in decisions/ (copy decisions/_template.md) before acting on it.\n- Plans and notes go in docs/.\n- Tasks are in TASKS.md: one line "- [ ] title" each; "[x]" when done.\n- Never put secrets in this repo: .env files and secrets/ are ignored.\n`,
+    "AGENTS.md": `# How work is done here\n\n${summary}\n\n- Record a decision in decisions/ (copy decisions/_template.md) before acting on it.\n- Plans and notes go in docs/.\n- Tasks are in TASKS.md: one line "- [ ] title" each; "[x]" when done.\n- When the Ultimate Brain block in this file names a Factory, its tasks in Notion say what is wanted next, and the detailed plan stays in this repo.\n- Never put secrets in this repo: .env files and secrets/ are ignored.\n`,
     "CLAUDE.md": "@AGENTS.md\n",
     "decisions/_template.md": "# NNNN — Title\n\n**Status:** Proposed\n**Date:** YYYY-MM-DD\n\n## Context\n## Decision\n## Consequences\n",
     "docs/README.md": "Plans, notes and documents for acme-api.\n",
