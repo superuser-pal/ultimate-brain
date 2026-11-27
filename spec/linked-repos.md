@@ -343,6 +343,7 @@ The exit code is 1 when any check is an error, as for `lint`.
 - Record a decision in decisions/ (copy decisions/_template.md) before acting on it.
 - Plans and notes go in docs/.
 - {tasks}
+- When the Ultimate Brain block in this file names a Factory, its tasks in Notion say what is wanted next, and the detailed plan stays in this repo.
 - Never put secrets in this repo: .env files and secrets/ are ignored.
 ```
 
@@ -350,6 +351,8 @@ The exit code is 1 when any check is an error, as for `lint`.
 - tracked-in-repo: `Tasks are in TASKS.md: one line "- [ ] title" each; "[x]" when done.`
 - connected: `Tasks are in Notion, through the connected workflow.`
 - no `tasks`: `This repo tracks no tasks.`
+
+The line about the block (0.18.0) agrees with the Factory paragraph `brain link` writes (§8): a starter repo whose work is connected has both, and the block says how a session starts. The starter is written once, by `repo new`; a later release doesn't change a repo already made.
 
 **`CLAUDE.md`**
 ```text

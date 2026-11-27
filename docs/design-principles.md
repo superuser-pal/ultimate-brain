@@ -23,7 +23,7 @@ Reuse the [capture lifecycle](../spec/capture-and-review.md), [eligibility contr
 
 ## 3. Keep Notion small
 
-Use existing databases, views, properties and page sections before proposing another database. During the feature-planning session, the agent reviews the use case against the existing database inventory and records the reuse choice. A new database needs an essential purpose and an explanation of why none of the existing databases can serve it, including the complexity it adds to setup, migration and daily use. This is part of the existing planning review.
+Use existing databases, views, properties and page sections before proposing another database. During the feature-planning session, the agent reviews the use case against the existing database inventory and records the reuse choice. A new database needs an essential purpose and an explanation of why none of the existing databases can serve it, including the complexity it adds to setup, migration and daily use. This is part of the existing planning review. Factories (0.18.0), the database added under this rule, has its review in [0113](../decisions/0113-factories-and-domain-homes-in-0-18-0-the-fourteen-features-in-0-19-0-espanol-in-0-20-0.md) §1.
 
 ## 4. Minimise the user's effort
 

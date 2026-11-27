@@ -6,6 +6,7 @@ The default page templates as they exist in the live Notion space, plus the impr
 - **Build prompt:** [prompts/06-templates.md](prompts/06-templates.md).
 - **Ids:** template, page and view ids are left out (`<id>`): the product repo holds no Notion ids from a real workspace (AGENTS.md, decision 0038). Look them up live.
 - **Since 0.16.0** ([migration 0027](migrations/0027-one-place-to-decide.md), decision 0099): the Decisions and Questions views and toggles are gone from the Areas, Projects and Meetings templates, and the area home has no "Review waiting" tab (0096). The snapshot below shows them removed; the rest is as last pulled.
+- **Since 0.18.0** ([migration 0031](migrations/0031-domain-homes-factories-and-home-cards.md), decision 0113): the Domains template is the Domain's home ([views-guide.md](views-guide.md) §9a), and Factories has one (§9b). The snapshot below has neither yet: the rest is as last pulled.
 - **Last pulled:** 2026-10-21, through the Notion API, read-only, after migration 0005 (U-13). Only Areas and Inbox changed since the 2026-10-14 pull. The API shows headings and linked views, not view tabs or filters; those are as built by hand from Prompt 6.
 
 The API returns each linked view's title and URL, but not its filters, sorts or visible properties. The filters listed below are the ones Prompt 6 asked for; they have not been checked live.
@@ -88,6 +89,29 @@ Template id `<id>`. Header shows the "Meetings via projects" rollup (page layout
 
 ### Inbox · "Capture" (default)
 Template id `<id>`. Empty body; it only sets Kind = Capture on a new row (migration 0005), so a quick capture needs nothing set.
+
+### Domains · the Domain's home (default, 0.18.0; as designed, not yet pulled)
+Every view also: Domain contains This page.
+
+```text
+### What needs me here?              tabs: Today ▦ Tasks · Meetings to review ▦ Meetings · Inbox ▦ Inbox
+### How are my areas?                ▦ Areas
+### What's on my plate here?         ▦ Tasks       Due · Upcoming · No date
+### What's active here?              ▦ Projects
+### What am I working toward here?   ▦ Goals
+### Where is work being built?       ▦ Factories
+### Which meetings?                  ▦ Meetings    Upcoming · Past
+### What do we know?                 ▦ Documents
+▸ My notes
+```
+
+### Factories · "Factory" (default, 0.18.0; as designed, not yet pulled)
+
+```text
+## ▸ Overview                        brain-written (0113 §6)
+### What should happen next here?    ▦ Tasks       board by Status, Factory is this page
+▸ My notes
+```
 
 ### Key Results, Tasks
 No template. This is intended: both databases are property-only. (Decisions, Questions and Review, retired in 0.16.0, had none either.) (Concepts, retired in 0.9.1, had none either: their pages are learned Documents now, 0071.)

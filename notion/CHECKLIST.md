@@ -14,14 +14,15 @@ The prompts are generated from [docs/notion-space-design.md](../docs/notion-spac
 
 The space is a core (Inbox, Meetings, Projects, Areas, People) plus the modules you choose. There is no Review, Decisions or Questions database since 0.16.0: you decide what the brain proposes in your agent session (the weekly row's actions and clean-up you tick in that Inbox row, since 0.17.0), and a project's decisions and open questions are in its Brief and Decision log (decisions 0096, 0099). You can change this any time by asking your agent ("turn on documents"); each module's steps for later are in [modules/](modules/).
 
-- [ ] **Domains:** group Areas by the work or life context they belong to, and see each project's, meeting's and document's Domain. The Domains database and the Domain rollups on Projects, Meetings and Documents are built either way (decisions 0065, 0105); this choice is whether the brain uses them and your pages show them. A Domain has no Type: its name and summary say what kind of context it is
+- [ ] **Domains:** group Areas by the work or life context they belong to, see each row's Domain, and get a home page per Domain, with one card for each on Home (decision 0113). The Domains database and the Domain rollups on Projects, Meetings, Documents, Tasks, Inbox and Goals are built either way (decisions 0065, 0105, 0114); this choice is whether the brain uses them and your pages show them. A Domain has no Type: its name and summary say what kind of context it is
 - [x] **Orgs:** client and partner organizations
 - [ ] **Documents:** keep a document, or part of one, as a page, checked first when only part is kept; with Tasks, keep a task's page as one too
 - [ ] **Reports:** ask the brain in the Inbox, get a report you can refresh
 - [ ] **Tasks:** action items as Notion tasks, the questions and risks you follow up, and the Keep as document button on a task (leave it off if you'll map your own tasks database: [modules/tasks.md](modules/tasks.md))
 - [ ] **Planning:** Goals and Key Results
+- [ ] **Factories:** one row per folder where agents build, with the tasks you want done there (with Tasks) and an overview of what is being built. You can leave it off: it is offered when you link your first repo or connect your first folder
 
-**How the prompts follow your choice.** A line that starts with a module in brackets, such as `[Planning]`, belongs to that module. Before pasting a prompt, **delete every line tagged with a module you didn't choose**. Leave the tags on the other lines: each prompt tells Notion AI to ignore them. A line with two tags needs both modules. Untagged lines are Core: keep them all.
+**How the prompts follow your choice.** A line that starts with a module in brackets, such as `[Planning]`, belongs to that module. Before pasting a prompt, **delete every line tagged with a module you didn't choose**. Leave the tags on the other lines: each prompt tells Notion AI to ignore them. A line with two tags needs both modules. A line tagged `[Domains off]` (Prompt 7a) is the opposite: delete it when you chose Domains. Untagged lines are Core: keep them all.
 
 ### Build
 
@@ -34,7 +35,7 @@ The space is a core (Inbox, Meetings, Projects, Areas, People) plus the modules 
 - [ ] [7 · Spaces and views](prompts/07-spaces-views.md): one prompt per page (Home, Meetings, Tasks, Projects, Plan, Knowledge, Archive)
 - [ ] (optional) [8 · Navigation](prompts/08-navigation.md)
 - [ ] [9 · Notion Brain Assistant's skills and the guide](prompts/09-assistant-and-guide.md): the Skills database (Notion Brain Assistant's skills) on System, and How it works
-- [ ] **Buttons and page layouts, by hand** (the API and Notion AI can't create buttons or set page layouts): for each module you chose, do the "By hand" steps of its file in [modules/](modules/), then set each database's page layout as in [views-guide.md](views-guide.md) §9, and the Domains page template's three views as in §9a.
+- [ ] **Buttons and page layouts, by hand** (the API and Notion AI can't create buttons or set page layouts): for each module you chose, do the "By hand" steps of its file in [modules/](modules/), then set each database's page layout as in [views-guide.md](views-guide.md) §9, and the Domains page template, each Domain's home, as in §9a. With Factories, check its template and set the limits too ([modules/factories.md](modules/factories.md), steps 3 to 6).
 
 Prefer to build Spaces and views by hand? [views-guide.md](views-guide.md) spells out every view (filters, sorts, grouping, visible properties, use case), the database page layouts and the navigation. It replaces steps 7 and 8.
 

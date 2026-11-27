@@ -5,6 +5,7 @@
 **Amends:** [0037](0037-intake-experience.md) (Concepts database), [0043](0043-see-what-the-brain-took-in.md) and [0045](0045-review-in-one-row-fix-before-ingest.md) (Report rows on the Inbox), [0048](0048-modules-and-simpler-rows.md) (the Knowledge module), [0049](0049-documents.md) (Promote on concepts)
 **Amended by:** [0098](0098-agree-by-subject-and-check-a-changed-document.md) (2026-11-16; 0.17.0): a Documents part chosen by Only keep is checked as an Inbox row before ingest, not approved as an item
 **Amended by:** [0099](0099-notion-without-decisions-and-questions.md) (2026-11-16; 0.16.0): the Decisions and Questions databases are removed; a question or risk you follow up is a task (§3, §4)
+**Amended by:** [0115](0115-obsidian-as-a-reading-room-in-0-19-0.md) (2026-11-27; 0.19.0): a report may carry a diagram, kept in `diagrams/` and shown by a standard image link
 
 ## Context
 The brain in Git holds everything it captures; Notion is where you see what it has and where you decide, correct and set your own fields. In the user's 2026-11-04 scope review of Review, Inbox, Decisions, Questions, Concepts, Documents and Orgs:

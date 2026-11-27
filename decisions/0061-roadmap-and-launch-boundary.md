@@ -14,6 +14,7 @@
 **Amended by:** [0106](0106-beta-on-0-16-x-patches-0-17-0-and-0-18-0-before-1-0-and-the-launch-bar.md) (2026-11-18): the beta runs on 0.16.x patches; 0.17.0 (the path without Notion AI and the rename to Notion Brain Assistant) and 0.18.0 (Español) before 1.0.0, by explicit roadmap change; 1.0.0's release-candidate bar and a soft launch; the cutoff stands for anything else
 **Amended by:** [0112](0112-0-18-0-fourteen-features-and-espanol-in-0-19-0.md) (2026-11-22): 0.18.0 holds fourteen features from the LifeOS study and Español moves to 0.19.0, both before 1.0.0, by explicit roadmap change after the cutoff
 **Amended by:** [0113](0113-factories-and-domain-homes-in-0-18-0-the-fourteen-features-in-0-19-0-espanol-in-0-20-0.md) (2026-11-23): 0.18.0 holds Factories and Domain homes, the fourteen features from the LifeOS study move to 0.19.0 and Español to 0.20.0, all before 1.0.0, by explicit roadmap change after the cutoff
+**Amended by:** [0115](0115-obsidian-as-a-reading-room-in-0-19-0.md) (2026-11-27; 0.19.0): 0.19.0 also makes Obsidian an optional reading room, before 1.0.0, by explicit roadmap change after the cutoff
 
 ## Context
 
