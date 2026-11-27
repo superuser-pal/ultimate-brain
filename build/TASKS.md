@@ -398,7 +398,7 @@ A feature release, by explicit roadmap change after the cutoff ([0112](../decisi
 | CC-416 | The factory starter: the CLI, its files and the guide lines | `src/`, `tests/`, `templates/repo/factory/`, `docs/` | after CC-415 | `todo` |
 | CC-417 | The factory starter: the skill text, in 0.19.0's fork release | the fork, then `.agents/skills/` | after CC-415, in CC-381's release; vendored after CC-416 | `todo` |
 | U-50 | The factory starter in your next repo | a new repo of yours | after 0.19.0 is released | author's task |
-| CC-418 | Add the 0.18.0 smoke run's trust-34 and trust-14 to CC-413 | this plan | the author's yes of 2026-11-27; merged after the 0.18.0 release | `in progress` |
+| CC-418 | Add the 0.18.0 smoke run's trust-34 and trust-14 to CC-413 | this plan | the author's yes of 2026-11-27; merged after the 0.18.0 release | `review` |
 
 ### CC-376 · The seven checks that open 0.19.0, then its scope review (0112 §15) · `todo`
 **Release:** 0.19.0
@@ -517,7 +517,7 @@ A feature release, by explicit roadmap change after the cutoff ([0112](../decisi
 **Output:** the skill text for CC-415's contract, written in the fork and vendored with CC-381's one released snapshot (skills-delivery §9.5), never edited here: `brain-repos` offers `--starter factory` when the user starts a repo where agents will build, and says what it writes (0117 §2); a session in a factory repo reads and updates the task's section as `AGENTS.md` says, and the Factory overview reads it (§3). The fork's release notes classify each change (skills-integration).
 **Acceptance:** every skill rule of the contract is in one skill (a table in the PR, rule → file); each changed skill keeps its report short (counts, what needs the user, the next action); a native smoke run in Claude Code and one in Codex, by agents, on a synthetic brain, covers starting a factory repo and a session that ends with a task open and its Stopped line written; the vendored snapshot equals the fork's tag; the leak and PR format checks pass.
 
-### CC-418 · Add the 0.18.0 smoke run's trust-34 and trust-14 to CC-413 · `in progress`
+### CC-418 · Add the 0.18.0 smoke run's trust-34 and trust-14 to CC-413 · `review`
 **Release:** 0.19.0
 **Changelog:** development only: CC-413 also takes trust-34 and trust-14 from the smoke run 0.18.0 was released on, and comes first in 0.19.0.
 **Output:** planning only, in this file, as CC-412 (#513): CC-413's row gains run c in its Reviewed reading (0.18.0 released on `~/ub-smoke-runs/0.18.0-c`, main fb8f48ab, the author's yes of 2026-11-27, decision 0083), (3) trust-34's scorer miss and its test, (4) trust-14, the same cause as trust-19, and an acceptance of three Claude Code runs in a row, since Claude Code's results vary on one package; its old (3) and (4) become (5) and (6) unchanged. CC-413 comes first in 0.19.0's order (the Order paragraph and its table line). CC-413 stays `todo`. Merged only after the 0.18.0 release.
