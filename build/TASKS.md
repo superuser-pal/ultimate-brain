@@ -113,7 +113,7 @@ A feature release, by explicit roadmap change after the cutoff ([0113](../decisi
 | CC-397 | The CLI for Factories | `src/`, `tests/`, `templates/` | after CC-395 | `done` (#506) |
 | CC-398 | The CLI fills a task's Area from its Project | `src/`, `tests/` | after CC-396 | `done` (#501) |
 | CC-399 | The release's Notion migration, prompts, views guide and template documents | `notion/` | after CC-395 and CC-396; CC-384's and CC-386's steps join it | `done` (#503) |
-| CC-400 | The skills for 0.18.0, through the fork | the fork, then `.agents/skills/` | after CC-395 and CC-396; vendored after CC-397 and CC-398 | `review` |
+| CC-400 | The skills for 0.18.0, through the fork | the fork, then `.agents/skills/` | after CC-395 and CC-396; vendored after CC-397 and CC-398 | `done` (#510) |
 | CC-401 | Guides and template text | the README, `docs/`, `templates/` | after CC-397 to CC-400 | `done` (#507) |
 | CC-384 | Weekly review's answer line names only the task options (moved from 1.0.0's section) | brain-assistant.md, the release's migration | any order; one migration with CC-386 | `done` (#499) |
 | CC-385 | A skill page built from Prompt 9 keeps its text where the template does (moved from 1.0.0's section) | `spec/setup.md` §6.4, Notion design §5, Prompt 9, brain-assistant.md, the fork if it names the layout | contract first | `done` (#494) |
@@ -309,7 +309,7 @@ In the block read the rich text item of the date is `{"type":"mention","mention"
 | E3 · Tools and access | no | yes | one Skills database, the one under your top page |
 | Hand check: a row added on an Area's page, in its task list | on the copy, then deleted | yes | note whether its Area is filled; nothing depends on it |
 
-### CC-400 · The skills for 0.18.0, through the fork (0113 §1 to §10) · `review`
+### CC-400 · The skills for 0.18.0, through the fork (0113 §1 to §10) · `done` (#510)
 **Release:** 0.18.0
 **Changelog:** A session in a linked repo or connected folder starts from the tasks you wrote for that Factory, agrees with you how to do the one you pick, and leaves an overview of what was built.
 **Output:** the skills' texts for both contracts, written in the fork and vendored as one released snapshot (skills-delivery §9.5), never edited here: linking a repo offers the Factories module and the connection in one summary, and unlinking says what happens to the row (§1, §4); the workflow skills take a Factory as a destination, start a session from its open tasks, agree the how in the session, offer a task for work that had none, and at the close set the statuses and write the overview (§3, §5, §6); the catch-up refreshes each Factory's overview and fills an unfinished task's empty Area from its Project or, with no Project, its Factory (0114), with its count in the report (§6, §9); setup and connect Notion know the Factories module and Tasks · Factory, also for a Tasks database the user mapped (§1, §3); setup and "turn on domains" say Home's by-hand line and offer a mapped Tasks database the Domain rollup (§9, §10). The release also takes CC-403's fork PR (the unattended run's last steps, the opening line, one input per commit). The fork's release notes classify each change (skills-integration), and the snapshot's CLI range names 0.18.0.
